@@ -626,6 +626,55 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
   </div>
 </div>
 
+<!-- EDIT MATERIAL MODAL -->
+<div class="modal-overlay" id="edit-material-modal" onclick="if(event.target===this)closeModal('edit-material-modal')">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Edit Material — <span id="edit-mat-title" style="color:#185FA5"></span></div><div class="modal-close" onclick="closeModal('edit-material-modal')">×</div></div>
+    <div class="modal-body">
+      <div style="background:#dbeafe;border-radius:8px;padding:10px 12px;font-size:12px;color:#1e40af;margin-bottom:14px">Edit any field below. <b>Used MTD</b> and <b>Cost MTD</b> are updated automatically when artisans log materials on job cards — but you can also correct them here.</div>
+      <div class="form-group"><div class="form-label">Description *</div><input class="form-input" id="emat-desc"/></div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Category</div><select class="form-select" id="emat-cat"><option>Seals &amp; gaskets</option><option>Bearings</option><option>Electrical</option><option>Lubricants</option><option>Filters</option><option>Belts &amp; drives</option><option>Pipe fittings</option><option>General</option></select></div>
+        <div class="form-group"><div class="form-label">Unit cost (R)</div><input class="form-input" id="emat-unitcost" type="number"/></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">In stock (current qty)</div><input class="form-input" id="emat-stock" type="number"/></div>
+        <div class="form-group"><div class="form-label">Minimum level (reorder at)</div><input class="form-input" id="emat-min" type="number"/></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Used MTD (qty this month)</div><input class="form-input" id="emat-usedmtd" type="number"/><div style="font-size:11px;color:#9ca3af;margin-top:3px">Auto-updated when artisans log on jobs</div></div>
+        <div class="form-group"><div class="form-label">Item code</div><input class="form-input" id="emat-code"/></div>
+      </div>
+      <div class="form-group"><div class="form-label">Supplier / notes</div><input class="form-input" id="emat-supplier" placeholder="e.g. RS Components, Bearing Man, local hardware"/></div>
+    </div>
+    <div class="modal-foot">
+      <button class="tb-btn danger" onclick="deleteMaterial()">🗑 Delete item</button>
+      <button class="tb-btn" onclick="closeModal('edit-material-modal')" style="margin-left:auto">Cancel</button>
+      <button class="tb-btn primary" onclick="saveEditMaterial()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- REORDER MODAL -->
+<div class="modal-overlay" id="reorder-modal" onclick="if(event.target===this)closeModal('reorder-modal')">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Reorder — <span id="reorder-mat-title" style="color:#185FA5"></span></div><div class="modal-close" onclick="closeModal('reorder-modal')">×</div></div>
+    <div class="modal-body">
+      <div style="background:#fef3c7;border-radius:8px;padding:12px;font-size:12.5px;color:#92400e;margin-bottom:14px">
+        <b>Stock is below minimum level.</b> Fill in the order details below and click "Log order" to record it. When stock arrives, edit the item and update the "In stock" quantity.
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Current stock</div><div class="form-input" id="reorder-current" style="background:#f9fafb;color:#6b7280">—</div></div>
+        <div class="form-group"><div class="form-label">Minimum level</div><div class="form-input" id="reorder-min" style="background:#f9fafb;color:#6b7280">—</div></div>
+      </div>
+      <div class="form-group"><div class="form-label">Quantity to order *</div><input class="form-input" id="reorder-qty" type="number" placeholder="e.g. 10"/></div>
+      <div class="form-group"><div class="form-label">Supplier</div><input class="form-input" id="reorder-supplier" placeholder="e.g. RS Components"/></div>
+      <div class="form-group"><div class="form-label">Notes</div><input class="form-input" id="reorder-notes" placeholder="e.g. Urgent — production affected"/></div>
+    </div>
+    <div class="modal-foot"><button class="tb-btn" onclick="closeModal('reorder-modal')">Cancel</button><button class="tb-btn primary" onclick="logReorder()">Log reorder request</button></div>
+  </div>
+</div>
+
 <!-- SCHEDULE MODAL -->
 <div class="modal-overlay" id="schedule-modal" onclick="if(event.target===this)closeModal('schedule-modal')">
   <div class="modal">
@@ -972,7 +1021,8 @@ window.renderPermits = function(){
           <button class="tb-btn primary" style="flex:1;justify-content:center;font-size:11px" onclick="approvePermit('${p.id}')">✓ Approve</button>
           <button class="tb-btn danger" style="font-size:11px" onclick="rejectPermit('${p.id}')">✕ Reject</button>
         </div>`:
-        p.status==='active'?`<div style="display:flex;gap:6px"><button class="tb-btn" style="font-size:11px" onclick="closePermit('${p.id}')">Close permit</button></div>`:''}
+        p.status==='active'?`<div style="display:flex;gap:6px"><button class="tb-btn" style="font-size:11px" onclick="closePermit('${p.id}')">Close permit</button><button class="tb-btn danger" style="font-size:11px;margin-left:4px" onclick="deletePermit('${p.id}')">🗑 Delete</button></div>`:
+        `<div style="display:flex;gap:6px"><button class="tb-btn danger" style="font-size:11px" onclick="deletePermit('${p.id}')">🗑 Delete</button></div>`}
     </div>`;
   });
   container.innerHTML = html||'<div class="empty-state">No permits yet</div>';
@@ -996,25 +1046,43 @@ window.renderDashPermits = function(){
 window.renderMaterials = function(){
   const tbody = document.getElementById('materials-tbody');
   if(!tbody)return;
-  if(!allMaterials.length){tbody.innerHTML='<tr><td colspan="11" class="empty-state">No materials added yet — add items to the register</td></tr>';return;}
+  if(!allMaterials.length){tbody.innerHTML='<tr><td colspan="11" class="empty-state">No materials added yet — click "+ Add item" above</td></tr>';return;}
+
+  // Calculate usedMTD from actual job cards — sum all job materials that match this item by name
+  const jobMaterialUsage = {};
+  allJobs.forEach(j=>{
+    (j.materials||[]).forEach(m=>{
+      const key = (m.name||'').toLowerCase().trim();
+      if(!jobMaterialUsage[key]) jobMaterialUsage[key]={qty:0,cost:0,jobs:[]};
+      jobMaterialUsage[key].qty += parseFloat(m.qty)||0;
+      jobMaterialUsage[key].cost += (parseFloat(m.qty)||0)*(parseFloat(m.unitPrice||m.unitCost||0));
+      if(j.jobNumber && !jobMaterialUsage[key].jobs.includes(j.jobNumber)) jobMaterialUsage[key].jobs.push(j.jobNumber);
+    });
+  });
+
   tbody.innerHTML = allMaterials.map(m=>{
     const stockStatus = m.inStock<=0?'stock-out':m.inStock<=m.minLevel?'stock-low':'stock-ok';
     const stockLabel = m.inStock<=0?'Out of stock':m.inStock<=m.minLevel?'Low stock':'In stock';
-    const usedCost = (m.usedMTD||0)*(m.unitCost||0);
+    // Get live usage from job cards
+    const usage = jobMaterialUsage[(m.description||'').toLowerCase().trim()]||{qty:0,cost:0,jobs:[]};
+    const usedQty = (m.usedMTD||0) > usage.qty ? (m.usedMTD||0) : usage.qty;
+    const usedCost = usedQty*(parseFloat(m.unitCost)||0);
+    const usedJobs = (m.usedOnJobs||[]).length > usage.jobs.length ? (m.usedOnJobs||[]) : usage.jobs;
+    const isLow = m.inStock<=m.minLevel;
     return `<tr>
       <td style="font-size:11px;color:#9ca3af">${m.code||'—'}</td>
       <td><b>${m.description||'—'}</b></td>
       <td>${m.category||'—'}</td>
-      <td>R ${(m.unitCost||0).toLocaleString()}</td>
-      <td style="font-weight:600;color:${m.inStock<=0?'#dc2626':m.inStock<=m.minLevel?'#d97706':'#111827'}">${m.inStock||0}</td>
+      <td>R ${(m.unitCost||0).toFixed(2)}</td>
+      <td style="font-weight:700;color:${m.inStock<=0?'#dc2626':m.inStock<=m.minLevel?'#d97706':'#111827'}">${m.inStock||0}</td>
       <td>${m.minLevel||0}</td>
-      <td>${m.usedMTD||0}</td>
-      <td style="font-weight:600">R ${usedCost.toLocaleString()}</td>
-      <td style="font-size:11px;color:#6b7280">${(m.usedOnJobs||[]).join(', ')||'—'}</td>
+      <td style="font-weight:600;color:${usedQty>0?'#185FA5':'#9ca3af'}">${usedQty||0}</td>
+      <td style="font-weight:600;color:${usedCost>0?'#185FA5':'#9ca3af'}">R ${usedCost.toFixed(2)}</td>
+      <td style="font-size:11px;color:#6b7280">${usedJobs.join(', ')||'—'}</td>
       <td><span class="${stockStatus}">${stockLabel}</span></td>
-      <td>
-        ${m.inStock<=m.minLevel?'<button class="tb-btn primary" style="font-size:11px;padding:3px 8px">Reorder</button>':''}
-        <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="editStock('${m.id}',${m.inStock||0})">Edit stock</button>
+      <td style="white-space:nowrap">
+        ${isLow?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px;background:#fef3c7;color:#92400e;border-color:#f59e0b" onclick="openReorderModal('${m.id}','${(m.description||'').replace(/'/g,"\\'")}',${m.inStock||0},${m.minLevel||0})">📦 Reorder</button>`:''}
+        <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:${isLow?'4px':'0'}" onclick="openEditMaterialModal('${m.id}')">✏️ Edit</button>
       </td>
     </tr>`;
   }).join('');
@@ -1023,13 +1091,24 @@ window.renderMaterials = function(){
 window.renderDashMaterials = function(){
   const tbody = document.getElementById('dash-materials');
   if(!tbody)return;
-  const recent = allMaterials.filter(m=>m.usedMTD>0).slice(0,5);
-  if(!recent.length){tbody.innerHTML='<tr><td colspan="4" class="empty-state">Materials logged from artisan phones appear here</td></tr>';return;}
-  tbody.innerHTML = recent.map(m=>`<tr>
-    <td>${m.description||'—'}</td>
-    <td style="font-size:11px;color:#6b7280">${(m.usedOnJobs||[]).join(', ')||'—'}</td>
-    <td>${m.usedMTD||0}</td>
-    <td style="font-weight:600">R ${((m.usedMTD||0)*(m.unitCost||0)).toLocaleString()}</td>
+  // Build usage from actual job card materials
+  const usageMap = {};
+  allJobs.forEach(j=>{
+    (j.materials||[]).forEach(m=>{
+      const name = m.name||'Unknown';
+      if(!usageMap[name]) usageMap[name]={name,qty:0,cost:0,jobs:[]};
+      usageMap[name].qty += parseFloat(m.qty)||0;
+      usageMap[name].cost += (parseFloat(m.qty)||0)*(parseFloat(m.unitPrice||m.unitCost||0));
+      if(j.jobNumber && !usageMap[name].jobs.includes(j.jobNumber)) usageMap[name].jobs.push(j.jobNumber);
+    });
+  });
+  const items = Object.values(usageMap).filter(x=>x.qty>0).sort((a,b)=>b.cost-a.cost).slice(0,5);
+  if(!items.length){tbody.innerHTML='<tr><td colspan="4" class="empty-state">Artisans log materials on job cards — they appear here</td></tr>';return;}
+  tbody.innerHTML = items.map(item=>`<tr>
+    <td><b>${item.name}</b></td>
+    <td style="font-size:11px;color:#6b7280">${item.jobs.join(', ')||'—'}</td>
+    <td style="font-weight:600;color:#185FA5">${item.qty.toFixed(item.qty%1===0?0:2)}</td>
+    <td style="font-weight:700;color:#185FA5">R ${item.cost.toFixed(2)}</td>
   </tr>`).join('');
 };
 
@@ -1465,6 +1544,13 @@ window.closePermit = async function(id){
   toast('Permit closed','success');
 };
 
+window.deletePermit = async function(id){
+  if(!confirm('Permanently delete this permit?'))return;
+  const {deleteDoc} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  await deleteDoc(doc(db,'permits',id));
+  toast('Permit deleted','success');
+};
+
 window.completeJob = async function(id){
   await updateDoc(doc(db,'jobCards',id),{
     status:'completed',
@@ -1536,11 +1622,88 @@ window.addMaterial = async function(){
   }catch(e){toast('Error: '+e.message,'error');}
 };
 
-window.editStock = async function(id,current){
-  const newStock = prompt('Update stock level (current: '+current+'):',current);
-  if(newStock===null)return;
-  await updateDoc(doc(db,'materials',id),{inStock:parseInt(newStock)||0});
-  toast('Stock level updated','success');
+window.openEditMaterialModal = function(id){
+  const m = allMaterials.find(x=>x.id===id);
+  if(!m)return;
+  window._editingMatId = id;
+  document.getElementById('edit-mat-title').textContent = m.description||'—';
+  document.getElementById('emat-desc').value = m.description||'';
+  document.getElementById('emat-cat').value = m.category||'General';
+  document.getElementById('emat-unitcost').value = m.unitCost||0;
+  document.getElementById('emat-stock').value = m.inStock||0;
+  document.getElementById('emat-min').value = m.minLevel||0;
+  document.getElementById('emat-usedmtd').value = m.usedMTD||0;
+  document.getElementById('emat-code').value = m.code||'';
+  document.getElementById('emat-supplier').value = m.supplier||'';
+  openModal('edit-material-modal');
+};
+
+window.saveEditMaterial = async function(){
+  if(!window._editingMatId)return;
+  const desc = document.getElementById('emat-desc').value.trim();
+  if(!desc){toast('Description is required','error');return;}
+  await updateDoc(doc(db,'materials',window._editingMatId),{
+    description: desc,
+    category: document.getElementById('emat-cat').value,
+    unitCost: parseFloat(document.getElementById('emat-unitcost').value)||0,
+    inStock: parseInt(document.getElementById('emat-stock').value)||0,
+    minLevel: parseInt(document.getElementById('emat-min').value)||0,
+    usedMTD: parseInt(document.getElementById('emat-usedmtd').value)||0,
+    code: document.getElementById('emat-code').value,
+    supplier: document.getElementById('emat-supplier').value,
+    updatedAt: serverTimestamp()
+  });
+  closeModal('edit-material-modal');
+  toast('Material updated','success');
+};
+
+window.deleteMaterial = async function(){
+  if(!window._editingMatId)return;
+  const m = allMaterials.find(x=>x.id===window._editingMatId);
+  if(!confirm('Delete "'+(m?.description||'this item')+'" from the register?'))return;
+  const {deleteDoc} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  await deleteDoc(doc(db,'materials',window._editingMatId));
+  closeModal('edit-material-modal');
+  toast('Material deleted from register','success');
+};
+
+window.openReorderModal = function(id, desc, current, minLevel){
+  window._reorderMatId = id;
+  document.getElementById('reorder-mat-title').textContent = desc;
+  document.getElementById('reorder-current').textContent = current+' units in stock';
+  document.getElementById('reorder-min').textContent = 'Min: '+minLevel+' units';
+  const suggestedQty = Math.max(minLevel*2, minLevel-current+minLevel);
+  document.getElementById('reorder-qty').value = suggestedQty;
+  document.getElementById('reorder-supplier').value = allMaterials.find(m=>m.id===id)?.supplier||'';
+  document.getElementById('reorder-notes').value = '';
+  openModal('reorder-modal');
+};
+
+window.logReorder = async function(){
+  if(!window._reorderMatId)return;
+  const qty = parseInt(document.getElementById('reorder-qty').value)||0;
+  const supplier = document.getElementById('reorder-supplier').value;
+  const notes = document.getElementById('reorder-notes').value;
+  if(!qty){toast('Please enter a quantity','error');return;}
+  const m = allMaterials.find(x=>x.id===window._reorderMatId);
+  // Log as a notification/record
+  await addDoc(collection(db,'reorders'),{
+    materialId: window._reorderMatId,
+    description: m?.description||'—',
+    qty,
+    supplier,
+    notes,
+    status: 'pending',
+    createdAt: serverTimestamp()
+  });
+  // Also update material to show pending order
+  await updateDoc(doc(db,'materials',window._reorderMatId),{
+    pendingOrder: qty,
+    pendingOrderSupplier: supplier,
+    updatedAt: serverTimestamp()
+  });
+  closeModal('reorder-modal');
+  toast('Reorder logged — '+qty+' units from '+(supplier||'supplier'),'success');
 };
 
 window.addSchedule = async function(){
