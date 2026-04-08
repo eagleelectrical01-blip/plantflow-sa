@@ -319,21 +319,42 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
 
   <!-- OHSA -->
   <div class="screen" id="s-ohsa">
-    <div class="page-sub">Live OHSA and SANS compliance scores driven by inspections, permits issued, training records and incident logs.</div>
+    <div class="page-sub">OHSA Act 85 of 1993 compliance tracking. Scores are updated by the Maintenance Manager based on actual inspections, permits and PM tasks. Live data from PlantFlow feeds the overdue task count automatically.</div>
+
+    <!-- Live stats from real data -->
     <div class="four-col" style="margin-bottom:16px">
-      <div class="kpi-card"><div class="kpi-val" style="color:#16a34a" id="ohsa-overall">87%</div><div class="kpi-label">Overall compliance</div></div>
-      <div class="kpi-card"><div class="kpi-val" style="color:#185FA5" id="ohsa-actions">3</div><div class="kpi-label">Open action items</div></div>
-      <div class="kpi-card"><div class="kpi-val" style="color:#d97706">1</div><div class="kpi-label">Overdue tasks</div></div>
-      <div class="kpi-card"><div class="kpi-val" style="color:#16a34a">0</div><div class="kpi-label">Incidents MTD</div></div>
+      <div class="kpi-card"><div class="kpi-val" id="ohsa-overall" style="color:#16a34a">—</div><div class="kpi-label">Overall compliance</div></div>
+      <div class="kpi-card"><div class="kpi-val" style="color:#185FA5" id="ohsa-inspections">—</div><div class="kpi-label">Inspections submitted (MTD)</div></div>
+      <div class="kpi-card"><div class="kpi-val" style="color:#d97706" id="ohsa-overdue">—</div><div class="kpi-label">Overdue PM tasks</div></div>
+      <div class="kpi-card"><div class="kpi-val" style="color:#185FA5" id="ohsa-permits-count">—</div><div class="kpi-label">Safety permits issued (MTD)</div></div>
     </div>
+
+    <!-- Explanation banner -->
+    <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:14px 16px;margin-bottom:14px;font-size:12.5px;line-height:1.7;color:#374151">
+      <b style="color:#92400e">ℹ How these scores work:</b> Each section below maps to a section of the South African OHSA Act 85 of 1993.
+      The score reflects how well your factory is complying with that section right now.
+      You update the score and notes manually after doing a walkthrough or inspection.
+      Anything below 80% shows as "Review" — you need to take action.
+      The <b>linked job types</b> tell you which PlantFlow job card types contribute to that score.
+      <b>Click "Update" on any row to edit that section's score and notes.</b>
+    </div>
+
     <div class="panel">
-      <div class="panel-head"><div class="panel-title">OHSA Compliance by Section</div></div>
-      <div class="ohsa-item"><div class="ohsa-score" style="color:#16a34a">94%</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">General safety provisions — Section 8</div><div style="font-size:11px;color:#6b7280">Safety reps appointed, hazard identification complete</div><div class="ohsa-bar-bg"><div class="ohsa-bar-fill" style="width:94%;background:#16a34a"></div></div></div><span class="badge b-green">Good</span></div>
-      <div class="ohsa-item"><div class="ohsa-score" style="color:#16a34a">91%</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Hazardous chemical substances — HCS Regs</div><div style="font-size:11px;color:#6b7280">SDS available, storage compliant, PPE stocked</div><div class="ohsa-bar-bg"><div class="ohsa-bar-fill" style="width:91%;background:#16a34a"></div></div></div><span class="badge b-green">Good</span></div>
-      <div class="ohsa-item"><div class="ohsa-score" style="color:#d97706">76%</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Driven Machinery Regulations — DMR</div><div style="font-size:11px;color:#6b7280">Thermography overdue · 2 machine guards missing</div><div class="ohsa-bar-bg"><div class="ohsa-bar-fill" style="width:76%;background:#d97706"></div></div></div><span class="badge b-amber">Review</span></div>
-      <div class="ohsa-item"><div class="ohsa-score" style="color:#16a34a">88%</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Electrical installation regulations</div><div style="font-size:11px;color:#6b7280">COC up to date, panel labels done</div><div class="ohsa-bar-bg"><div class="ohsa-bar-fill" style="width:88%;background:#16a34a"></div></div></div><span class="badge b-green">Good</span></div>
-      <div class="ohsa-item"><div class="ohsa-score" style="color:#d97706">79%</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Pressure vessel regulations — SANS 347</div><div style="font-size:11px;color:#6b7280">Annual inspection due in 18 days</div><div class="ohsa-bar-bg"><div class="ohsa-bar-fill" style="width:79%;background:#d97706"></div></div></div><span class="badge b-amber">Review</span></div>
-      <div class="ohsa-item"><div class="ohsa-score" style="color:#16a34a">95%</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Fire precautions — SANS 10400-T</div><div style="font-size:11px;color:#6b7280">All extinguishers serviced · Evacuation drills done</div><div class="ohsa-bar-bg"><div class="ohsa-bar-fill" style="width:95%;background:#16a34a"></div></div></div><span class="badge b-green">Good</span></div>
+      <div class="panel-head">
+        <div class="panel-title">OHSA Compliance by Section <span class="live-dot" style="margin-left:5px;width:6px;height:6px"></span></div>
+        <button class="tb-btn" style="font-size:11px;padding:5px 10px" onclick="saveOHSAScores()">💾 Save all scores</button>
+      </div>
+      <div id="ohsa-sections-list"></div>
+    </div>
+
+    <!-- What to do when score is low -->
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">How to improve a low score</div></div>
+      <div style="padding:14px;font-size:12.5px;line-height:1.8;color:#374151">
+        <div style="margin-bottom:8px"><b style="color:#185FA5">Below 70% (Critical):</b> Create a job card immediately, assign to a responsible artisan, and schedule a follow-up inspection within 7 days.</div>
+        <div style="margin-bottom:8px"><b style="color:#d97706">70–80% (Review):</b> Add a PM schedule task for the affected area. The artisan will see it on their phone and submit an inspection report when done.</div>
+        <div><b style="color:#16a34a">Above 80% (Good):</b> Maintain with regular PM schedules. Submit inspections monthly to keep the score current.</div>
+      </div>
     </div>
   </div>
 
@@ -778,6 +799,7 @@ onSnapshot(query(collection(db,'schedules'),orderBy('createdAt','desc')), snap =
 onSnapshot(query(collection(db,'inspections'),orderBy('createdAt','desc')), snap => {
   allInspections = snap.docs.map(d=>({id:d.id,...d.data()}));
   renderInspections();
+  renderOHSA();
   setSync();
 }, err => { console.error('inspections:',err.code); });
 
@@ -1055,6 +1077,145 @@ window.renderUsers = function(){
   }
 };
 
+// ── OHSA SECTIONS DEFAULT DATA ──
+const OHSA_DEFAULTS = [
+  {key:'general', title:'General safety provisions — Section 8', law:'OHSA Act 85 of 1993 — Section 8', what:'Your employer\'s general duty to provide a safe workplace. Requires: hazard identification, risk assessments, safety representatives appointed, safety committee meetings, emergency procedures in place.', linked:'Safety inspections submitted by artisans, overdue PM tasks', score:87, notes:'Safety reps appointed, hazard identification complete'},
+  {key:'chemical', title:'Hazardous chemical substances — HCS Regs', law:'HCS Regulations under OHSA', what:'Controls storage, handling and disposal of hazardous chemicals. Requires: SDS (Safety Data Sheets) at every chemical storage point, correct labelling, PPE provided, medical surveillance for exposed workers.', linked:'Chemical handling permits (PTW type: Chemical handling), inspection passes for chemical areas', score:91, notes:'SDS available, storage compliant, PPE stocked'},
+  {key:'machinery', title:'Driven Machinery Regulations — DMR', law:'Driven Machinery Regulations under OHSA', what:'Covers all powered machinery — pumps, compressors, conveyors, presses. Requires: guards on all moving parts, thermography inspections, maintenance records for each machine.', linked:'PM schedules for machinery, machine-related job cards, DMR inspection submissions', score:76, notes:'Thermography overdue · 2 machine guards missing'},
+  {key:'electrical', title:'Electrical installation regulations', law:'Electrical Installation Regulations 2009 under OHS Act', what:'Covers all electrical installations. Requires: Certificate of Compliance (COC) for installation, all DB boards labelled and closed, no exposed wiring, LOTO (lockout/tagout) procedures for electrical work.', linked:'Electrical isolation permits (PTW type: LOTO), electrical PM schedules, electrical inspection submissions', score:88, notes:'COC up to date, panel labels done'},
+  {key:'pressure', title:'Pressure vessel regulations — SANS 347', law:'Pressure Equipment Regulations / SANS 347', what:'Covers boilers, pressure vessels, compressors. Requires: annual or periodic inspection by an approved inspection authority, pressure relief valves tested, records kept.', linked:'Pressure vessel PM schedules, inspection submissions for pressure vessels', score:79, notes:'Annual inspection due in 18 days'},
+  {key:'fire', title:'Fire precautions — SANS 10400-T', law:'National Building Regulations — Part T (Fire Protection)', what:'Covers fire safety in buildings and factories. Requires: extinguishers in correct locations and serviced annually, emergency evacuation plan posted, fire drills done, fire hose reels tested.', linked:'Fire safety inspections, fire drill PM schedules', score:95, notes:'All extinguishers serviced · Evacuation drills done'}
+];
+
+let ohsaData = [...OHSA_DEFAULTS];
+
+window.renderOHSA = function(){
+  // Live counts from real data
+  const overdueSchedules = allSchedules.filter(s=>{
+    if(!s.nextDue)return false;
+    const d = new Date(s.nextDue);
+    return !isNaN(d) && d < new Date();
+  }).length;
+  const el1 = document.getElementById('ohsa-inspections');
+  const el2 = document.getElementById('ohsa-overdue');
+  const el3 = document.getElementById('ohsa-permits-count');
+  if(el1) el1.textContent = allInspections.length;
+  if(el2) el2.textContent = overdueSchedules;
+  if(el3) el3.textContent = allPermits.length;
+
+  // Calculate overall
+  const avg = Math.round(ohsaData.reduce((s,r)=>s+r.score,0)/ohsaData.length);
+  const overallEl = document.getElementById('ohsa-overall');
+  if(overallEl){ overallEl.textContent=avg+'%'; overallEl.style.color=avg>=80?'#16a34a':avg>=70?'#d97706':'#dc2626'; }
+
+  // Render editable rows
+  const list = document.getElementById('ohsa-sections-list');
+  if(!list)return;
+  list.innerHTML = ohsaData.map((row,i)=>{
+    const score = row.score||0;
+    const color = score>=80?'#16a34a':score>=70?'#d97706':'#dc2626';
+    const badgeClass = score>=80?'b-green':score>=70?'b-amber':'b-red';
+    const badgeLabel = score>=80?'Good':score>=70?'Review':'Action needed';
+    return `<div class="ohsa-item" style="flex-direction:column;align-items:stretch;padding:14px 16px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+        <div class="ohsa-score" style="color:${color}">${score}%</div>
+        <div style="flex:1">
+          <div style="font-size:12.5px;font-weight:700;color:#111827">${row.title}</div>
+          <div style="font-size:11px;color:#6b7280;margin-top:2px">${row.law}</div>
+        </div>
+        <span class="badge ${badgeClass}">${badgeLabel}</span>
+        <button class="tb-btn" style="font-size:11px;padding:4px 10px" onclick="toggleOHSAEdit(${i})">Edit</button>
+      </div>
+      <div class="ohsa-bar-bg"><div class="ohsa-bar-fill" style="width:${score}%;background:${color}"></div></div>
+
+      <!-- Explanation (always visible) -->
+      <div style="margin-top:10px;background:#f9fafb;border-radius:8px;padding:10px 12px;font-size:12px;color:#374151;line-height:1.6">
+        <div style="margin-bottom:5px"><b>What this means:</b> ${row.what}</div>
+        <div style="color:#185FA5"><b>Linked to PlantFlow:</b> ${row.linked}</div>
+      </div>
+
+      <!-- Notes (always visible) -->
+      <div style="margin-top:8px;font-size:12px;color:#6b7280">
+        <b>Current status:</b> <span id="ohsa-note-display-${i}">${row.notes}</span>
+      </div>
+
+      <!-- Edit panel (hidden by default) -->
+      <div id="ohsa-edit-${i}" style="display:none;margin-top:10px;background:#eff6ff;border-radius:10px;padding:12px;border:1px solid #bfdbfe">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;margin-bottom:10px">
+          <label style="font-size:12px;font-weight:600;color:#374151">Score (0–100):</label>
+          <input type="number" min="0" max="100" value="${score}" id="ohsa-score-input-${i}"
+            style="width:80px;padding:6px 10px;border:1.5px solid #bfdbfe;border-radius:7px;font-size:14px;font-weight:700;color:${color}"
+            oninput="previewOHSAScore(${i},this.value)"/>
+        </div>
+        <div style="margin-bottom:10px">
+          <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px">Status notes:</label>
+          <input type="text" value="${row.notes}" id="ohsa-notes-input-${i}"
+            style="width:100%;padding:8px 10px;border:1.5px solid #bfdbfe;border-radius:7px;font-size:12.5px;font-family:'Segoe UI',Arial,sans-serif"/>
+        </div>
+        <button class="tb-btn primary" style="font-size:12px;padding:6px 14px" onclick="applyOHSAEdit(${i})">Apply</button>
+        <button class="tb-btn" style="font-size:12px;padding:6px 14px;margin-left:6px" onclick="toggleOHSAEdit(${i})">Cancel</button>
+      </div>
+    </div>`;
+  }).join('');
+};
+
+window.toggleOHSAEdit = function(i){
+  const panel = document.getElementById('ohsa-edit-'+i);
+  if(panel) panel.style.display = panel.style.display==='none' ? 'block' : 'none';
+};
+
+window.previewOHSAScore = function(i, val){
+  const score = Math.min(100, Math.max(0, parseInt(val)||0));
+  const color = score>=80?'#16a34a':score>=70?'#d97706':'#dc2626';
+  const input = document.getElementById('ohsa-score-input-'+i);
+  if(input) input.style.color = color;
+};
+
+window.applyOHSAEdit = function(i){
+  const scoreEl = document.getElementById('ohsa-score-input-'+i);
+  const notesEl = document.getElementById('ohsa-notes-input-'+i);
+  if(!scoreEl||!notesEl)return;
+  ohsaData[i].score = Math.min(100, Math.max(0, parseInt(scoreEl.value)||0));
+  ohsaData[i].notes = notesEl.value;
+  renderOHSA();
+};
+
+window.saveOHSAScores = async function(){
+  try{
+    await updateDoc(doc(db,'config','ohsa'),{
+      scores: ohsaData.map(r=>({key:r.key, score:r.score, notes:r.notes})),
+      updatedAt: serverTimestamp()
+    });
+    toast('OHSA scores saved to database','success');
+  }catch(e){
+    // Config doc may not exist yet — create it
+    try{
+      await addDoc(collection(db,'config'),{
+        id:'ohsa',
+        scores: ohsaData.map(r=>({key:r.key, score:r.score, notes:r.notes})),
+        updatedAt: serverTimestamp()
+      });
+      toast('OHSA scores saved','success');
+    }catch(e2){ toast('Error saving: '+e2.message,'error'); }
+  }
+};
+
+// Load saved OHSA scores from Firestore on startup
+async function loadOHSAScores(){
+  try{
+    const snap = await getDocs(query(collection(db,'config'),where('id','==','ohsa')));
+    if(!snap.empty){
+      const saved = snap.docs[0].data().scores||[];
+      saved.forEach(s=>{
+        const idx = ohsaData.findIndex(r=>r.key===s.key);
+        if(idx>=0){ ohsaData[idx].score=s.score; ohsaData[idx].notes=s.notes; }
+      });
+    }
+  }catch(e){ /* first run — use defaults */ }
+  renderOHSA();
+}
+loadOHSAScores();
+
 window.renderSchedules = function(){
   const tbody = document.getElementById('schedules-tbody');
   if(!tbody)return;
@@ -1313,10 +1474,25 @@ window.completeJob = async function(id){
 };
 
 window.deleteJob = async function(id){
-  if(!confirm('Permanently delete this completed job card?'))return;
+  if(!confirm('Permanently delete this completed job card? The linked permit will also be deleted.'))return;
   const {deleteDoc} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  // Find the job to get its job number
+  const job = allJobs.find(j=>j.id===id);
   await deleteDoc(doc(db,'jobCards',id));
-  toast('Job card deleted','success');
+  // Also delete any permit linked to this job card
+  if(job&&job.jobNumber){
+    const linkedPermits = allPermits.filter(p=>p.jobCard===job.jobNumber);
+    for(const p of linkedPermits){
+      await deleteDoc(doc(db,'permits',p.id));
+    }
+    if(linkedPermits.length>0){
+      toast('Job card and '+linkedPermits.length+' linked permit(s) deleted','success');
+    } else {
+      toast('Job card deleted','success');
+    }
+  } else {
+    toast('Job card deleted','success');
+  }
 };
 
 window.convertFault = async function(id,desc,loc,priority){
