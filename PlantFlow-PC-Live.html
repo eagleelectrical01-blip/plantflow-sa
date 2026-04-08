@@ -146,6 +146,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
     <div class="nav-item" onclick="nav('reports',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 12V4l3 3 3-5 3 5 3-3v8H2z"/></svg>Reports</div>
     <div class="nav-item" onclick="nav('users',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="5" r="3"/><path d="M2 15c0-3 2.5-5 6-5s6 2 6 5"/></svg>Manage Users</div>
     <div class="nav-item" onclick="nav('settings',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="2.5"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2"/></svg>Settings</div>
+    <div class="nav-item" onclick="nav('superadmin',this)" style="border-top:1px solid #f3f4f6;margin-top:4px"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M1 6h14"/><path d="M5 10h2M9 10h2"/></svg>Super Admin</div>
   </div>
   <div class="sidebar-user">
     <div class="av" style="width:32px;height:32px;">JV</div>
@@ -449,6 +450,72 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
     </div>
   </div>
 
+  <!-- SUPER ADMIN -->
+  <div class="screen" id="s-superadmin">
+    <div id="superadmin-login-wall">
+      <div style="max-width:400px;margin:60px auto;background:#fff;border-radius:16px;padding:32px;border:1px solid #e5e7eb;box-shadow:0 4px 20px rgba(0,0,0,0.08);text-align:center">
+        <div style="width:56px;height:56px;border-radius:16px;background:#0D1B2A;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="white" stroke-width="2"><rect x="3" y="11" width="20" height="13" rx="2"/><path d="M8 11V7a5 5 0 0110 0v4"/><circle cx="13" cy="17" r="2"/></svg>
+        </div>
+        <div style="font-size:18px;font-weight:800;color:#0D1B2A;margin-bottom:6px">Super Admin Access</div>
+        <div style="font-size:12px;color:#6b7280;margin-bottom:24px">Eagle Electrical Ventures — PlantFlow owner panel</div>
+        <div class="form-group" style="text-align:left"><div class="form-label">Admin password</div><input class="form-input" type="password" id="sa-password" placeholder="Enter super admin password" onkeydown="if(event.key==='Enter')checkSALogin()"/></div>
+        <button class="tb-btn primary" style="width:100%;justify-content:center;padding:10px;margin-top:8px" onclick="checkSALogin()">Login to Super Admin</button>
+      </div>
+    </div>
+    <div id="superadmin-panel" style="display:none">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <div style="font-size:16px;font-weight:800;color:#0D1B2A">🔐 Super Admin Panel — Eagle Electrical Ventures</div>
+        <button class="tb-btn danger" style="margin-left:auto" onclick="logoutSA()">Logout</button>
+      </div>
+      <div class="two-equal" style="margin-bottom:16px">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Subscription Settings</div></div>
+          <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+            <div class="form-group"><div class="form-label">Monthly subscription fee</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:18px;font-weight:700;color:#374151" id="sa-currency-display">ZAR R</span>
+                <input class="form-input" id="sa-sub-price" type="number" value="299" style="width:120px;font-size:18px;font-weight:700"/>
+                <span style="font-size:13px;color:#6b7280">/ month per company</span>
+              </div>
+            </div>
+            <div class="form-group"><div class="form-label">Currency</div>
+              <select class="form-select" id="sa-currency" onchange="document.getElementById('sa-currency-display').textContent=this.options[this.selectedIndex].dataset.sym||'ZAR R'">
+                <option value="ZAR" data-sym="ZAR R" selected>South African Rand (ZAR)</option>
+                <option value="USD" data-sym="USD $">US Dollar (USD)</option>
+                <option value="GBP" data-sym="GBP £">British Pound (GBP)</option>
+                <option value="EUR" data-sym="EUR €">Euro (EUR)</option>
+                <option value="NAD" data-sym="NAD N$">Namibian Dollar (NAD)</option>
+                <option value="BWP" data-sym="BWP P">Botswana Pula (BWP)</option>
+              </select>
+            </div>
+            <div class="form-group"><div class="form-label">Free trial days</div><input class="form-input" id="sa-trial" type="number" value="30" style="width:100px"/></div>
+            <div class="form-group"><div class="form-label">PayFast Merchant ID</div><input class="form-input" id="sa-pf-merchant" value="16936284"/></div>
+            <div class="form-group"><div class="form-label">PayFast Merchant Key</div><input class="form-input" id="sa-pf-key" value="hn1r1ick5zokt"/></div>
+            <button class="tb-btn primary" style="width:100%;justify-content:center;padding:10px" onclick="saveSASettings()">Save subscription settings</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Company Accounts</div><button class="tb-btn primary" style="font-size:11px;padding:5px 10px" onclick="openModal('add-company-modal')">+ Add company</button></div>
+          <table class="tbl">
+            <thead><tr><th>Company</th><th>Admin email</th><th>Plan</th><th>Status</th><th>Expires</th><th>Action</th></tr></thead>
+            <tbody id="sa-companies-tbody"><tr><td colspan="6" class="empty-state">No companies yet</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Super Admin Settings</div></div>
+        <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group"><div class="form-label">App name</div><input class="form-input" id="sa-app-name" value="PlantFlow — Maintenance OS"/></div>
+          <div class="form-group"><div class="form-label">Support email</div><input class="form-input" id="sa-support-email" value="infobookanartisan01@gmail.com"/></div>
+          <div class="form-group"><div class="form-label">Change super admin password</div><input class="form-input" type="password" id="sa-new-password" placeholder="New password"/></div>
+          <div class="form-group"><div class="form-label">Confirm new password</div><input class="form-input" type="password" id="sa-confirm-password" placeholder="Confirm password"/></div>
+        </div>
+        <div style="padding:0 16px 16px"><button class="tb-btn primary" onclick="saveSASettings()">Save all settings</button></div>
+      </div>
+    </div>
+  </div>
+
   </div><!-- end content -->
 </div><!-- end main -->
 </div><!-- end app -->
@@ -576,6 +643,26 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
       <div class="form-group"><div class="form-label">Employee / Contractor #</div><input class="form-input" id="u-empno" placeholder="e.g. EMP-0041 or CONT-001"/></div>
     </div>
     <div class="modal-foot"><button class="tb-btn" onclick="closeModal('user-modal')">Cancel</button><button class="tb-btn primary" onclick="addUser()">Add user</button></div>
+  </div>
+</div>
+
+<!-- EDIT JOB MODAL -->
+<div class="modal-overlay" id="edit-job-modal" onclick="if(event.target===this)closeModal('edit-job-modal')">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Edit Job Card <span id="edit-job-num" style="color:#185FA5"></span></div><div class="modal-close" onclick="closeModal('edit-job-modal')">×</div></div>
+    <div class="modal-body">
+      <div class="form-group"><div class="form-label">Description *</div><input class="form-input" id="edit-jc-desc" placeholder="Job description"/></div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Priority</div><select class="form-select" id="edit-jc-priority"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+        <div class="form-group"><div class="form-label">Location *</div><input class="form-input" id="edit-jc-location"/></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Asset / Equipment</div><input class="form-input" id="edit-jc-asset"/></div>
+        <div class="form-group"><div class="form-label">Permit required?</div><select class="form-select" id="edit-jc-permit-req"><option value="no">No</option><option value="yes">Yes — hazardous work</option></select></div>
+      </div>
+      <div class="form-group"><div class="form-label">Notes / instructions</div><textarea class="form-textarea" id="edit-jc-notes" rows="3"></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="tb-btn" onclick="closeModal('edit-job-modal')">Cancel</button><button class="tb-btn primary" onclick="saveEditJob()">Save changes</button></div>
   </div>
 </div>
 
@@ -718,26 +805,31 @@ window.renderJobCards = function(){
   if(filter) jobs = jobs.filter(j=>j.status===filter);
   const tbody = document.getElementById('jobcards-tbody');
   if(!tbody)return;
-  if(!jobs.length){tbody.innerHTML='<tr><td colspan="12" class="empty-state">No job cards yet — create one above or employees log faults from their phones</td></tr>';return;}
-  tbody.innerHTML = jobs.map(j=>`
-    <tr>
+  if(!jobs.length){tbody.innerHTML='<tr><td colspan="13" class="empty-state">No job cards yet</td></tr>';return;}
+  tbody.innerHTML = jobs.map(j=>{
+    const artisans = Array.isArray(j.assignedArtisans)&&j.assignedArtisans.length ? j.assignedArtisans : (j.assignedTo?[j.assignedTo]:[]);
+    const artisanDisplay = artisans.length ? artisans.map(a=>`<span class="badge b-blue" style="margin:1px">${a}</span>`).join(' ') : '<span style="color:#9ca3af">Unassigned</span>';
+    const isOpen = j.status!=='completed';
+    return `<tr>
       <td style="color:#9ca3af;font-size:11px">${j.jobNumber||'—'}</td>
       <td><span class="badge b-${j.priority==='high'||j.priority==='critical'?'red':j.priority==='medium'?'amber':'teal'}">${j.priority||'medium'}</span></td>
       <td>${priorityDot(j.priority)}<b>${j.description||'—'}</b></td>
       <td style="color:#6b7280">${j.location||'—'}</td>
       <td>${j.loggedBy||'—'}</td>
-      <td>${j.assignedTo||'<span style="color:#9ca3af">Unassigned</span>'}</td>
+      <td>${artisanDisplay}</td>
       <td>${j.permitNumber?`<span class="badge b-purple">${j.permitNumber}</span>`:j.permitRequired==='yes'?'<span class="badge b-red">Required</span>':'<span class="badge b-gray">N/A</span>'}</td>
       <td style="font-size:11px;color:#6b7280">${(j.materials||[]).map(m=>m.name).join(', ')||'—'}</td>
-      <td style="font-weight:600">${j.totalCost?'R '+j.totalCost.toLocaleString():'—'}</td>
+      <td style="font-weight:600">${j.totalCost?'R '+(parseFloat(j.totalCost)).toFixed(2):'—'}</td>
       <td style="font-size:11px">${fmtDate(j.createdAt)}</td>
       <td>${statusBadge(j.status||'open')}</td>
-      <td>
-        <button class="tb-btn" style="font-size:11px;padding:3px 8px" onclick="openAssignModal('${j.id}','${j.jobNumber}','${(j.assignedTo||'').replace(/'/g,"\\'")}')">Assign</button>
-        ${j.status!=='completed'?`<button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="completeJob('${j.id}')">Complete</button>`:''}
-        ${j.permitRequired==='yes'&&!j.permitNumber?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="quickPermit('${j.jobNumber}','${j.assignedTo}')">Issue PTW</button>`:''}
+      <td style="white-space:nowrap">
+        <button class="tb-btn" style="font-size:11px;padding:3px 8px" onclick="openAssignModal('${j.id}','${j.jobNumber}','${artisans.join(',')}')">👤 Assign</button>
+        ${isOpen?`<button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#fef3c7;border-color:#f59e0b;color:#92400e" onclick="openEditJobModal('${j.id}')">✏️ Edit</button>`:''}
+        ${isOpen?`<button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px" onclick="completeJob('${j.id}')">✓ Done</button>`:''}
+        ${j.permitRequired==='yes'&&!j.permitNumber?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px;margin-left:3px" onclick="quickPermit('${j.jobNumber}','${artisans[0]||''}')">PTW</button>`:''}
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 };
 
 window.renderDashJobs = function(){
@@ -1388,45 +1480,96 @@ window.runDashSearch = function(val){
   tbody.innerHTML=jobRows+permitRows;
 };
 
-window.openAssignModal = function(jobId, jobNum, currentAssignee){
+window.openEditJobModal = function(jobId){
+  const j = allJobs.find(x=>x.id===jobId);
+  if(!j)return;
+  window._editingJobId = jobId;
+  document.getElementById('edit-job-num').textContent = j.jobNumber||'';
+  document.getElementById('edit-jc-desc').value = j.description||'';
+  document.getElementById('edit-jc-priority').value = j.priority||'medium';
+  document.getElementById('edit-jc-location').value = j.location||'';
+  document.getElementById('edit-jc-asset').value = j.asset||'';
+  document.getElementById('edit-jc-permit-req').value = j.permitRequired||'no';
+  document.getElementById('edit-jc-notes').value = j.notes||'';
+  openModal('edit-job-modal');
+};
+
+window.saveEditJob = async function(){
+  if(!window._editingJobId)return;
+  const desc = document.getElementById('edit-jc-desc').value.trim();
+  const loc = document.getElementById('edit-jc-location').value.trim();
+  if(!desc||!loc){toast('Description and location are required','error');return;}
+  await updateDoc(doc(db,'jobCards',window._editingJobId),{
+    description: desc,
+    priority: document.getElementById('edit-jc-priority').value,
+    location: loc,
+    asset: document.getElementById('edit-jc-asset').value,
+    permitRequired: document.getElementById('edit-jc-permit-req').value,
+    notes: document.getElementById('edit-jc-notes').value,
+    editedAt: serverTimestamp()
+  });
+  closeModal('edit-job-modal');
+  toast('Job card updated successfully','success');
+};
   window._assigningJobId = jobId;
+  const currentList = currentAssigneesStr ? currentAssigneesStr.split(',').filter(Boolean) : [];
   document.getElementById('assign-job-num').textContent = jobNum;
   const artisans = allUsers.filter(u=>u.role==='artisan'||u.role==='contractor');
   const list = document.getElementById('assign-artisan-list');
   if(!artisans.length){
-    list.innerHTML='<div style="padding:20px;text-align:center;color:#9ca3af">No artisans added yet — go to Manage Users to add artisans.</div>';
+    list.innerHTML='<div style="padding:20px;text-align:center;color:#9ca3af">No artisans added yet — go to Manage Users to add artisans first.</div>';
   } else {
-    list.innerHTML = artisans.map(u=>`
-      <div onclick="assignJob('${u.name}')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid ${u.name===currentAssignee?'#185FA5':'#e5e7eb'};border-radius:10px;cursor:pointer;background:${u.name===currentAssignee?'#eff6ff':'#fff'};transition:all 0.1s" onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background='${u.name===currentAssignee?'#eff6ff':'#fff'}'">
-        <div style="width:38px;height:38px;border-radius:50%;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">${(u.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().substring(0,2)}</div>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:700;color:#111827">${u.name}</div>
-          <div style="font-size:11px;color:#6b7280">${u.trade||u.role} · ${u.phone||'—'}</div>
-        </div>
-        ${u.name===currentAssignee?'<span class="badge b-blue">Currently assigned</span>':'<span style="font-size:12px;color:#185FA5;font-weight:600">Tap to assign →</span>'}
-      </div>`).join('');
+    list.innerHTML = `
+      <div style="font-size:11px;color:#6b7280;margin-bottom:10px;padding:8px 12px;background:#f0f9ff;border-radius:8px">
+        ✓ Tick all artisans who must receive this job. Multiple artisans can work the same job.
+      </div>
+      ${artisans.map(u=>{
+        const checked = currentList.includes(u.name);
+        return `<label style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid ${checked?'#185FA5':'#e5e7eb'};border-radius:10px;cursor:pointer;background:${checked?'#eff6ff':'#fff'};margin-bottom:6px;transition:all 0.1s" id="assign-label-${u.name.replace(/\s/g,'_')}">
+          <input type="checkbox" ${checked?'checked':''} value="${u.name}" onchange="toggleAssignLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:#185FA5"/>
+          <div style="width:36px;height:36px;border-radius:50%;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0">${(u.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().substring(0,2)}</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:#111827">${u.name}</div>
+            <div style="font-size:11px;color:#6b7280">${u.trade||u.role} · ${u.phone||'—'}</div>
+          </div>
+        </label>`;
+      }).join('')}
+      <button class="tb-btn primary" style="width:100%;justify-content:center;padding:10px;margin-top:8px;font-size:13px" onclick="saveAssignments()">Save assignments</button>`;
   }
   openModal('assign-modal');
 };
 
-window.assignJob = async function(artisanName){
+window.toggleAssignLabel = function(cb){
+  const label = cb.closest('label');
+  if(cb.checked){label.style.borderColor='#185FA5';label.style.background='#eff6ff';}
+  else{label.style.borderColor='#e5e7eb';label.style.background='#fff';}
+};
+
+window.saveAssignments = async function(){
   if(!window._assigningJobId)return;
+  const checked = [...document.querySelectorAll('#assign-artisan-list input[type=checkbox]:checked')].map(c=>c.value);
+  if(!checked.length){toast('Please select at least one artisan','error');return;}
   await updateDoc(doc(db,'jobCards',window._assigningJobId),{
-    assignedTo: artisanName,
+    assignedTo: checked[0],
+    assignedArtisans: checked,
     status: 'assigned',
     assignedAt: serverTimestamp()
   });
-  // Write notification for artisan
-  await addDoc(collection(db,'notifications'),{
-    for: artisanName,
-    type: 'job-assigned',
-    title: 'New job card assigned to you',
-    body: 'You have a new job card. Open PlantFlow to view it.',
-    read: false,
-    createdAt: serverTimestamp()
-  });
+  // Notify each assigned artisan
+  for(const name of checked){
+    const job = allJobs.find(j=>j.id===window._assigningJobId);
+    await addDoc(collection(db,'notifications'),{
+      for: name,
+      type: 'job-assigned',
+      title: 'New job assigned to you',
+      body: job ? job.description : 'You have a new job card. Open PlantFlow to view it.',
+      jobId: window._assigningJobId,
+      read: false,
+      createdAt: serverTimestamp()
+    });
+  }
   closeModal('assign-modal');
-  toast(artisanName+' assigned — they will see this job on their phone now','success');
+  toast(checked.length+' artisan'+(checked.length>1?'s':'')+' assigned — they will see this job on their phones now','success');
 };
 </script>
 
@@ -1438,9 +1581,69 @@ function nav(id,el){
   if(sc)sc.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   if(el)el.classList.add('active');
-  const titles={dashboard:'Dashboard',schedules:'PM Schedules',jobcards:'Job Cards',faults:'Fault Reports',permits:'Permits to Work',inspections:'Inspections',ohsa:'OHSA Compliance',materials:'Materials & Spares',artisans:'Artisans & Contractors',reports:'Reports',users:'Manage Users',settings:'Settings'};
+  const titles={dashboard:'Dashboard',schedules:'PM Schedules',jobcards:'Job Cards',faults:'Fault Reports',permits:'Permits to Work',inspections:'Inspections',ohsa:'OHSA Compliance',materials:'Materials & Spares',artisans:'Artisans & Contractors',reports:'Reports',users:'Manage Users',settings:'Settings',superadmin:'Super Admin — Eagle Electrical Ventures'};
   document.getElementById('page-title').textContent=titles[id]||id;
 }
+
+const SA_PASSWORD = 'Eagle2024!';
+window.checkSALogin = function(){
+  const pw = document.getElementById('sa-password').value;
+  if(pw===SA_PASSWORD){
+    document.getElementById('superadmin-login-wall').style.display='none';
+    document.getElementById('superadmin-panel').style.display='block';
+    loadSACompanies();
+  } else {
+    toast('Incorrect password','error');
+    document.getElementById('sa-password').value='';
+  }
+};
+window.logoutSA = function(){
+  document.getElementById('superadmin-login-wall').style.display='block';
+  document.getElementById('superadmin-panel').style.display='none';
+  document.getElementById('sa-password').value='';
+};
+window.saveSASettings = async function(){
+  const newPw = document.getElementById('sa-new-password').value;
+  const confPw = document.getElementById('sa-confirm-password').value;
+  if(newPw&&newPw!==confPw){toast('Passwords do not match','error');return;}
+  await updateDoc(doc(db,'config','superadmin'),{
+    subscriptionPrice: parseFloat(document.getElementById('sa-sub-price').value)||299,
+    currency: document.getElementById('sa-currency').value,
+    trialDays: parseInt(document.getElementById('sa-trial').value)||30,
+    pfMerchant: document.getElementById('sa-pf-merchant').value,
+    pfKey: document.getElementById('sa-pf-key').value,
+    appName: document.getElementById('sa-app-name').value,
+    supportEmail: document.getElementById('sa-support-email').value,
+    updatedAt: serverTimestamp()
+  }).catch(()=>{});
+  toast('Settings saved','success');
+};
+window.loadSACompanies = async function(){
+  try{
+    const snap = await getDocs(collection(db,'companies'));
+    const tbody = document.getElementById('sa-companies-tbody');
+    if(!snap.empty){
+      tbody.innerHTML = snap.docs.map(d=>{const c=d.data();return `<tr>
+        <td><b>${c.name||'—'}</b></td>
+        <td>${c.adminEmail||'—'}</td>
+        <td><span class="badge b-blue">${c.plan||'Monthly'}</span></td>
+        <td><span class="badge b-${c.status==='active'?'green':'red'}">${c.status||'active'}</span></td>
+        <td>${c.expires||'—'}</td>
+        <td>
+          <button class="tb-btn" style="font-size:11px;padding:3px 8px" onclick="toggleCompany('${d.id}','${c.status||'active'}')">
+            ${c.status==='active'?'Suspend':'Activate'}
+          </button>
+        </td>
+      </tr>`;}).join('');
+    }
+  }catch(e){}
+};
+window.toggleCompany = async function(id,status){
+  const newStatus = status==='active'?'suspended':'active';
+  await updateDoc(doc(db,'companies',id),{status:newStatus});
+  loadSACompanies();
+  toast('Company '+newStatus,'success');
+};
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(msg,type=''){

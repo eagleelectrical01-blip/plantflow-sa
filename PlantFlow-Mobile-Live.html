@@ -874,23 +874,63 @@ function priorityColor(p){return p==='high'||p==='critical'?'#dc2626':p==='mediu
 
 window.renderArtisanJobs = function(){
   const name = window._currentUserName || '';
-  // Only show jobs explicitly assigned to this artisan - not unassigned ones
-  const myJobs = name ? allJobs.filter(j=>j.assignedTo===name&&j.status!=='completed') : [];
+  // Show jobs where this artisan is in assignedArtisans array OR assignedTo field
+  const myJobs = name ? allJobs.filter(j=>{
+    const inArray = Array.isArray(j.assignedArtisans) && j.assignedArtisans.includes(name);
+    const inSingle = j.assignedTo === name;
+    return inArray || inSingle;
+  }) : [];
+
+  const activeJobs = myJobs.filter(j=>j.status!=='completed');
+  const completedJobs = myJobs.filter(j=>j.status==='completed'&&j.dismissedBy&&j.dismissedBy.includes(name)===false);
+
   const container = document.getElementById('artisan-jobs-container');
   if(!container)return;
-  const jobCount = document.getElementById('artisan-job-count');
-  if(jobCount) jobCount.textContent = myJobs.length;
-  const jobSub = document.getElementById('artisan-job-sub');
-  const inProg = myJobs.filter(j=>j.status==='in-progress').length;
-  if(jobSub) jobSub.textContent = inProg+' in progress';
 
-  if(!myJobs.length){
-    container.innerHTML='<div class="empty-state-mob"><div class="empty-icon">📋</div><div class="empty-title">No jobs assigned yet</div><div class="empty-sub">Jobs assigned to you from the PC panel appear here in real time.</div></div>';
+  // Update bell badge with active job count
+  const bellBadge = document.getElementById('artisan-notif-dot');
+  const jobCount = document.getElementById('artisan-job-count');
+  const jobSub = document.getElementById('artisan-job-sub');
+  if(jobCount) jobCount.textContent = activeJobs.length;
+  if(jobSub) jobSub.textContent = myJobs.filter(j=>j.status==='in-progress').length+' in progress';
+
+  // Bell shows active jobs count
+  if(bellBadge){
+    bellBadge.style.display = activeJobs.length > 0 ? 'block' : 'none';
+    bellBadge.textContent = activeJobs.length > 9 ? '9+' : activeJobs.length;
+    bellBadge.style.width = 'auto';
+    bellBadge.style.minWidth = '16px';
+    bellBadge.style.height = '16px';
+    bellBadge.style.borderRadius = '8px';
+    bellBadge.style.fontSize = '9px';
+    bellBadge.style.fontWeight = '700';
+    bellBadge.style.color = '#fff';
+    bellBadge.style.display = activeJobs.length > 0 ? 'flex' : 'none';
+    bellBadge.style.alignItems = 'center';
+    bellBadge.style.justifyContent = 'center';
+    bellBadge.style.padding = '0 4px';
+    bellBadge.style.top = '4px';
+    bellBadge.style.right = '4px';
+    bellBadge.style.background = '#16a34a';
+  }
+
+  // App icon badge via document title
+  if(activeJobs.length > 0){
+    document.title = '('+activeJobs.length+') PlantFlow — '+name;
+  } else {
+    document.title = 'PlantFlow Mobile';
+  }
+
+  const allVisible = [...activeJobs, ...completedJobs.slice(0,3)];
+
+  if(!allVisible.length){
+    container.innerHTML='<div class="empty-state-mob"><div class="empty-icon">📋</div><div class="empty-title">No jobs assigned yet</div><div class="empty-sub">Jobs assigned to you appear here in real time.</div></div>';
     return;
   }
-  container.innerHTML = myJobs.map(j=>`
-    <div class="job-card" onclick="openJobDetail('${j.id}')">
-      <div class="jc-head">
+  container.innerHTML = allVisible.map(j=>{
+    const isCompleted = j.status==='completed';
+    return `<div class="job-card" style="${isCompleted?'opacity:0.7':''}">
+      <div class="jc-head" onclick="${!isCompleted?`openJobDetail('${j.id}')`:''}" style="cursor:${isCompleted?'default':'pointer'}">
         <div class="jc-icon" style="background:${j.priority==='high'||j.priority==='critical'?'#fee2e2':j.priority==='medium'?'#fef3c7':'#dcfce7'}">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="${priorityColor(j.priority)}" stroke-width="1.8"><path d="M9 1.5l7.5 13H1.5z"/><path d="M9 7v4M9 12.5h.01"/></svg>
         </div>
@@ -898,16 +938,28 @@ window.renderArtisanJobs = function(){
           <div class="jc-num">${j.jobNumber||'—'} · <span class="badge b-${j.priority==='high'||j.priority==='critical'?'red':j.priority==='medium'?'amber':'green'}">${j.priority||'medium'}</span></div>
           <div class="jc-title">${j.description||'—'}</div>
           <div class="jc-loc">📍 ${j.location||'—'}</div>
+          ${Array.isArray(j.assignedArtisans)&&j.assignedArtisans.length>1?`<div style="font-size:11px;color:#6b7280;margin-top:3px">👥 Team job: ${j.assignedArtisans.join(', ')}</div>`:''}
         </div>
       </div>
       <div class="jc-foot">
         <span class="badge b-${j.status==='completed'?'green':j.status==='in-progress'?'amber':j.status==='blocked'?'red':'blue'}">${j.status||'open'}</span>
         ${j.permitNumber?`<span class="badge b-purple">${j.permitNumber} ✓</span>`:j.permitRequired==='yes'?'<span class="badge b-red">PTW required</span>':'<span class="badge b-green">No permit needed</span>'}
-        <span style="margin-left:auto;font-size:11px;color:#9ca3af">${fmtDateTime(j.createdAt)}</span>
+        ${isCompleted?`<button class="btn btn-danger btn-sm" style="margin-left:auto;font-size:11px;padding:5px 10px" onclick="dismissJob('${j.id}')">🗑 Remove from my list</button>`:`<span style="margin-left:auto;font-size:11px;color:#9ca3af">${fmtDateTime(j.createdAt)}</span>`}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 };
 
+window.dismissJob = async function(jobId){
+  const name = window._currentUserName||'';
+  if(!name)return;
+  const j = allJobs.find(x=>x.id===jobId);
+  if(!j||j.status!=='completed')return;
+  const dismissed = [...(j.dismissedBy||[])];
+  if(!dismissed.includes(name))dismissed.push(name);
+  await updateDoc(doc(db,'jobCards',jobId),{dismissedBy:dismissed});
+  toastMob('Job removed from your list','success');
+};
 window.openJobDetail = function(id){
   const j = allJobs.find(x=>x.id===id);
   if(!j)return;
