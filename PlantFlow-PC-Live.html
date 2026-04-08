@@ -132,6 +132,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
   <div class="nav-section">
     <div class="nav-label">Overview</div>
     <div class="nav-item active" onclick="nav('dashboard',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>Dashboard</div>
+    <div id="trial-countdown" style="display:none;align-items:center;padding:6px 16px 8px;gap:6px;border-bottom:1px solid #f3f4f6;margin-bottom:4px"></div>
     <div class="nav-label">Maintenance</div>
     <div class="nav-item" onclick="nav('schedules',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="2.5" width="14" height="12" rx="2"/><path d="M4 2.5V1M12 2.5V1M1 7h14"/></svg>PM Schedules</div>
     <div class="nav-item" onclick="nav('jobcards',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4h10M3 8h7M3 12h5"/><circle cx="13" cy="11" r="2.5"/></svg>Job Cards<span class="nbadge nb-red" id="badge-jobs">0</span></div>
@@ -484,55 +485,104 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
         <button class="tb-btn primary" style="width:100%;justify-content:center;padding:10px;margin-top:8px" onclick="checkSALogin()">Login to Super Admin</button>
       </div>
     </div>
+
     <div id="superadmin-panel" style="display:none">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-        <div style="font-size:16px;font-weight:800;color:#0D1B2A">🔐 Super Admin Panel — Eagle Electrical Ventures</div>
+      <!-- Header -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="font-size:16px;font-weight:800;color:#0D1B2A">🔐 Super Admin — Eagle Electrical Ventures</div>
         <button class="tb-btn danger" style="margin-left:auto" onclick="logoutSA()">Logout</button>
       </div>
-      <div class="two-equal" style="margin-bottom:16px">
+
+      <!-- Company detail panel (shown when editing a company) -->
+      <div id="sa-company-detail" style="display:none;margin-bottom:16px">
         <div class="panel">
-          <div class="panel-head"><div class="panel-title">Subscription Settings</div></div>
-          <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-            <div class="form-group"><div class="form-label">Monthly subscription fee</div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <span style="font-size:18px;font-weight:700;color:#374151" id="sa-currency-display">ZAR R</span>
-                <input class="form-input" id="sa-sub-price" type="number" value="299" style="width:120px;font-size:18px;font-weight:700"/>
-                <span style="font-size:13px;color:#6b7280">/ month per company</span>
-              </div>
-            </div>
-            <div class="form-group"><div class="form-label">Currency</div>
-              <select class="form-select" id="sa-currency" onchange="document.getElementById('sa-currency-display').textContent=this.options[this.selectedIndex].dataset.sym||'ZAR R'">
-                <option value="ZAR" data-sym="ZAR R" selected>South African Rand (ZAR)</option>
-                <option value="USD" data-sym="USD $">US Dollar (USD)</option>
-                <option value="GBP" data-sym="GBP £">British Pound (GBP)</option>
-                <option value="EUR" data-sym="EUR €">Euro (EUR)</option>
-                <option value="NAD" data-sym="NAD N$">Namibian Dollar (NAD)</option>
-                <option value="BWP" data-sym="BWP P">Botswana Pula (BWP)</option>
+          <div class="panel-head">
+            <div class="panel-title">🏭 Company: <span id="sa-detail-name" style="color:#185FA5"></span></div>
+            <button class="tb-btn" style="font-size:11px;padding:5px 10px;margin-left:auto" onclick="closeSACompanyDetail()">← Back to all companies</button>
+          </div>
+          <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+            <div class="form-group"><div class="form-label">Company name *</div><input class="form-input" id="sa-det-name"/></div>
+            <div class="form-group"><div class="form-label">Admin email</div><input class="form-input" id="sa-det-email" type="email"/></div>
+            <div class="form-group"><div class="form-label">Admin phone</div><input class="form-input" id="sa-det-phone"/></div>
+            <div class="form-group"><div class="form-label">Industry</div><select class="form-select" id="sa-det-industry"><option>Chemical manufacturing</option><option>General manufacturing</option><option>Mining</option><option>Food &amp; beverage</option><option>Logistics</option><option>Other</option></select></div>
+            <div class="form-group"><div class="form-label">Subscription plan</div><select class="form-select" id="sa-det-plan"><option value="trial">Free trial</option><option value="monthly">Monthly</option><option value="annual">Annual</option></select></div>
+            <div class="form-group"><div class="form-label">Subscription price (R)</div><input class="form-input" id="sa-det-price" type="number" placeholder="299"/></div>
+            <div class="form-group"><div class="form-label">Free trial days</div><input class="form-input" id="sa-det-trial" type="number" placeholder="30"/></div>
+            <div class="form-group"><div class="form-label">Trial start date</div><input class="form-input" id="sa-det-trialstart" type="date"/></div>
+            <div class="form-group"><div class="form-label">Subscription expires</div><input class="form-input" id="sa-det-expires" type="date"/></div>
+            <div class="form-group"><div class="form-label">Notes</div><input class="form-input" id="sa-det-notes" placeholder="Any notes about this company"/></div>
+            <div class="form-group"><div class="form-label">Status</div>
+              <select class="form-select" id="sa-det-status">
+                <option value="trial">On trial</option>
+                <option value="active">Active — paid</option>
+                <option value="held">Held — payment overdue</option>
+                <option value="cancelled">Cancelled</option>
               </select>
             </div>
-            <div class="form-group"><div class="form-label">Free trial days</div><input class="form-input" id="sa-trial" type="number" value="30" style="width:100px"/></div>
-            <div class="form-group"><div class="form-label">PayFast Merchant ID</div><input class="form-input" id="sa-pf-merchant" value="16936284"/></div>
-            <div class="form-group"><div class="form-label">PayFast Merchant Key</div><input class="form-input" id="sa-pf-key" value="hn1r1ick5zokt"/></div>
-            <button class="tb-btn primary" style="width:100%;justify-content:center;padding:10px" onclick="saveSASettings()">Save subscription settings</button>
+            <div class="form-group"><div class="form-label">PayFast subscription ref</div><input class="form-input" id="sa-det-pfref" placeholder="PayFast reference number"/></div>
+          </div>
+          <div style="padding:0 16px 16px;display:flex;gap:10px;align-items:center">
+            <button class="tb-btn primary" style="padding:9px 20px" onclick="saveSACompanyDetail()">💾 Save changes</button>
+            <button class="tb-btn" style="background:#fef3c7;border-color:#f59e0b;color:#92400e;padding:9px 20px" onclick="holdCompany()">⏸ Hold account</button>
+            <button class="tb-btn danger" style="padding:9px 20px;margin-left:auto" onclick="deleteCompany()">🗑 Delete company</button>
           </div>
         </div>
+      </div>
+
+      <!-- Main panel (hidden when viewing company detail) -->
+      <div id="sa-main-panel">
+        <div class="two-equal" style="margin-bottom:16px">
+          <!-- Subscription settings -->
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Global Subscription Settings</div></div>
+            <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+              <div class="form-group"><div class="form-label">Default monthly fee</div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:18px;font-weight:700;color:#374151" id="sa-currency-display">ZAR R</span>
+                  <input class="form-input" id="sa-sub-price" type="number" value="299" style="width:120px;font-size:18px;font-weight:700"/>
+                  <span style="font-size:13px;color:#6b7280">/ month</span>
+                </div>
+              </div>
+              <div class="form-group"><div class="form-label">Currency</div>
+                <select class="form-select" id="sa-currency" onchange="document.getElementById('sa-currency-display').textContent=this.options[this.selectedIndex].dataset.sym||'ZAR R'">
+                  <option value="ZAR" data-sym="ZAR R" selected>South African Rand (ZAR)</option>
+                  <option value="USD" data-sym="USD $">US Dollar (USD)</option>
+                  <option value="GBP" data-sym="GBP £">British Pound (GBP)</option>
+                  <option value="EUR" data-sym="EUR €">Euro (EUR)</option>
+                  <option value="NAD" data-sym="NAD N$">Namibian Dollar (NAD)</option>
+                  <option value="BWP" data-sym="BWP P">Botswana Pula (BWP)</option>
+                </select>
+              </div>
+              <div class="form-group"><div class="form-label">Default free trial days</div><input class="form-input" id="sa-trial" type="number" value="30" style="width:100px"/></div>
+              <div class="form-group"><div class="form-label">PayFast Merchant ID</div><input class="form-input" id="sa-pf-merchant" value="16936284"/></div>
+              <div class="form-group"><div class="form-label">PayFast Merchant Key</div><input class="form-input" id="sa-pf-key" value="hn1r1ick5zokt"/></div>
+              <button class="tb-btn primary" style="width:100%;justify-content:center;padding:10px" onclick="saveSASettings()">Save global settings</button>
+            </div>
+          </div>
+          <!-- Super admin settings -->
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Super Admin Settings</div></div>
+            <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+              <div class="form-group"><div class="form-label">App name</div><input class="form-input" id="sa-app-name" value="PlantFlow — Maintenance OS"/></div>
+              <div class="form-group"><div class="form-label">Support email</div><input class="form-input" id="sa-support-email" value="infobookanartisan01@gmail.com"/></div>
+              <div class="form-group"><div class="form-label">Change super admin password</div><input class="form-input" type="password" id="sa-new-password" placeholder="New password"/></div>
+              <div class="form-group"><div class="form-label">Confirm new password</div><input class="form-input" type="password" id="sa-confirm-password" placeholder="Confirm password"/></div>
+              <button class="tb-btn primary" style="width:100%;justify-content:center;padding:10px" onclick="saveSASettings()">Save admin settings</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Company accounts -->
         <div class="panel">
-          <div class="panel-head"><div class="panel-title">Company Accounts</div><button class="tb-btn primary" style="font-size:11px;padding:5px 10px" onclick="openModal('add-company-modal')">+ Add company</button></div>
+          <div class="panel-head">
+            <div class="panel-title">Company Accounts <span id="sa-company-count" class="badge b-blue" style="margin-left:8px">0</span></div>
+            <button class="tb-btn primary" style="font-size:11px;padding:5px 12px" onclick="openModal('add-company-modal')">+ Add company</button>
+          </div>
           <table class="tbl">
-            <thead><tr><th>Company</th><th>Admin email</th><th>Plan</th><th>Status</th><th>Expires</th><th>Action</th></tr></thead>
-            <tbody id="sa-companies-tbody"><tr><td colspan="6" class="empty-state">No companies yet</td></tr></tbody>
+            <thead><tr><th>Company</th><th>Admin email</th><th>Plan</th><th>Price</th><th>Trial days left</th><th>Status</th><th>Expires</th><th>Action</th></tr></thead>
+            <tbody id="sa-companies-tbody"><tr><td colspan="8" class="empty-state">No companies yet — click "+ Add company" to add the first client</td></tr></tbody>
           </table>
         </div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><div class="panel-title">Super Admin Settings</div></div>
-        <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div class="form-group"><div class="form-label">App name</div><input class="form-input" id="sa-app-name" value="PlantFlow — Maintenance OS"/></div>
-          <div class="form-group"><div class="form-label">Support email</div><input class="form-input" id="sa-support-email" value="infobookanartisan01@gmail.com"/></div>
-          <div class="form-group"><div class="form-label">Change super admin password</div><input class="form-input" type="password" id="sa-new-password" placeholder="New password"/></div>
-          <div class="form-group"><div class="form-label">Confirm new password</div><input class="form-input" type="password" id="sa-confirm-password" placeholder="Confirm password"/></div>
-        </div>
-        <div style="padding:0 16px 16px"><button class="tb-btn primary" onclick="saveSASettings()">Save all settings</button></div>
       </div>
     </div>
   </div>
@@ -661,17 +711,46 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
     <div class="modal-head"><div class="modal-title">Reorder — <span id="reorder-mat-title" style="color:#185FA5"></span></div><div class="modal-close" onclick="closeModal('reorder-modal')">×</div></div>
     <div class="modal-body">
       <div style="background:#fef3c7;border-radius:8px;padding:12px;font-size:12.5px;color:#92400e;margin-bottom:14px">
-        <b>Stock is below minimum level.</b> Fill in the order details below and click "Log order" to record it. When stock arrives, edit the item and update the "In stock" quantity.
+        <b>Stock is below minimum level.</b> Fill in the order details. When you click "Send &amp; Log", the reorder is saved and an email is sent directly to the buyer or supplier.
       </div>
       <div class="form-grid-2">
         <div class="form-group"><div class="form-label">Current stock</div><div class="form-input" id="reorder-current" style="background:#f9fafb;color:#6b7280">—</div></div>
         <div class="form-group"><div class="form-label">Minimum level</div><div class="form-input" id="reorder-min" style="background:#f9fafb;color:#6b7280">—</div></div>
       </div>
       <div class="form-group"><div class="form-label">Quantity to order *</div><input class="form-input" id="reorder-qty" type="number" placeholder="e.g. 10"/></div>
-      <div class="form-group"><div class="form-label">Supplier</div><input class="form-input" id="reorder-supplier" placeholder="e.g. RS Components"/></div>
-      <div class="form-group"><div class="form-label">Notes</div><input class="form-input" id="reorder-notes" placeholder="e.g. Urgent — production affected"/></div>
+      <div class="form-group"><div class="form-label">Supplier / buyer name</div><input class="form-input" id="reorder-supplier" placeholder="e.g. RS Components, Bearing Man"/></div>
+      <div class="form-group"><div class="form-label">Supplier / buyer email *</div><input class="form-input" id="reorder-email" type="email" placeholder="e.g. orders@rscomponents.co.za"/></div>
+      <div class="form-group"><div class="form-label">Notes / urgency</div><input class="form-input" id="reorder-notes" placeholder="e.g. Urgent — production affected"/></div>
     </div>
-    <div class="modal-foot"><button class="tb-btn" onclick="closeModal('reorder-modal')">Cancel</button><button class="tb-btn primary" onclick="logReorder()">Log reorder request</button></div>
+    <div class="modal-foot">
+      <button class="tb-btn" onclick="closeModal('reorder-modal')">Cancel</button>
+      <button class="tb-btn" style="margin-left:auto" onclick="logReorder(false)">Log only (no email)</button>
+      <button class="tb-btn primary" onclick="logReorder(true)">📧 Send &amp; Log</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD COMPANY MODAL -->
+<div class="modal-overlay" id="add-company-modal" onclick="if(event.target===this)closeModal('add-company-modal')">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Add New Company</div><div class="modal-close" onclick="closeModal('add-company-modal')">×</div></div>
+    <div class="modal-body">
+      <div class="form-group"><div class="form-label">Company name *</div><input class="form-input" id="ac-name" placeholder="e.g. Acme Chemical (Pty) Ltd"/></div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Admin email *</div><input class="form-input" id="ac-email" type="email" placeholder="admin@company.co.za"/></div>
+        <div class="form-group"><div class="form-label">Admin phone</div><input class="form-input" id="ac-phone" placeholder="0821234567"/></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Industry</div><select class="form-select" id="ac-industry"><option>Chemical manufacturing</option><option>General manufacturing</option><option>Mining</option><option>Food &amp; beverage</option><option>Logistics</option><option>Other</option></select></div>
+        <div class="form-group"><div class="form-label">Subscription plan</div><select class="form-select" id="ac-plan"><option value="trial">Free trial</option><option value="monthly">Monthly</option><option value="annual">Annual</option></select></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Free trial days</div><input class="form-input" id="ac-trial" type="number" value="30"/></div>
+        <div class="form-group"><div class="form-label">Subscription price (R)</div><input class="form-input" id="ac-price" type="number" placeholder="299"/></div>
+      </div>
+      <div class="form-group"><div class="form-label">Notes</div><input class="form-input" id="ac-notes" placeholder="Any notes"/></div>
+    </div>
+    <div class="modal-foot"><button class="tb-btn" onclick="closeModal('add-company-modal')">Cancel</button><button class="tb-btn primary" onclick="addSACompany()">Add company</button></div>
   </div>
 </div>
 
@@ -963,7 +1042,14 @@ window.renderFaults = function(){
       <td><span class="badge b-${f.priority==='high'||f.priority==='critical'?'red':f.priority==='medium'?'amber':'teal'}">${f.priority||'medium'}</span></td>
       <td style="font-size:11px">${fmtDateTime(f.createdAt)}</td>
       <td>${statusBadge(f.status||'new')}</td>
-      <td>${f.status==='new'?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="convertFault('${f.id}','${(f.description||'').replace(/'/g,"\\'")}','${f.location||''}','${f.priority||'medium'}')">Convert to Job →</button>`:f.status==='converted'?`<span style="font-size:11px;color:#16a34a">→ ${f.jobNumber||'Job created'}</span>`:''}</td>
+      <td style="white-space:nowrap">${f.status==='new'
+        ?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="convertFault('${f.id}','${(f.description||'').replace(/'/g,"\\'")}','${f.location||''}','${f.priority||'medium'}')">Convert to Job →</button>
+          <button class="tb-btn danger" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="deleteFault('${f.id}')">🗑</button>`
+        :f.status==='converted'
+        ?`<span style="font-size:11px;color:#16a34a">→ ${f.jobNumber||'Job created'}</span>
+          <button class="tb-btn danger" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="deleteFault('${f.id}')">🗑</button>`
+        :`<button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteFault('${f.id}')">🗑 Delete</button>`
+      }</td>
     </tr>`).join('');
 
   const newFaults = allFaults.filter(f=>f.status==='new');
@@ -1600,6 +1686,13 @@ window.convertFault = async function(id,desc,loc,priority){
   toast('Fault converted to '+jNum+' — visible on mobile now','success');
 };
 
+window.deleteFault = async function(id){
+  if(!confirm('Delete this fault report?'))return;
+  const {deleteDoc} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  await deleteDoc(doc(db,'faults',id));
+  toast('Fault report deleted','success');
+};
+
 window.addMaterial = async function(){
   const desc=document.getElementById('mat-desc').value.trim();
   const cost=parseFloat(document.getElementById('mat-cost').value)||0;
@@ -1679,31 +1772,47 @@ window.openReorderModal = function(id, desc, current, minLevel){
   openModal('reorder-modal');
 };
 
-window.logReorder = async function(){
+window.logReorder = async function(sendEmail){
   if(!window._reorderMatId)return;
   const qty = parseInt(document.getElementById('reorder-qty').value)||0;
   const supplier = document.getElementById('reorder-supplier').value;
+  const email = document.getElementById('reorder-email').value.trim();
   const notes = document.getElementById('reorder-notes').value;
   if(!qty){toast('Please enter a quantity','error');return;}
   const m = allMaterials.find(x=>x.id===window._reorderMatId);
-  // Log as a notification/record
+  const matName = m?.description||'—';
+
   await addDoc(collection(db,'reorders'),{
     materialId: window._reorderMatId,
-    description: m?.description||'—',
-    qty,
-    supplier,
-    notes,
+    description: matName,
+    qty, supplier, email, notes,
     status: 'pending',
     createdAt: serverTimestamp()
   });
-  // Also update material to show pending order
   await updateDoc(doc(db,'materials',window._reorderMatId),{
     pendingOrder: qty,
     pendingOrderSupplier: supplier,
     updatedAt: serverTimestamp()
   });
+
   closeModal('reorder-modal');
-  toast('Reorder logged — '+qty+' units from '+(supplier||'supplier'),'success');
+
+  if(sendEmail && email){
+    const subject = encodeURIComponent('PlantFlow Reorder Request — '+matName);
+    const body = encodeURIComponent(
+      'Dear '+supplier+',\n\n'+
+      'Please supply the following:\n\n'+
+      'Item: '+matName+'\n'+
+      'Quantity required: '+qty+'\n'+
+      (notes?'Notes: '+notes+'\n':'')+
+      '\nKindly confirm receipt and estimated delivery date.\n\n'+
+      'Regards,\nPlantFlow — Maintenance OS'
+    );
+    window.open('mailto:'+email+'?subject='+subject+'&body='+body);
+    toast('Email opened to '+email+' — reorder logged','success');
+  } else {
+    toast('Reorder logged — '+qty+' units of '+matName,'success');
+  }
 };
 
 window.addSchedule = async function(){
@@ -1795,11 +1904,47 @@ window.saveSettings = async function(){
 };
 
 window.exportMaterials = function(){
-  const rows = [['Code','Description','Category','Unit Cost','In Stock','Min Level','Used MTD','Cost MTD']];
-  allMaterials.forEach(m=>rows.push([m.code,m.description,m.category,'R '+m.unitCost,m.inStock,m.minLevel,m.usedMTD,'R '+((m.usedMTD||0)*(m.unitCost||0))]));
-  const csv = rows.map(r=>r.join(',')).join('\n');
-  const a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(csv);a.download='PlantFlow-Materials.csv';a.click();
-  toast('Materials exported to CSV','success');
+  // Calculate live usage from job cards
+  const usageMap = {};
+  allJobs.forEach(j=>{
+    (j.materials||[]).forEach(m=>{
+      const key=(m.name||'').toLowerCase().trim();
+      if(!usageMap[key]){usageMap[key]={qty:0,cost:0,jobs:[]};}
+      usageMap[key].qty+=parseFloat(m.qty)||0;
+      usageMap[key].cost+=(parseFloat(m.qty)||0)*(parseFloat(m.unitPrice||m.unitCost||0));
+      if(j.jobNumber&&!usageMap[key].jobs.includes(j.jobNumber))usageMap[key].jobs.push(j.jobNumber);
+    });
+  });
+
+  const q = s => '"'+String(s||'').replace(/"/g,'""')+'"';
+  const rows = [
+    [q('Code'),q('Description'),q('Category'),q('Unit Cost (R)'),q('In Stock'),q('Min Level'),q('Used MTD (qty)'),q('Cost MTD (R)'),q('Used On Jobs'),q('Status'),q('Supplier')]
+  ];
+  allMaterials.forEach(m=>{
+    const usage = usageMap[(m.description||'').toLowerCase().trim()]||{qty:0,cost:0,jobs:[]};
+    const usedQty = Math.max(m.usedMTD||0, usage.qty);
+    const usedCost = usedQty*(parseFloat(m.unitCost)||0);
+    const stockLabel = m.inStock<=0?'Out of stock':m.inStock<=m.minLevel?'Low stock':'In stock';
+    rows.push([
+      q(m.code||''),
+      q(m.description||''),
+      q(m.category||''),
+      q((parseFloat(m.unitCost)||0).toFixed(2)),
+      q(m.inStock||0),
+      q(m.minLevel||0),
+      q(usedQty),
+      q(usedCost.toFixed(2)),
+      q((m.usedOnJobs||[]).concat(usage.jobs).filter((v,i,a)=>a.indexOf(v)===i).join(', ')||'—'),
+      q(stockLabel),
+      q(m.supplier||'')
+    ]);
+  });
+  const csv = rows.map(r=>r.join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='PlantFlow-Materials.csv';
+  a.click();
+  toast('Materials exported — each field in its own column','success');
 };
 
 window.exportReport = function(){
@@ -1989,6 +2134,8 @@ function nav(id,el){
 }
 
 const SA_PASSWORD = 'Eagle2024!';
+window._editingSACompanyId = null;
+
 window.checkSALogin = function(){
   const pw = document.getElementById('sa-password').value;
   if(pw===SA_PASSWORD){
@@ -2000,53 +2147,210 @@ window.checkSALogin = function(){
     document.getElementById('sa-password').value='';
   }
 };
+
 window.logoutSA = function(){
   document.getElementById('superadmin-login-wall').style.display='block';
   document.getElementById('superadmin-panel').style.display='none';
   document.getElementById('sa-password').value='';
+  closeSACompanyDetail();
 };
+
 window.saveSASettings = async function(){
-  const newPw = document.getElementById('sa-new-password').value;
-  const confPw = document.getElementById('sa-confirm-password').value;
+  const newPw = document.getElementById('sa-new-password')&&document.getElementById('sa-new-password').value;
+  const confPw = document.getElementById('sa-confirm-password')&&document.getElementById('sa-confirm-password').value;
   if(newPw&&newPw!==confPw){toast('Passwords do not match','error');return;}
-  await updateDoc(doc(db,'config','superadmin'),{
-    subscriptionPrice: parseFloat(document.getElementById('sa-sub-price').value)||299,
-    currency: document.getElementById('sa-currency').value,
-    trialDays: parseInt(document.getElementById('sa-trial').value)||30,
-    pfMerchant: document.getElementById('sa-pf-merchant').value,
-    pfKey: document.getElementById('sa-pf-key').value,
-    appName: document.getElementById('sa-app-name').value,
-    supportEmail: document.getElementById('sa-support-email').value,
-    updatedAt: serverTimestamp()
-  }).catch(()=>{});
+  try{
+    await updateDoc(doc(db,'config','superadmin'),{
+      subscriptionPrice: parseFloat(document.getElementById('sa-sub-price').value)||299,
+      currency: document.getElementById('sa-currency').value,
+      trialDays: parseInt(document.getElementById('sa-trial').value)||30,
+      pfMerchant: document.getElementById('sa-pf-merchant').value,
+      pfKey: document.getElementById('sa-pf-key').value,
+      updatedAt: serverTimestamp()
+    });
+  }catch(e){ try{await addDoc(collection(db,'config'),{id:'superadmin'});}catch(e2){} }
+  updateTrialCountdown();
   toast('Settings saved','success');
 };
+
+window.addSACompany = async function(){
+  const name = document.getElementById('ac-name').value.trim();
+  const email = document.getElementById('ac-email').value.trim();
+  if(!name){toast('Company name is required','error');return;}
+  const trialDays = parseInt(document.getElementById('ac-trial').value)||30;
+  const trialStart = new Date();
+  const expires = new Date(trialStart.getTime()+trialDays*24*60*60*1000);
+  try{
+    await addDoc(collection(db,'companies'),{
+      name, adminEmail:email,
+      phone: document.getElementById('ac-phone').value,
+      industry: document.getElementById('ac-industry').value,
+      plan: document.getElementById('ac-plan').value,
+      price: parseFloat(document.getElementById('ac-price').value)||299,
+      trialDays,
+      trialStart: trialStart.toISOString().split('T')[0],
+      expires: expires.toISOString().split('T')[0],
+      status: 'trial',
+      notes: document.getElementById('ac-notes').value,
+      createdAt: serverTimestamp()
+    });
+    closeModal('add-company-modal');
+    ['ac-name','ac-email','ac-phone','ac-price','ac-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    loadSACompanies();
+    updateTrialCountdown();
+    toast(name+' added','success');
+  }catch(e){toast('Error: '+e.message,'error');}
+};
+
 window.loadSACompanies = async function(){
   try{
     const snap = await getDocs(collection(db,'companies'));
     const tbody = document.getElementById('sa-companies-tbody');
-    if(!snap.empty){
-      tbody.innerHTML = snap.docs.map(d=>{const c=d.data();return `<tr>
-        <td><b>${c.name||'—'}</b></td>
-        <td>${c.adminEmail||'—'}</td>
-        <td><span class="badge b-blue">${c.plan||'Monthly'}</span></td>
-        <td><span class="badge b-${c.status==='active'?'green':'red'}">${c.status||'active'}</span></td>
-        <td>${c.expires||'—'}</td>
-        <td>
-          <button class="tb-btn" style="font-size:11px;padding:3px 8px" onclick="toggleCompany('${d.id}','${c.status||'active'}')">
-            ${c.status==='active'?'Suspend':'Activate'}
-          </button>
-        </td>
-      </tr>`;}).join('');
+    const countEl = document.getElementById('sa-company-count');
+    if(countEl) countEl.textContent = snap.size;
+    const today = new Date();
+    if(snap.empty){
+      tbody.innerHTML='<tr><td colspan="8" class="empty-state">No companies yet</td></tr>';
+      return;
     }
-  }catch(e){}
+    tbody.innerHTML = snap.docs.map(d=>{
+      const c=d.data();
+      let trialLeft = '—';
+      if(c.trialStart&&c.trialDays){
+        const start = new Date(c.trialStart);
+        const exp = new Date(start.getTime()+c.trialDays*24*60*60*1000);
+        const diff = Math.ceil((exp-today)/(1000*60*60*24));
+        trialLeft = diff>0 ? diff+' days' : '<span style="color:#dc2626;font-weight:700">Expired</span>';
+      }
+      const sColor = c.status==='active'?'b-green':c.status==='held'?'b-red':c.status==='trial'?'b-amber':'b-gray';
+      const nm = (c.name||'').replace(/'/g,"\\'");
+      return '<tr>'
+        +'<td><b>'+(c.name||'—')+'</b></td>'
+        +'<td style="font-size:11px">'+(c.adminEmail||'—')+'</td>'
+        +'<td><span class="badge b-blue">'+(c.plan||'trial')+'</span></td>'
+        +'<td>R '+(c.price||'—')+'/mo</td>'
+        +'<td style="font-size:11px">'+trialLeft+'</td>'
+        +'<td><span class="badge '+sColor+'">'+(c.status||'trial')+'</span></td>'
+        +'<td style="font-size:11px">'+(c.expires||'—')+'</td>'
+        +'<td style="white-space:nowrap">'
+        +'<button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="openSACompanyDetail(\'' + d.id + '\')">📋 Open</button> '
+        +'<button class="tb-btn" style="font-size:11px;padding:3px 8px;background:#fef3c7;border-color:#f59e0b;color:#92400e" onclick="holdCompanyById(\'' + d.id + '\',\'' + (c.status||'active') + '\')">⏸ Hold</button> '
+        +'<button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteCompanyById(\'' + d.id + '\',\'' + nm + '\')">🗑</button>'
+        +'</td></tr>';
+    }).join('');
+  }catch(e){console.error('loadSACompanies:',e);}
 };
-window.toggleCompany = async function(id,status){
-  const newStatus = status==='active'?'suspended':'active';
-  await updateDoc(doc(db,'companies',id),{status:newStatus});
+
+window.openSACompanyDetail = async function(id){
+  window._editingSACompanyId = id;
+  try{
+    const snap = await getDocs(collection(db,'companies'));
+    const d = snap.docs.find(function(x){return x.id===id;});
+    if(!d)return;
+    const c = d.data();
+    document.getElementById('sa-detail-name').textContent = c.name||'—';
+    document.getElementById('sa-det-name').value = c.name||'';
+    document.getElementById('sa-det-email').value = c.adminEmail||'';
+    document.getElementById('sa-det-phone').value = c.phone||'';
+    document.getElementById('sa-det-industry').value = c.industry||'General manufacturing';
+    document.getElementById('sa-det-plan').value = c.plan||'trial';
+    document.getElementById('sa-det-price').value = c.price||299;
+    document.getElementById('sa-det-trial').value = c.trialDays||30;
+    document.getElementById('sa-det-trialstart').value = c.trialStart||'';
+    document.getElementById('sa-det-expires').value = c.expires||'';
+    document.getElementById('sa-det-status').value = c.status||'trial';
+    document.getElementById('sa-det-notes').value = c.notes||'';
+    document.getElementById('sa-det-pfref').value = c.pfRef||'';
+    document.getElementById('sa-company-detail').style.display='block';
+    document.getElementById('sa-main-panel').style.display='none';
+  }catch(e){toast('Error: '+e.message,'error');}
+};
+
+window.closeSACompanyDetail = function(){
+  window._editingSACompanyId=null;
+  var det=document.getElementById('sa-company-detail');
+  var main=document.getElementById('sa-main-panel');
+  if(det)det.style.display='none';
+  if(main)main.style.display='block';
+};
+
+window.saveSACompanyDetail = async function(){
+  if(!window._editingSACompanyId)return;
+  const name = document.getElementById('sa-det-name').value.trim();
+  if(!name){toast('Company name required','error');return;}
+  await updateDoc(doc(db,'companies',window._editingSACompanyId),{
+    name, adminEmail:document.getElementById('sa-det-email').value,
+    phone:document.getElementById('sa-det-phone').value,
+    industry:document.getElementById('sa-det-industry').value,
+    plan:document.getElementById('sa-det-plan').value,
+    price:parseFloat(document.getElementById('sa-det-price').value)||299,
+    trialDays:parseInt(document.getElementById('sa-det-trial').value)||30,
+    trialStart:document.getElementById('sa-det-trialstart').value,
+    expires:document.getElementById('sa-det-expires').value,
+    status:document.getElementById('sa-det-status').value,
+    notes:document.getElementById('sa-det-notes').value,
+    pfRef:document.getElementById('sa-det-pfref').value,
+    updatedAt:serverTimestamp()
+  });
+  document.getElementById('sa-detail-name').textContent=name;
   loadSACompanies();
-  toast('Company '+newStatus,'success');
+  updateTrialCountdown();
+  toast('Company updated','success');
 };
+
+window.holdCompany = async function(){
+  if(!window._editingSACompanyId)return;
+  await updateDoc(doc(db,'companies',window._editingSACompanyId),{status:'held',heldAt:serverTimestamp()});
+  document.getElementById('sa-det-status').value='held';
+  loadSACompanies();
+  toast('Account placed on hold','success');
+};
+
+window.holdCompanyById = async function(id,currentStatus){
+  const newStatus = currentStatus==='held'?'active':'held';
+  await updateDoc(doc(db,'companies',id),{status:newStatus,updatedAt:serverTimestamp()});
+  loadSACompanies();
+  toast('Company '+(newStatus==='held'?'placed on hold':'reactivated'),'success');
+};
+
+window.deleteCompany = async function(){
+  if(!window._editingSACompanyId)return;
+  const name = document.getElementById('sa-det-name').value;
+  if(!confirm('Permanently delete "'+name+'"?'))return;
+  const {deleteDoc:dd} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  await dd(doc(db,'companies',window._editingSACompanyId));
+  closeSACompanyDetail();
+  loadSACompanies();
+  toast(name+' deleted','success');
+};
+
+window.deleteCompanyById = async function(id,name){
+  if(!confirm('Permanently delete "'+name+'"?'))return;
+  const {deleteDoc:dd} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  await dd(doc(db,'companies',id));
+  loadSACompanies();
+  toast(name+' deleted','success');
+};
+
+async function updateTrialCountdown(){
+  try{
+    const snap = await getDocs(collection(db,'companies'));
+    const el = document.getElementById('trial-countdown');
+    if(!el)return;
+    if(snap.empty){el.style.display='none';return;}
+    const c = snap.docs[0].data();
+    if(!c.trialStart||!c.trialDays){el.style.display='none';return;}
+    const expires = new Date(new Date(c.trialStart).getTime()+c.trialDays*24*60*60*1000);
+    const diff = Math.ceil((expires-new Date())/(1000*60*60*24));
+    const color = diff<=0?'#dc2626':diff<=5?'#dc2626':diff<=14?'#d97706':'#16a34a';
+    el.innerHTML = diff<=0
+      ? '<span style="color:#dc2626;font-weight:700;font-size:11px">⚠ Trial expired</span>'
+      : '<span style="color:'+color+';font-weight:700;font-size:11px">🕐 '+diff+' trial day'+(diff!==1?'s':'')+' left</span>';
+    el.style.display='flex';
+  }catch(e){const el=document.getElementById('trial-countdown');if(el)el.style.display='none';}
+}
+window.updateTrialCountdown = updateTrialCountdown;
+updateTrialCountdown();
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(msg,type=''){
