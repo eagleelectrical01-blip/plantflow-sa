@@ -704,6 +704,12 @@ document.getElementById('conn-text').textContent = 'Connected to plantflow-sa Fi
 document.getElementById('firebase-status').textContent = 'Connected';
 setSync();
 
+// Warn if opened from file:// — Firebase won't work
+if(window.location.protocol === 'file:'){
+  document.getElementById('conn-text').textContent = '⚠ You are opening this from your desktop (file://). Firebase will NOT connect. Use: https://eagleelectrical01-blip.github.io/plantflow-sa/PlantFlow-PC-Live.html';
+  document.getElementById('conn-dot').style.background = '#f87171';
+}
+
 function setSync(){
   const now = new Date();
   document.getElementById('last-sync').textContent = 'Last sync: ' + now.toLocaleTimeString('en-ZA');
@@ -722,7 +728,7 @@ onSnapshot(query(collection(db,'jobCards'),orderBy('createdAt','desc')), snap =>
   updateJobStats();
   renderReports();
   setSync();
-});
+}, err => { console.error('jobCards:',err.code); showConnError(err.code); });
 
 // Faults
 onSnapshot(query(collection(db,'faults'),orderBy('createdAt','desc')), snap => {
@@ -731,7 +737,7 @@ onSnapshot(query(collection(db,'faults'),orderBy('createdAt','desc')), snap => {
   renderDashFaults();
   updateFaultStats();
   setSync();
-});
+}, err => { console.error('faults:',err.code); });
 
 // Permits
 onSnapshot(query(collection(db,'permits'),orderBy('createdAt','desc')), snap => {
@@ -741,7 +747,7 @@ onSnapshot(query(collection(db,'permits'),orderBy('createdAt','desc')), snap => 
   updatePermitStats();
   renderPermitAudit();
   setSync();
-});
+}, err => { console.error('permits:',err.code); });
 
 // Materials
 onSnapshot(query(collection(db,'materials'),orderBy('description','asc')), snap => {
@@ -750,7 +756,7 @@ onSnapshot(query(collection(db,'materials'),orderBy('description','asc')), snap 
   renderDashMaterials();
   updateMaterialStats();
   setSync();
-});
+}, err => { console.error('materials:',err.code); });
 
 // Users
 onSnapshot(query(collection(db,'users'),orderBy('name','asc')), snap => {
@@ -758,21 +764,28 @@ onSnapshot(query(collection(db,'users'),orderBy('name','asc')), snap => {
   renderUsers();
   populateArtisanDropdowns();
   setSync();
-});
+}, err => { console.error('users:',err.code); });
 
 // Schedules
 onSnapshot(query(collection(db,'schedules'),orderBy('createdAt','desc')), snap => {
   allSchedules = snap.docs.map(d=>({id:d.id,...d.data()}));
   renderSchedules();
   setSync();
-});
+}, err => { console.error('schedules:',err.code); });
 
 // Inspections
 onSnapshot(query(collection(db,'inspections'),orderBy('createdAt','desc')), snap => {
   allInspections = snap.docs.map(d=>({id:d.id,...d.data()}));
   renderInspections();
   setSync();
-});
+}, err => { console.error('inspections:',err.code); });
+
+function showConnError(code){
+  const bar = document.getElementById('conn-text');
+  if(bar) bar.textContent = '⚠ Firebase error: '+code+' — Are you opening from file://? Use the GitHub Pages URL instead.';
+  const dot = document.getElementById('conn-dot');
+  if(dot) dot.style.background = '#f87171';
+}
 
 // ── RENDER FUNCTIONS ──
 
@@ -1511,30 +1524,28 @@ window.saveEditJob = async function(){
   closeModal('edit-job-modal');
   toast('Job card updated successfully','success');
 };
+
+window.openAssignModal = function(jobId, jobNum, currentAssigneesStr){
   window._assigningJobId = jobId;
   const currentList = currentAssigneesStr ? currentAssigneesStr.split(',').filter(Boolean) : [];
   document.getElementById('assign-job-num').textContent = jobNum;
   const artisans = allUsers.filter(u=>u.role==='artisan'||u.role==='contractor');
   const list = document.getElementById('assign-artisan-list');
   if(!artisans.length){
-    list.innerHTML='<div style="padding:20px;text-align:center;color:#9ca3af">No artisans added yet — go to Manage Users to add artisans first.</div>';
+    list.innerHTML='<div style="padding:20px;text-align:center;color:#9ca3af">No artisans added yet — go to Manage Users first.</div>';
   } else {
-    list.innerHTML = `
-      <div style="font-size:11px;color:#6b7280;margin-bottom:10px;padding:8px 12px;background:#f0f9ff;border-radius:8px">
-        ✓ Tick all artisans who must receive this job. Multiple artisans can work the same job.
-      </div>
-      ${artisans.map(u=>{
-        const checked = currentList.includes(u.name);
-        return `<label style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid ${checked?'#185FA5':'#e5e7eb'};border-radius:10px;cursor:pointer;background:${checked?'#eff6ff':'#fff'};margin-bottom:6px;transition:all 0.1s" id="assign-label-${u.name.replace(/\s/g,'_')}">
-          <input type="checkbox" ${checked?'checked':''} value="${u.name}" onchange="toggleAssignLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:#185FA5"/>
-          <div style="width:36px;height:36px;border-radius:50%;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0">${(u.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().substring(0,2)}</div>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:700;color:#111827">${u.name}</div>
-            <div style="font-size:11px;color:#6b7280">${u.trade||u.role} · ${u.phone||'—'}</div>
-          </div>
-        </label>`;
-      }).join('')}
-      <button class="tb-btn primary" style="width:100%;justify-content:center;padding:10px;margin-top:8px;font-size:13px" onclick="saveAssignments()">Save assignments</button>`;
+    let html = '<div style="font-size:11px;color:#185FA5;margin-bottom:10px;padding:8px 12px;background:#eff6ff;border-radius:8px;font-weight:600">Tick all artisans who must receive this job. Multiple artisans allowed.</div>';
+    artisans.forEach(function(u){
+      const checked = currentList.includes(u.name);
+      const initials = (u.name||'?').split(' ').map(function(w){return w[0];}).join('').toUpperCase().substring(0,2);
+      html += '<label style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid '+(checked?'#185FA5':'#e5e7eb')+';border-radius:10px;cursor:pointer;background:'+(checked?'#eff6ff':'#fff')+';margin-bottom:6px">';
+      html += '<input type="checkbox" '+(checked?'checked':'')+' value="'+u.name+'" onchange="toggleAssignLabel(this)" style="width:18px;height:18px;cursor:pointer;accent-color:#185FA5"/>';
+      html += '<div style="width:36px;height:36px;border-radius:50%;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0">'+initials+'</div>';
+      html += '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#111827">'+u.name+'</div><div style="font-size:11px;color:#6b7280">'+(u.trade||u.role)+' · '+(u.phone||'—')+'</div></div>';
+      html += '</label>';
+    });
+    html += '<button class="tb-btn primary" style="width:100%;justify-content:center;padding:10px;margin-top:8px;font-size:13px" onclick="saveAssignments()">Save assignments</button>';
+    list.innerHTML = html;
   }
   openModal('assign-modal');
 };
