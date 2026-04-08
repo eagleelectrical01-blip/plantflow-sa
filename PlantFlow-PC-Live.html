@@ -562,6 +562,18 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
   </div>
 </div>
 
+<!-- ASSIGN MODAL -->
+<div class="modal-overlay" id="assign-modal" onclick="if(event.target===this)closeModal('assign-modal')">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Assign Job Card <span id="assign-job-num" style="color:#185FA5"></span></div><div class="modal-close" onclick="closeModal('assign-modal')">×</div></div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:#6b7280;margin-bottom:12px">Tap a name to assign. The artisan will see this job card on their phone immediately.</div>
+      <div id="assign-artisan-list" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+    <div class="modal-foot"><button class="tb-btn" onclick="closeModal('assign-modal')">Cancel</button></div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -703,7 +715,8 @@ window.renderJobCards = function(){
       <td style="font-size:11px">${fmtDate(j.createdAt)}</td>
       <td>${statusBadge(j.status||'open')}</td>
       <td>
-        ${j.status!=='completed'?`<button class="tb-btn" style="font-size:11px;padding:3px 8px" onclick="completeJob('${j.id}')">Complete</button>`:''}
+        <button class="tb-btn" style="font-size:11px;padding:3px 8px" onclick="openAssignModal('${j.id}','${j.jobNumber}','${(j.assignedTo||'').replace(/'/g,"\\'")}')">Assign</button>
+        ${j.status!=='completed'?`<button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="completeJob('${j.id}')">Complete</button>`:''}
         ${j.permitRequired==='yes'&&!j.permitNumber?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="quickPermit('${j.jobNumber}','${j.assignedTo}')">Issue PTW</button>`:''}
       </td>
     </tr>`).join('');
@@ -713,15 +726,16 @@ window.renderDashJobs = function(){
   const tbody = document.getElementById('dash-jobs');
   if(!tbody)return;
   const jobs = allJobs.slice(0,6);
-  if(!jobs.length){tbody.innerHTML='<tr><td colspan="6" class="empty-state">No job cards yet</td></tr>';return;}
+  if(!jobs.length){tbody.innerHTML='<tr><td colspan="7" class="empty-state">No job cards yet</td></tr>';return;}
   tbody.innerHTML = jobs.map(j=>`
     <tr>
       <td style="color:#9ca3af;font-size:11px">${j.jobNumber||'—'}</td>
       <td>${priorityDot(j.priority)}<b>${j.description||'—'}</b></td>
       <td style="color:#6b7280">${j.location||'—'}</td>
-      <td>${j.assignedTo||'—'}</td>
+      <td>${j.assignedTo||'<span style="color:#dc2626;font-weight:600">Unassigned</span>'}</td>
       <td>${j.permitNumber?`<span class="badge b-purple">${j.permitNumber}</span>`:j.permitRequired==='yes'?'<span class="badge b-red">Required</span>':'<span class="badge b-gray">N/A</span>'}</td>
       <td>${statusBadge(j.status||'open')}</td>
+      <td><button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="openAssignModal('${j.id}','${j.jobNumber}','${(j.assignedTo||'').replace(/'/g,"\\'")}')">Assign →</button></td>
     </tr>`).join('');
 };
 
@@ -744,8 +758,10 @@ window.renderFaults = function(){
     </tr>`).join('');
 
   const newFaults = allFaults.filter(f=>f.status==='new');
-  document.getElementById('fault-unreview-count').textContent = newFaults.length;
-  document.getElementById('fault-done-count').textContent = allFaults.filter(f=>f.status==='converted').length;
+  const fcNew = document.getElementById('fault-new-count');
+  const fcDone = document.getElementById('fault-done-count');
+  if(fcNew) fcNew.textContent = newFaults.length;
+  if(fcDone) fcDone.textContent = allFaults.filter(f=>f.status==='converted').length;
 };
 
 window.renderDashFaults = function(){
@@ -1273,6 +1289,47 @@ window.exportMaterials = function(){
 
 window.exportReport = function(){
   toast('Generating report...','success');
+};
+
+window.openAssignModal = function(jobId, jobNum, currentAssignee){
+  window._assigningJobId = jobId;
+  document.getElementById('assign-job-num').textContent = jobNum;
+  const artisans = allUsers.filter(u=>u.role==='artisan'||u.role==='contractor');
+  const list = document.getElementById('assign-artisan-list');
+  if(!artisans.length){
+    list.innerHTML='<div style="padding:20px;text-align:center;color:#9ca3af">No artisans added yet — go to Manage Users to add artisans.</div>';
+  } else {
+    list.innerHTML = artisans.map(u=>`
+      <div onclick="assignJob('${u.name}')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid ${u.name===currentAssignee?'#185FA5':'#e5e7eb'};border-radius:10px;cursor:pointer;background:${u.name===currentAssignee?'#eff6ff':'#fff'};transition:all 0.1s" onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background='${u.name===currentAssignee?'#eff6ff':'#fff'}'">
+        <div style="width:38px;height:38px;border-radius:50%;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">${(u.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().substring(0,2)}</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:#111827">${u.name}</div>
+          <div style="font-size:11px;color:#6b7280">${u.trade||u.role} · ${u.phone||'—'}</div>
+        </div>
+        ${u.name===currentAssignee?'<span class="badge b-blue">Currently assigned</span>':'<span style="font-size:12px;color:#185FA5;font-weight:600">Tap to assign →</span>'}
+      </div>`).join('');
+  }
+  openModal('assign-modal');
+};
+
+window.assignJob = async function(artisanName){
+  if(!window._assigningJobId)return;
+  await updateDoc(doc(db,'jobCards',window._assigningJobId),{
+    assignedTo: artisanName,
+    status: 'assigned',
+    assignedAt: serverTimestamp()
+  });
+  // Write notification for artisan
+  await addDoc(collection(db,'notifications'),{
+    for: artisanName,
+    type: 'job-assigned',
+    title: 'New job card assigned to you',
+    body: 'You have a new job card. Open PlantFlow to view it.',
+    read: false,
+    createdAt: serverTimestamp()
+  });
+  closeModal('assign-modal');
+  toast(artisanName+' assigned — they will see this job on their phone now','success');
 };
 </script>
 
