@@ -4,7 +4,15 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="theme-color" content="#185FA5"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="PlantFlow"/>
+<meta name="application-name" content="PlantFlow"/>
+<meta name="theme-color" content="#0D1B2A"/>
+<meta name="description" content="PlantFlow — Maintenance OS for industrial plants"/>
+<link rel="manifest" href="./manifest.json"/>
+<link rel="apple-touch-icon" href="./plantflow-icon-192.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="./plantflow-icon-192.png"/>
+<link rel="icon" type="image/png" sizes="512x512" href="./plantflow-icon-512.png"/>
 <title>PlantFlow Mobile</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -229,6 +237,16 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
       </div>
 
       <div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin-top:24px">PlantFlow v1.0 · Eagle Electrical Ventures<br>Not registered? Ask your manager to add you in the Admin Panel.</div>
+
+      <!-- Install to home screen prompt -->
+      <div id="install-prompt" style="display:none;margin-top:20px;background:rgba(245,130,10,0.2);border:1px solid rgba(245,130,10,0.4);border-radius:14px;padding:14px;text-align:center">
+        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px">📲 Add PlantFlow to your home screen</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:10px">For quick access — works like a real app, no Play Store needed</div>
+        <button id="install-btn" onclick="installApp()" style="background:#F5820A;border:none;color:#fff;font-size:13px;font-weight:700;padding:10px 20px;border-radius:10px;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif">Install PlantFlow</button>
+      </div>
+      <div id="ios-install-hint" style="display:none;margin-top:16px;background:rgba(255,255,255,0.1);border-radius:12px;padding:12px;text-align:center">
+        <div style="font-size:12px;color:rgba(255,255,255,0.8);line-height:1.6">📲 To install on iPhone: tap the <b>Share</b> button at the bottom of Safari, then tap <b>"Add to Home Screen"</b></div>
+      </div>
     </div>
   </div>
 
@@ -1721,6 +1739,51 @@ function toastMob(msg,type=''){
   setTimeout(()=>t.classList.remove('show'),3000);
 }
 window.toastMob=toastMob;
+
+// Register service worker for PWA
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('PlantFlow SW registered:', reg.scope))
+      .catch(err => console.log('SW registration failed:', err));
+  });
+}
+
+// ── PWA INSTALL PROMPT ──
+let _deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _deferredInstallPrompt = e;
+  // Show install button
+  const prompt = document.getElementById('install-prompt');
+  if(prompt) prompt.style.display = 'block';
+});
+
+window.installApp = async function(){
+  if(!_deferredInstallPrompt) return;
+  _deferredInstallPrompt.prompt();
+  const result = await _deferredInstallPrompt.userChoice;
+  if(result.outcome === 'accepted'){
+    const prompt = document.getElementById('install-prompt');
+    if(prompt) prompt.style.display = 'none';
+    toastMob('PlantFlow installed! Find it on your home screen','success');
+  }
+  _deferredInstallPrompt = null;
+};
+
+window.addEventListener('appinstalled', () => {
+  const prompt = document.getElementById('install-prompt');
+  if(prompt) prompt.style.display = 'none';
+});
+
+// iOS Safari detect — show manual instructions
+const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+if(isIOS && !isInStandaloneMode){
+  const hint = document.getElementById('ios-install-hint');
+  if(hint) hint.style.display = 'block';
+}
 </script>
 </body>
 </html>

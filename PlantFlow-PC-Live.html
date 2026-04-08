@@ -126,7 +126,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
       <div class="logo-icon">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M2 14V7l7-5 7 5v7l-7 4.5L2 14z" opacity="0.3"/><path d="M9 2L2 7v7l7 4.5L16 14V7L9 2zm0 2L14 8v5.5L9 16.3 4 13.5V8z"/><rect x="7" y="8" width="4" height="6" rx="1"/></svg>
       </div>
-      <div><div class="logo-text">PlantFlow</div><div class="logo-sub">Admin Panel</div></div>
+      <div><div class="logo-text">PlantFlow</div><div class="logo-sub" id="sidebar-company-name">Admin Panel</div></div>
     </div>
   </div>
   <div class="nav-section">
@@ -847,6 +847,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 window.db = db;
+// Expose Firebase functions so non-module scripts can use them
+window._addDoc = addDoc;
+window._collection = collection;
+window._doc = doc;
+window._updateDoc = updateDoc;
+window._serverTimestamp = serverTimestamp;
+window._getDocs = getDocs;
+window._query = query;
+window._orderBy = orderBy;
+window._where = where;
 
 // Connection indicator
 document.getElementById('conn-text').textContent = 'Connected to plantflow-sa Firebase — live sync active';
@@ -1169,6 +1179,7 @@ window.renderMaterials = function(){
       <td style="white-space:nowrap">
         ${isLow?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px;background:#fef3c7;color:#92400e;border-color:#f59e0b" onclick="openReorderModal('${m.id}','${(m.description||'').replace(/'/g,"\\'")}',${m.inStock||0},${m.minLevel||0})">📦 Reorder</button>`:''}
         <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:${isLow?'4px':'0'}" onclick="openEditMaterialModal('${m.id}')">✏️ Edit</button>
+        <button class="tb-btn danger" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="quickDeleteMaterial('${m.id}','${(m.description||'').replace(/'/g,"\\'")}')">🗑</button>
       </td>
     </tr>`;
   }).join('');
@@ -1760,6 +1771,13 @@ window.deleteMaterial = async function(){
   toast('Material deleted from register','success');
 };
 
+window.quickDeleteMaterial = async function(id, desc){
+  if(!confirm('Delete "'+desc+'" from the materials register?'))return;
+  const {deleteDoc} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  await deleteDoc(doc(db,'materials',id));
+  toast(desc+' deleted','success');
+};
+
 window.openReorderModal = function(id, desc, current, minLevel){
   window._reorderMatId = id;
   document.getElementById('reorder-mat-title').textContent = desc;
@@ -2136,6 +2154,12 @@ function nav(id,el){
 const SA_PASSWORD = 'Eagle2024!';
 window._editingSACompanyId = null;
 
+// Helper: get Firebase functions (exposed from module)
+function _db(){return window.db;}
+function _add(col,data){return window._addDoc(window._collection(_db(),col),data);}
+function _upd(col,id,data){return window._updateDoc(window._doc(_db(),col,id),data);}
+function _get(col){return window._getDocs(window._collection(_db(),col));}
+
 window.checkSALogin = function(){
   const pw = document.getElementById('sa-password').value;
   if(pw===SA_PASSWORD){
@@ -2156,19 +2180,23 @@ window.logoutSA = function(){
 };
 
 window.saveSASettings = async function(){
-  const newPw = document.getElementById('sa-new-password')&&document.getElementById('sa-new-password').value;
-  const confPw = document.getElementById('sa-confirm-password')&&document.getElementById('sa-confirm-password').value;
+  const newPw = document.getElementById('sa-new-password')?.value||'';
+  const confPw = document.getElementById('sa-confirm-password')?.value||'';
   if(newPw&&newPw!==confPw){toast('Passwords do not match','error');return;}
   try{
-    await updateDoc(doc(db,'config','superadmin'),{
+    await _upd('config','superadmin',{
       subscriptionPrice: parseFloat(document.getElementById('sa-sub-price').value)||299,
       currency: document.getElementById('sa-currency').value,
       trialDays: parseInt(document.getElementById('sa-trial').value)||30,
       pfMerchant: document.getElementById('sa-pf-merchant').value,
       pfKey: document.getElementById('sa-pf-key').value,
-      updatedAt: serverTimestamp()
+      appName: document.getElementById('sa-app-name')?.value||'PlantFlow',
+      supportEmail: document.getElementById('sa-support-email')?.value||'',
+      updatedAt: window._serverTimestamp()
     });
-  }catch(e){ try{await addDoc(collection(db,'config'),{id:'superadmin'});}catch(e2){} }
+  }catch(e){
+    try{ await _add('config',{id:'superadmin',updatedAt:window._serverTimestamp()}); }catch(e2){}
+  }
   updateTrialCountdown();
   toast('Settings saved','success');
 };
@@ -2181,7 +2209,7 @@ window.addSACompany = async function(){
   const trialStart = new Date();
   const expires = new Date(trialStart.getTime()+trialDays*24*60*60*1000);
   try{
-    await addDoc(collection(db,'companies'),{
+    await _add('companies',{
       name, adminEmail:email,
       phone: document.getElementById('ac-phone').value,
       industry: document.getElementById('ac-industry').value,
@@ -2192,60 +2220,72 @@ window.addSACompany = async function(){
       expires: expires.toISOString().split('T')[0],
       status: 'trial',
       notes: document.getElementById('ac-notes').value,
-      createdAt: serverTimestamp()
+      createdAt: window._serverTimestamp()
     });
     closeModal('add-company-modal');
     ['ac-name','ac-email','ac-phone','ac-price','ac-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     loadSACompanies();
     updateTrialCountdown();
-    toast(name+' added','success');
-  }catch(e){toast('Error: '+e.message,'error');}
+    // Update sidebar company name
+    const sideEl = document.getElementById('sidebar-company-name');
+    if(sideEl) sideEl.textContent = name;
+    toast(name+' added successfully','success');
+  }catch(e){toast('Error adding company: '+e.message,'error');console.error(e);}
 };
 
 window.loadSACompanies = async function(){
   try{
-    const snap = await getDocs(collection(db,'companies'));
+    const snap = await _get('companies');
     const tbody = document.getElementById('sa-companies-tbody');
     const countEl = document.getElementById('sa-company-count');
     if(countEl) countEl.textContent = snap.size;
-    const today = new Date();
+
+    // Update sidebar with first company name
+    if(!snap.empty){
+      const firstName = snap.docs[0].data().name;
+      const sideEl = document.getElementById('sidebar-company-name');
+      if(sideEl&&firstName) sideEl.textContent = firstName;
+    }
+
     if(snap.empty){
-      tbody.innerHTML='<tr><td colspan="8" class="empty-state">No companies yet</td></tr>';
+      if(tbody) tbody.innerHTML='<tr><td colspan="8" class="empty-state">No companies yet — click "+ Add company"</td></tr>';
       return;
     }
-    tbody.innerHTML = snap.docs.map(d=>{
+    const today = new Date();
+    if(tbody) tbody.innerHTML = snap.docs.map(d=>{
       const c=d.data();
       let trialLeft = '—';
       if(c.trialStart&&c.trialDays){
         const start = new Date(c.trialStart);
         const exp = new Date(start.getTime()+c.trialDays*24*60*60*1000);
         const diff = Math.ceil((exp-today)/(1000*60*60*24));
-        trialLeft = diff>0 ? diff+' days' : '<span style="color:#dc2626;font-weight:700">Expired</span>';
+        trialLeft = diff>0 ? diff+' days' : 'Expired';
       }
-      const sColor = c.status==='active'?'b-green':c.status==='held'?'b-red':c.status==='trial'?'b-amber':'b-gray';
-      const nm = (c.name||'').replace(/'/g,"\\'");
-      return '<tr>'
-        +'<td><b>'+(c.name||'—')+'</b></td>'
-        +'<td style="font-size:11px">'+(c.adminEmail||'—')+'</td>'
-        +'<td><span class="badge b-blue">'+(c.plan||'trial')+'</span></td>'
-        +'<td>R '+(c.price||'—')+'/mo</td>'
-        +'<td style="font-size:11px">'+trialLeft+'</td>'
-        +'<td><span class="badge '+sColor+'">'+(c.status||'trial')+'</span></td>'
-        +'<td style="font-size:11px">'+(c.expires||'—')+'</td>'
-        +'<td style="white-space:nowrap">'
-        +'<button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="openSACompanyDetail(\'' + d.id + '\')">📋 Open</button> '
-        +'<button class="tb-btn" style="font-size:11px;padding:3px 8px;background:#fef3c7;border-color:#f59e0b;color:#92400e" onclick="holdCompanyById(\'' + d.id + '\',\'' + (c.status||'active') + '\')">⏸ Hold</button> '
-        +'<button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteCompanyById(\'' + d.id + '\',\'' + nm + '\')">🗑</button>'
-        +'</td></tr>';
+      const sc = c.status==='active'?'b-green':c.status==='held'?'b-red':c.status==='trial'?'b-amber':'b-gray';
+      const nameEsc = (c.name||'').replace(/'/g,"\'");
+      return '<tr>'+
+        '<td><b>'+(c.name||'—')+'</b></td>'+
+        '<td style="font-size:11px">'+(c.adminEmail||'—')+'</td>'+
+        '<td><span class="badge b-blue">'+(c.plan||'trial')+'</span></td>'+
+        '<td>R '+(c.price||'—')+'/mo</td>'+
+        '<td style="font-size:11px">'+trialLeft+'</td>'+
+        '<td><span class="badge '+sc+'">'+(c.status||'trial')+'</span></td>'+
+        '<td style="font-size:11px">'+(c.expires||'—')+'</td>'+
+        '<td style="white-space:nowrap">'+
+          '<button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="openSACompanyDetail(\"'+d.id+'\")">📋 Open</button> '+
+          '<button class="tb-btn" style="font-size:11px;padding:3px 8px;background:#fef3c7;border-color:#f59e0b;color:#92400e" onclick="holdCompanyById(\"'+d.id+'\",\"'+c.status+'\")">⏸</button> '+
+          '<button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteCompanyById(\"'+d.id+'\",\"'+nameEsc+'\")">🗑</button>'+
+        '</td>'+
+      '</tr>';
     }).join('');
-  }catch(e){console.error('loadSACompanies:',e);}
+  }catch(e){ console.error('loadSACompanies:',e); toast('Error loading companies: '+e.message,'error'); }
 };
 
 window.openSACompanyDetail = async function(id){
   window._editingSACompanyId = id;
   try{
-    const snap = await getDocs(collection(db,'companies'));
-    const d = snap.docs.find(function(x){return x.id===id;});
+    const snap = await _get('companies');
+    const d = snap.docs.find(x=>x.id===id);
     if(!d)return;
     const c = d.data();
     document.getElementById('sa-detail-name').textContent = c.name||'—';
@@ -2268,57 +2308,61 @@ window.openSACompanyDetail = async function(id){
 
 window.closeSACompanyDetail = function(){
   window._editingSACompanyId=null;
-  var det=document.getElementById('sa-company-detail');
-  var main=document.getElementById('sa-main-panel');
-  if(det)det.style.display='none';
-  if(main)main.style.display='block';
+  const det = document.getElementById('sa-company-detail');
+  const main = document.getElementById('sa-main-panel');
+  if(det) det.style.display='none';
+  if(main) main.style.display='block';
 };
 
 window.saveSACompanyDetail = async function(){
   if(!window._editingSACompanyId)return;
   const name = document.getElementById('sa-det-name').value.trim();
-  if(!name){toast('Company name required','error');return;}
-  await updateDoc(doc(db,'companies',window._editingSACompanyId),{
-    name, adminEmail:document.getElementById('sa-det-email').value,
-    phone:document.getElementById('sa-det-phone').value,
-    industry:document.getElementById('sa-det-industry').value,
-    plan:document.getElementById('sa-det-plan').value,
-    price:parseFloat(document.getElementById('sa-det-price').value)||299,
-    trialDays:parseInt(document.getElementById('sa-det-trial').value)||30,
-    trialStart:document.getElementById('sa-det-trialstart').value,
-    expires:document.getElementById('sa-det-expires').value,
-    status:document.getElementById('sa-det-status').value,
-    notes:document.getElementById('sa-det-notes').value,
-    pfRef:document.getElementById('sa-det-pfref').value,
-    updatedAt:serverTimestamp()
+  if(!name){toast('Name required','error');return;}
+  await _upd('companies',window._editingSACompanyId,{
+    name,
+    adminEmail: document.getElementById('sa-det-email').value,
+    phone: document.getElementById('sa-det-phone').value,
+    industry: document.getElementById('sa-det-industry').value,
+    plan: document.getElementById('sa-det-plan').value,
+    price: parseFloat(document.getElementById('sa-det-price').value)||299,
+    trialDays: parseInt(document.getElementById('sa-det-trial').value)||30,
+    trialStart: document.getElementById('sa-det-trialstart').value,
+    expires: document.getElementById('sa-det-expires').value,
+    status: document.getElementById('sa-det-status').value,
+    notes: document.getElementById('sa-det-notes').value,
+    pfRef: document.getElementById('sa-det-pfref').value,
+    updatedAt: window._serverTimestamp()
   });
-  document.getElementById('sa-detail-name').textContent=name;
+  document.getElementById('sa-detail-name').textContent = name;
+  // Update sidebar company name
+  const sideEl = document.getElementById('sidebar-company-name');
+  if(sideEl) sideEl.textContent = name;
   loadSACompanies();
   updateTrialCountdown();
-  toast('Company updated','success');
+  toast('Company saved','success');
 };
 
 window.holdCompany = async function(){
   if(!window._editingSACompanyId)return;
-  await updateDoc(doc(db,'companies',window._editingSACompanyId),{status:'held',heldAt:serverTimestamp()});
+  await _upd('companies',window._editingSACompanyId,{status:'held',updatedAt:window._serverTimestamp()});
   document.getElementById('sa-det-status').value='held';
   loadSACompanies();
-  toast('Account placed on hold','success');
+  toast('Account placed on hold — access suspended','success');
 };
 
 window.holdCompanyById = async function(id,currentStatus){
-  const newStatus = currentStatus==='held'?'active':'held';
-  await updateDoc(doc(db,'companies',id),{status:newStatus,updatedAt:serverTimestamp()});
+  const ns = currentStatus==='held'?'active':'held';
+  await _upd('companies',id,{status:ns,updatedAt:window._serverTimestamp()});
   loadSACompanies();
-  toast('Company '+(newStatus==='held'?'placed on hold':'reactivated'),'success');
+  toast('Company '+(ns==='held'?'placed on hold':'reactivated'),'success');
 };
 
 window.deleteCompany = async function(){
   if(!window._editingSACompanyId)return;
   const name = document.getElementById('sa-det-name').value;
   if(!confirm('Permanently delete "'+name+'"?'))return;
-  const {deleteDoc:dd} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-  await dd(doc(db,'companies',window._editingSACompanyId));
+  const {deleteDoc} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  await deleteDoc(window._doc(_db(),'companies',window._editingSACompanyId));
   closeSACompanyDetail();
   loadSACompanies();
   toast(name+' deleted','success');
@@ -2326,31 +2370,38 @@ window.deleteCompany = async function(){
 
 window.deleteCompanyById = async function(id,name){
   if(!confirm('Permanently delete "'+name+'"?'))return;
-  const {deleteDoc:dd} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-  await dd(doc(db,'companies',id));
+  const {deleteDoc} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  await deleteDoc(window._doc(_db(),'companies',id));
   loadSACompanies();
   toast(name+' deleted','success');
 };
 
-async function updateTrialCountdown(){
-  try{
-    const snap = await getDocs(collection(db,'companies'));
+function updateTrialCountdown(){
+  if(!window._getDocs||!window._collection||!window.db) return;
+  window._getDocs(window._collection(window.db,'companies')).then(snap=>{
     const el = document.getElementById('trial-countdown');
-    if(!el)return;
+    if(!el) return;
     if(snap.empty){el.style.display='none';return;}
     const c = snap.docs[0].data();
     if(!c.trialStart||!c.trialDays){el.style.display='none';return;}
-    const expires = new Date(new Date(c.trialStart).getTime()+c.trialDays*24*60*60*1000);
-    const diff = Math.ceil((expires-new Date())/(1000*60*60*24));
-    const color = diff<=0?'#dc2626':diff<=5?'#dc2626':diff<=14?'#d97706':'#16a34a';
-    el.innerHTML = diff<=0
-      ? '<span style="color:#dc2626;font-weight:700;font-size:11px">⚠ Trial expired</span>'
-      : '<span style="color:'+color+';font-weight:700;font-size:11px">🕐 '+diff+' trial day'+(diff!==1?'s':'')+' left</span>';
+    const exp = new Date(c.trialStart);
+    exp.setDate(exp.getDate()+(c.trialDays||30));
+    const diff = Math.ceil((exp-new Date())/(1000*60*60*24));
+    if(diff<=0){
+      el.innerHTML='<span style="color:#dc2626;font-weight:700;font-size:12px">⚠ Free trial expired</span>';
+    } else {
+      const color = diff<=5?'#dc2626':diff<=14?'#d97706':'#16a34a';
+      el.innerHTML='<span style="color:'+color+';font-weight:700;font-size:12px">🕐 '+diff+' trial day'+(diff!==1?'s':'')+' left</span>';
+    }
     el.style.display='flex';
-  }catch(e){const el=document.getElementById('trial-countdown');if(el)el.style.display='none';}
+    // Update sidebar company name while we're here
+    const sideEl = document.getElementById('sidebar-company-name');
+    if(sideEl&&c.name) sideEl.textContent = c.name;
+  }).catch(()=>{});
 }
 window.updateTrialCountdown = updateTrialCountdown;
-updateTrialCountdown();
+// Run after a short delay to let Firebase module init first
+setTimeout(updateTrialCountdown, 2000);
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function toast(msg,type=''){
