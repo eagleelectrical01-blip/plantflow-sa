@@ -268,9 +268,9 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
     </div>
     <div class="tab-bar">
       <div class="tab-item active" onclick="showSC('sc-artisan');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="13" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><div class="tab-label">Home</div></div>
-      <div class="tab-item" onclick="showSC('sc-artisan-permits');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 2l5.5 2.2V11c0 4-5.5 6-5.5 6S5.5 15 5.5 11V4.2L11 2z"/></svg><div class="tab-label">Permits</div></div>
+      <div class="tab-item" onclick="showSC('sc-artisan-calendar');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="18" height="17" rx="2"/><path d="M2 8h18M7 2v2M15 2v2"/></svg><div class="tab-label">Schedule</div></div>
       <div class="tab-item" onclick="showSC('sc-log-fault');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 2l9 16H2z"/><path d="M11 9v5M11 15.5h.01"/></svg><div class="tab-label">Log Fault</div></div>
-      <div class="tab-item" onclick="showSC('sc-artisan-materials');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 2h14v18H4z"/><path d="M7 7h8M7 11h8M7 15h4"/></svg><div class="tab-label">Materials</div></div>
+      <div class="tab-item" onclick="showSC('sc-artisan-permits');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 2l5.5 2.2V11c0 4-5.5 6-5.5 6S5.5 15 5.5 11V4.2L11 2z"/></svg><div class="tab-label">Permits</div></div>
       <div class="tab-item" onclick="showSC('sc-artisan-notif');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 2a7 7 0 017 7v3.5l2 3H2l2-3V9a7 7 0 017-7z"/><path d="M9 19a2 2 0 004 0"/></svg><div class="tab-label">Alerts</div><div class="tab-dot" id="notif-badge-count" style="display:none">0</div></div>
     </div>
   </div>
@@ -431,7 +431,41 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
     </div>
   </div>
 
-  <!-- LOG FAULT (all roles) -->
+  <!-- ARTISAN CALENDAR / PM SCHEDULES -->
+  <div class="screen" id="sc-artisan-calendar">
+    <div class="top-header" style="background:#185FA5">
+      <div class="th-row">
+        <div class="back-btn" onclick="showSC('sc-artisan')"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.2"><path d="M10 13L5 8l5-5"/></svg></div>
+        <div><div class="th-title">My Schedule</div><div style="font-size:12px;color:rgba(255,255,255,0.8)">PM tasks assigned to you</div></div>
+      </div>
+    </div>
+    <div class="scroll-content" style="padding-top:0">
+      <!-- Month header -->
+      <div style="background:#185FA5;padding:10px 16px 18px;display:flex;align-items:center;justify-content:space-between">
+        <button onclick="calPrevMonth()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:18px;width:36px;height:36px;border-radius:50%;cursor:pointer">‹</button>
+        <div style="font-size:17px;font-weight:800;color:#fff" id="cal-month-label">April 2026</div>
+        <button onclick="calNextMonth()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:18px;width:36px;height:36px;border-radius:50%;cursor:pointer">›</button>
+      </div>
+      <!-- Day-of-week headers -->
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);background:#0d3d6b;padding:6px 4px 4px">
+        <div style="text-align:center;font-size:11px;font-weight:700;color:rgba(255,255,255,0.6)">Sun</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:rgba(255,255,255,0.6)">Mon</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:rgba(255,255,255,0.6)">Tue</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:rgba(255,255,255,0.6)">Wed</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:rgba(255,255,255,0.6)">Thu</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:rgba(255,255,255,0.6)">Fri</div>
+        <div style="text-align:center;font-size:11px;font-weight:700;color:rgba(255,255,255,0.6)">Sat</div>
+      </div>
+      <!-- Calendar grid -->
+      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);background:#fff;padding:4px"></div>
+
+      <!-- Selected day tasks -->
+      <div style="padding:14px 14px 4px;font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px" id="cal-day-label">Tasks this month</div>
+      <div id="cal-tasks-list">
+        <div class="empty-state-mob"><div class="empty-icon">📅</div><div class="empty-title">No scheduled tasks</div><div class="empty-sub">The manager assigns PM tasks to you from the Admin Panel. They appear here.</div></div>
+      </div>
+    </div>
+  </div>
   <div class="screen" id="sc-log-fault">
     <div class="top-header" style="background:#dc2626">
       <div class="th-row">
@@ -809,6 +843,20 @@ function processLogin(userDoc){
   const target = roleMap[role] || 'sc-employee';
   showSC(target);
   toastMob('Welcome, '+window._currentUserName+' ('+role+')','success');
+
+  // Immediately render all data for this user — don't wait for next Firestore event
+  // This ensures old open jobs appear right away without needing a new job to trigger it
+  setTimeout(()=>{
+    if(typeof renderArtisanJobs==='function') renderArtisanJobs();
+    if(typeof renderMMJobs==='function') renderMMJobs();
+    if(typeof renderMMFaults==='function') renderMMFaults();
+    if(typeof renderMgrPermits==='function') renderMgrPermits();
+    if(typeof renderArtisanPermits==='function') renderArtisanPermits();
+    if(typeof updateMMStats==='function') updateMMStats();
+    if(window._notifsSnap && typeof renderNotifList==='function'){
+      renderNotifList(window._notifsSnap, window._currentUserName);
+    }
+  }, 300);
 }
 
 // Legacy compatibility
@@ -860,33 +908,181 @@ onSnapshot(query(collection(db,'users'),orderBy('name','asc')), snap=>{
   populateArtisanDropdowns();
 }, err=>{console.error('users listener error:',err.message);});
 
+// Schedules listener
+onSnapshot(query(collection(db,'schedules'),orderBy('createdAt','desc')), snap=>{
+  allSchedules.length=0;
+  snap.docs.forEach(d=>allSchedules.push({id:d.id,...d.data()}));
+  renderCalendar();
+}, err=>{console.error('schedules error:',err.message);});
+
+// ── CALENDAR ──
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let calSelectedDay = null;
+
+function renderCalendar(){
+  const name = window._currentUserName||'';
+  const mySchedules = name ? allSchedules.filter(s=>s.assignedTo===name) : [];
+
+  // Update month label
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const labelEl = document.getElementById('cal-month-label');
+  if(labelEl) labelEl.textContent = monthNames[calMonth]+' '+calYear;
+
+  // Build calendar grid
+  const grid = document.getElementById('cal-grid');
+  if(!grid) return;
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const today = new Date();
+
+  // Collect days that have tasks (based on nextDue date parse)
+  const taskDays = {};
+  mySchedules.forEach(s=>{
+    if(!s.nextDue) return;
+    // Try parse nextDue (format: "08 Apr 2026")
+    const d = new Date(s.nextDue);
+    if(!isNaN(d) && d.getMonth()===calMonth && d.getFullYear()===calYear){
+      const day = d.getDate();
+      if(!taskDays[day]) taskDays[day]=[];
+      taskDays[day].push(s);
+    }
+    // Also show weekly/daily tasks every week/day
+    if(s.frequency==='daily'){
+      for(let i=1;i<=daysInMonth;i++) { if(!taskDays[i]) taskDays[i]=[]; taskDays[i].push(s); }
+    } else if(s.frequency==='weekly'){
+      for(let i=1;i<=daysInMonth;i+=7) { if(!taskDays[i]) taskDays[i]=[]; taskDays[i].push(s); }
+    }
+  });
+
+  let html = '';
+  // Empty cells before first day
+  for(let i=0;i<firstDay;i++) html += '<div style="padding:6px 2px"></div>';
+  // Day cells
+  for(let d=1;d<=daysInMonth;d++){
+    const isToday = d===today.getDate()&&calMonth===today.getMonth()&&calYear===today.getFullYear();
+    const isSelected = d===calSelectedDay;
+    const hasTasks = taskDays[d]&&taskDays[d].length>0;
+    const bg = isSelected?'#185FA5':isToday?'#dbeafe':'transparent';
+    const color = isSelected?'#fff':isToday?'#185FA5':'#111827';
+    html += '<div onclick="calSelectDay('+d+')" style="padding:5px 2px;text-align:center;cursor:pointer;border-radius:8px;margin:1px;background:'+bg+'">';
+    html += '<div style="font-size:13px;font-weight:'+(isToday||isSelected?'800':'500')+';color:'+color+'">'+d+'</div>';
+    if(hasTasks) html += '<div style="width:5px;height:5px;border-radius:50%;background:'+(isSelected?'#fff':'#F5820A')+';margin:1px auto 0"></div>';
+    else html += '<div style="width:5px;height:5px;margin:1px auto 0"></div>';
+    html += '</div>';
+  }
+  grid.innerHTML = html;
+
+  // Render tasks for selected day or all tasks this month
+  renderCalTasks(mySchedules, taskDays);
+}
+
+function renderCalTasks(mySchedules, taskDays){
+  const list = document.getElementById('cal-tasks-list');
+  const label = document.getElementById('cal-day-label');
+  if(!list) return;
+
+  let tasks = [];
+  if(calSelectedDay && taskDays && taskDays[calSelectedDay]){
+    tasks = taskDays[calSelectedDay];
+    if(label) label.textContent = 'Tasks on day '+calSelectedDay;
+  } else {
+    tasks = mySchedules;
+    if(label) label.textContent = 'All my scheduled tasks';
+  }
+
+  if(!tasks.length){
+    list.innerHTML='<div class="empty-state-mob"><div class="empty-icon">📅</div><div class="empty-title">No tasks</div><div class="empty-sub">No PM tasks assigned to you yet. The manager assigns tasks in the Admin Panel.</div></div>';
+    return;
+  }
+
+  const freqColor = {daily:'#185FA5',weekly:'#6d28d9',monthly:'#16a34a',quarterly:'#d97706'};
+  list.innerHTML = [...new Map(tasks.map(t=>[t.id,t])).values()].map(s=>`
+    <div style="background:#fff;border-radius:12px;margin:0 14px 8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+      <div style="background:${freqColor[s.frequency]||'#185FA5'};padding:4px 12px;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:10px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.5px">${s.frequency||'scheduled'}</span>
+        <span style="font-size:10px;color:rgba(255,255,255,0.8)">${s.nextDue||''}</span>
+      </div>
+      <div style="padding:12px 14px">
+        <div style="font-size:14px;font-weight:700;color:#111827;margin-bottom:4px">${s.task||'—'}</div>
+        <div style="font-size:12px;color:#6b7280;margin-bottom:6px">📍 ${s.asset||'—'} · ⏱ ${s.estTime||'—'}</div>
+        ${s.materialsRequired?`<div style="font-size:11px;color:#374151;background:#f9fafb;padding:6px 10px;border-radius:8px">🔧 Materials: ${s.materialsRequired}</div>`:''}
+        ${s.permitRequired==='yes'?'<div style="font-size:11px;color:#dc2626;font-weight:600;margin-top:5px">⚠ Permit to Work required</div>':''}
+      </div>
+    </div>`).join('');
+}
+
+window.calSelectDay = function(day){
+  calSelectedDay = calSelectedDay===day ? null : day;
+  renderCalendar();
+};
+window.calPrevMonth = function(){
+  calMonth--;
+  if(calMonth<0){calMonth=11;calYear--;}
+  calSelectedDay=null;
+  renderCalendar();
+};
+window.calNextMonth = function(){
+  calMonth++;
+  if(calMonth>11){calMonth=0;calYear++;}
+  calSelectedDay=null;
+  renderCalendar();
+};
+window.renderCalendar = renderCalendar;
+
 // Notifications listener — updates artisan name and badge
+// Store notifications snap globally for delete access
+window._notifsSnap = null;
+
 onSnapshot(query(collection(db,'notifications'),orderBy('createdAt','desc')), snap=>{
+  window._notifsSnap = snap;
   const myName = window._currentUserName||'';
-  const myNotifs = myName ? snap.docs.filter(d=>d.data().for===myName&&!d.data().read) : [];
+  const myUnread = myName ? snap.docs.filter(d=>d.data().for===myName&&!d.data().read) : [];
   const badge = document.getElementById('notif-badge-count');
   const dot = document.getElementById('artisan-notif-dot');
-  if(badge){badge.textContent=myNotifs.length;badge.style.display=myNotifs.length?'block':'none';}
-  if(dot) dot.style.display = myNotifs.length?'block':'none';
-  // Render notifications
-  const list = document.getElementById('notif-list');
-  if(list){
-    const allNotifs = myName ? snap.docs.filter(d=>d.data().for===myName) : [];
-    if(!allNotifs.length){list.innerHTML='<div class="empty-state-mob"><div class="empty-icon">🔔</div><div class="empty-title">No notifications yet</div><div class="empty-sub">Job assignments and permit approvals appear here.</div></div>';return;}
-    list.innerHTML = allNotifs.slice(0,10).map(d=>{
-      const n=d.data();
-      return `<div class="notif-item ${!n.read?'unread':''}">
-        <div class="notif-icon" style="background:${n.type==='job-assigned'?'#dbeafe':n.type==='permit-approved'?'#dcfce7':'#fef3c7'}">
-          <span style="font-size:18px">${n.type==='job-assigned'?'📋':n.type==='permit-approved'?'✅':'🔔'}</span>
-        </div>
-        <div style="flex:1">
-          <div class="notif-title">${n.title||'Notification'}</div>
-          <div class="notif-body">${n.body||''}</div>
-        </div>
-      </div>`;
-    }).join('');
+  if(badge){badge.textContent=myUnread.length;badge.style.display=myUnread.length?'block':'none';}
+  if(dot){
+    dot.style.display=myUnread.length?'flex':'none';
+    dot.textContent=myUnread.length>9?'9+':myUnread.length;
+    dot.style.cssText+='width:auto;min-width:16px;height:16px;border-radius:8px;font-size:9px;font-weight:700;color:#fff;align-items:center;justify-content:center;padding:0 4px;background:#16a34a;top:4px;right:4px;';
   }
+  renderNotifList(snap, myName);
 }, err=>{console.error('notifications error:',err.message);});
+
+function renderNotifList(snap, myName){
+  const list = document.getElementById('notif-list');
+  if(!list)return;
+  const name = myName||window._currentUserName||'';
+  const allNotifs = name ? snap.docs.filter(d=>d.data().for===name) : [];
+  if(!allNotifs.length){
+    list.innerHTML='<div class="empty-state-mob"><div class="empty-icon">🔔</div><div class="empty-title">No notifications yet</div><div class="empty-sub">Job assignments, schedule tasks, and permit approvals appear here.</div></div>';
+    return;
+  }
+  list.innerHTML = allNotifs.map(d=>{
+    const n=d.data();
+    const iconBg = n.type==='job-assigned'?'#dbeafe':n.type==='permit-approved'?'#dcfce7':n.type==='schedule-assigned'?'#ede9fe':'#fef3c7';
+    const icon = n.type==='job-assigned'?'📋':n.type==='permit-approved'?'✅':n.type==='schedule-assigned'?'📅':'🔔';
+    const timeStr = n.createdAt ? (n.createdAt.toDate ? n.createdAt.toDate() : new Date(n.createdAt)).toLocaleDateString('en-ZA',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="notif-item ${!n.read?'unread':''}" style="position:relative">
+      <div class="notif-icon" style="background:${iconBg}"><span style="font-size:18px">${icon}</span></div>
+      <div style="flex:1">
+        <div class="notif-title">${n.title||'Notification'}</div>
+        <div class="notif-body">${n.body||''}</div>
+        <div class="notif-time">${timeStr}</div>
+      </div>
+      <button onclick="deleteNotif('${d.id}')" style="background:#fee2e2;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;color:#dc2626;font-weight:700;flex-shrink:0;align-self:flex-start">✕</button>
+    </div>`;
+  }).join('');
+}
+window.renderNotifList = renderNotifList;
+
+window.deleteNotif = async function(notifId){
+  try{
+    const {deleteDoc} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await deleteDoc(doc(db,'notifications',notifId));
+  }catch(e){toastMob('Error deleting: '+e.message,'error');}
+};
 
 // ── RENDER FUNCTIONS ──
 

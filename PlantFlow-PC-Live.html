@@ -203,8 +203,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
         <div class="panel">
           <div class="panel-head"><div class="panel-title">Live Job Cards <span class="live-dot" style="margin-left:5px;width:6px;height:6px"></span></div></div>
           <table class="tbl">
-            <thead><tr><th>Job #</th><th>Description</th><th>Location</th><th>Assigned to</th><th>Permit</th><th>Status</th></tr></thead>
-            <tbody id="dash-jobs"><tr><td colspan="6" class="empty-state">Waiting for data...</td></tr></tbody>
+            <thead><tr><th>Job #</th><th>Description</th><th>Location</th><th>Assigned to</th><th>Status</th><th>Created</th><th>Completed</th><th>Action</th></tr></thead>
+            <tbody id="dash-jobs"><tr><td colspan="8" class="empty-state">Waiting for data...</td></tr></tbody>
           </table>
         </div>
         <div class="panel">
@@ -253,7 +253,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
         <button class="tb-btn primary" style="font-size:11px;padding:5px 10px;margin-left:8px" onclick="openModal('jobcard-modal')">+ New Job Card</button>
       </div>
       <table class="tbl">
-        <thead><tr><th>Job #</th><th>Priority</th><th>Description</th><th>Location</th><th>Logged by</th><th>Assigned to</th><th>Permit #</th><th>Materials used</th><th>Total cost</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Job #</th><th>Priority</th><th>Description</th><th>Location</th><th>Logged by</th><th>Assigned to</th><th>Permit #</th><th>Materials used</th><th>Total cost</th><th>Created</th><th>Completed</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody id="jobcards-tbody"><tr><td colspan="12" class="empty-state">Loading...</td></tr></tbody>
       </table>
     </div>
@@ -726,6 +726,7 @@ onSnapshot(query(collection(db,'jobCards'),orderBy('createdAt','desc')), snap =>
   renderJobCards();
   renderDashJobs();
   updateJobStats();
+  updateMaterialStats();
   renderReports();
   setSync();
 }, err => { console.error('jobCards:',err.code); showConnError(err.code); });
@@ -818,12 +819,12 @@ window.renderJobCards = function(){
   if(filter) jobs = jobs.filter(j=>j.status===filter);
   const tbody = document.getElementById('jobcards-tbody');
   if(!tbody)return;
-  if(!jobs.length){tbody.innerHTML='<tr><td colspan="13" class="empty-state">No job cards yet</td></tr>';return;}
+  if(!jobs.length){tbody.innerHTML='<tr><td colspan="14" class="empty-state">No job cards yet</td></tr>';return;}
   tbody.innerHTML = jobs.map(j=>{
     const artisans = Array.isArray(j.assignedArtisans)&&j.assignedArtisans.length ? j.assignedArtisans : (j.assignedTo?[j.assignedTo]:[]);
     const artisanDisplay = artisans.length ? artisans.map(a=>`<span class="badge b-blue" style="margin:1px">${a}</span>`).join(' ') : '<span style="color:#9ca3af">Unassigned</span>';
     const isOpen = j.status!=='completed';
-    return `<tr>
+    return `<tr style="${!isOpen?'background:#f9faf9;':''}">
       <td style="color:#9ca3af;font-size:11px">${j.jobNumber||'—'}</td>
       <td><span class="badge b-${j.priority==='high'||j.priority==='critical'?'red':j.priority==='medium'?'amber':'teal'}">${j.priority||'medium'}</span></td>
       <td>${priorityDot(j.priority)}<b>${j.description||'—'}</b></td>
@@ -832,14 +833,19 @@ window.renderJobCards = function(){
       <td>${artisanDisplay}</td>
       <td>${j.permitNumber?`<span class="badge b-purple">${j.permitNumber}</span>`:j.permitRequired==='yes'?'<span class="badge b-red">Required</span>':'<span class="badge b-gray">N/A</span>'}</td>
       <td style="font-size:11px;color:#6b7280">${(j.materials||[]).map(m=>m.name).join(', ')||'—'}</td>
-      <td style="font-weight:600">${j.totalCost?'R '+(parseFloat(j.totalCost)).toFixed(2):'—'}</td>
+      <td style="font-weight:600;color:#185FA5">${j.totalCost?'R '+(parseFloat(j.totalCost)).toFixed(2):'—'}</td>
       <td style="font-size:11px">${fmtDate(j.createdAt)}</td>
+      <td style="font-size:11px;color:${!isOpen?'#16a34a':'#9ca3af'}">${!isOpen&&j.completedAt?fmtDate(j.completedAt):'—'}</td>
       <td>${statusBadge(j.status||'open')}</td>
       <td style="white-space:nowrap">
-        <button class="tb-btn" style="font-size:11px;padding:3px 8px" onclick="openAssignModal('${j.id}','${j.jobNumber}','${artisans.join(',')}')">👤 Assign</button>
-        ${isOpen?`<button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#fef3c7;border-color:#f59e0b;color:#92400e" onclick="openEditJobModal('${j.id}')">✏️ Edit</button>`:''}
-        ${isOpen?`<button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px" onclick="completeJob('${j.id}')">✓ Done</button>`:''}
-        ${j.permitRequired==='yes'&&!j.permitNumber?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px;margin-left:3px" onclick="quickPermit('${j.jobNumber}','${artisans[0]||''}')">PTW</button>`:''}
+        ${isOpen ? `
+          <button class="tb-btn" style="font-size:11px;padding:3px 8px" onclick="openAssignModal('${j.id}','${j.jobNumber}','${artisans.join(',')}')">👤 Assign</button>
+          <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#fef3c7;border-color:#f59e0b;color:#92400e" onclick="openEditJobModal('${j.id}')">✏️ Edit</button>
+          <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px" onclick="completeJob('${j.id}')">✓ Done</button>
+          ${j.permitRequired==='yes'&&!j.permitNumber?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px;margin-left:3px" onclick="quickPermit('${j.jobNumber}','${artisans[0]||''}')">PTW</button>`:''}
+        ` : `
+          <button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteJob('${j.id}')">🗑 Delete</button>
+        `}
       </td>
     </tr>`;
   }).join('');
@@ -848,18 +854,27 @@ window.renderJobCards = function(){
 window.renderDashJobs = function(){
   const tbody = document.getElementById('dash-jobs');
   if(!tbody)return;
-  const jobs = allJobs.slice(0,6);
-  if(!jobs.length){tbody.innerHTML='<tr><td colspan="7" class="empty-state">No job cards yet</td></tr>';return;}
-  tbody.innerHTML = jobs.map(j=>`
-    <tr>
+  const jobs = allJobs.slice(0,10);
+  if(!jobs.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">No job cards yet</td></tr>';return;}
+  tbody.innerHTML = jobs.map(j=>{
+    const isCompleted = j.status==='completed';
+    const artisans = Array.isArray(j.assignedArtisans)&&j.assignedArtisans.length ? j.assignedArtisans.join(', ') : (j.assignedTo||'');
+    return `<tr style="${isCompleted?'background:#f9faf9;':''}">
       <td style="color:#9ca3af;font-size:11px">${j.jobNumber||'—'}</td>
       <td>${priorityDot(j.priority)}<b>${j.description||'—'}</b></td>
       <td style="color:#6b7280">${j.location||'—'}</td>
-      <td>${j.assignedTo||'<span style="color:#dc2626;font-weight:600">Unassigned</span>'}</td>
-      <td>${j.permitNumber?`<span class="badge b-purple">${j.permitNumber}</span>`:j.permitRequired==='yes'?'<span class="badge b-red">Required</span>':'<span class="badge b-gray">N/A</span>'}</td>
+      <td>${artisans||'<span style="color:#dc2626">Unassigned</span>'}</td>
       <td>${statusBadge(j.status||'open')}</td>
-      <td><button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="openAssignModal('${j.id}','${j.jobNumber}','${(j.assignedTo||'').replace(/'/g,"\\'")}')">Assign →</button></td>
-    </tr>`).join('');
+      <td style="font-size:11px;color:#6b7280">${fmtDate(j.createdAt)||'—'}</td>
+      <td style="font-size:11px;color:${isCompleted?'#16a34a':'#9ca3af'}">${isCompleted?fmtDate(j.completedAt)||'—':'—'}</td>
+      <td style="white-space:nowrap">
+        ${isCompleted
+          ? `<button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteJob('${j.id}')">🗑 Delete</button>`
+          : `<button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="openAssignModal('${j.id}','${j.jobNumber}','${(artisans).replace(/'/g,"\\'")}')">Assign →</button>`
+        }
+      </td>
+    </tr>`;
+  }).join('');
 };
 
 window.renderFaults = function(){
@@ -1118,16 +1133,22 @@ function updatePermitStats(){
 function updateMaterialStats(){
   const low = allMaterials.filter(m=>m.inStock>0&&m.inStock<=m.minLevel).length;
   const out = allMaterials.filter(m=>m.inStock<=0).length;
-  const totalCost = allMaterials.reduce((sum,m)=>(sum+(m.usedMTD||0)*(m.unitCost||0)),0);
-  document.getElementById('stat-stock').textContent = low+out;
-  document.getElementById('stat-stock-sub').textContent = out+' out of stock';
-  document.getElementById('badge-stock').textContent = low+out;
-  document.getElementById('stat-cost').textContent = 'R '+totalCost.toLocaleString();
-  document.getElementById('mat-total').textContent = allMaterials.length;
-  document.getElementById('mat-low').textContent = low;
-  document.getElementById('mat-out').textContent = out;
-  document.getElementById('mat-cost-display').textContent = 'R '+totalCost.toLocaleString();
-  document.getElementById('rep-cost').textContent = 'R '+totalCost.toLocaleString();
+  // Cost comes from job cards totalCost — the actual logged materials
+  const jobCostTotal = allJobs.reduce((sum,j)=>sum+(parseFloat(j.totalCost)||0),0);
+  // Materials register cost (fallback for stock value)
+  const stockCost = allMaterials.reduce((sum,m)=>(sum+(m.usedMTD||0)*(m.unitCost||0)),0);
+  const displayCost = jobCostTotal > 0 ? jobCostTotal : stockCost;
+
+  const safeSet = (id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  safeSet('stat-stock', low+out);
+  safeSet('stat-stock-sub', out+' out of stock');
+  safeSet('badge-stock', low+out);
+  safeSet('stat-cost', 'R '+displayCost.toFixed(2));
+  safeSet('mat-total', allMaterials.length);
+  safeSet('mat-low', low);
+  safeSet('mat-out', out);
+  safeSet('mat-cost-display', 'R '+displayCost.toFixed(2));
+  safeSet('rep-cost', 'R '+displayCost.toFixed(2));
 }
 
 // ── POPULATE DROPDOWNS ──
@@ -1284,8 +1305,18 @@ window.closePermit = async function(id){
 };
 
 window.completeJob = async function(id){
-  await updateDoc(doc(db,'jobCards',id),{status:'completed',completedAt:serverTimestamp()});
+  await updateDoc(doc(db,'jobCards',id),{
+    status:'completed',
+    completedAt:serverTimestamp()
+  });
   toast('Job marked as complete','success');
+};
+
+window.deleteJob = async function(id){
+  if(!confirm('Permanently delete this completed job card?'))return;
+  const {deleteDoc} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  await deleteDoc(doc(db,'jobCards',id));
+  toast('Job card deleted','success');
 };
 
 window.convertFault = async function(id,desc,loc,priority){
@@ -1337,24 +1368,46 @@ window.editStock = async function(id,current){
 };
 
 window.addSchedule = async function(){
-  const task=document.getElementById('sc-task').value.trim();
+  const task = document.getElementById('sc-task').value.trim();
+  const assignedTo = document.getElementById('sc-assigned').value;
+  const frequency = document.getElementById('sc-freq').value;
   if(!task){toast('Please enter a task description','error');return;}
+
+  // Calculate next due date based on frequency
+  const now = new Date();
+  const nextDueMap = {daily:1, weekly:7, monthly:30, quarterly:90};
+  const daysAhead = nextDueMap[frequency]||7;
+  const nextDue = new Date(now.getTime()+(daysAhead*24*60*60*1000));
+  const nextDueStr = nextDue.toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'});
+
   try{
-    await addDoc(collection(db,'schedules'),{
+    const schedRef = await addDoc(collection(db,'schedules'),{
       task:task,
-      frequency:document.getElementById('sc-freq').value,
+      frequency:frequency,
       asset:document.getElementById('sc-asset').value,
-      assignedTo:document.getElementById('sc-assigned').value,
+      assignedTo:assignedTo,
       estTime:document.getElementById('sc-time').value,
       materialsRequired:document.getElementById('sc-mats').value,
       permitRequired:document.getElementById('sc-permit').value,
       status:'scheduled',
-      nextDue:'Next scheduled',
+      nextDue:nextDueStr,
       createdAt:serverTimestamp()
     });
+    // Send notification to assigned artisan
+    if(assignedTo){
+      await addDoc(collection(db,'notifications'),{
+        for: assignedTo,
+        type: 'schedule-assigned',
+        title: 'New PM schedule task assigned',
+        body: task+' — Due: '+nextDueStr+' ('+frequency+')',
+        scheduleId: schedRef.id,
+        read: false,
+        createdAt: serverTimestamp()
+      });
+    }
     closeModal('schedule-modal');
     document.getElementById('sc-task').value='';
-    toast('PM task added — artisan will receive on their phone','success');
+    toast('PM task added — '+( assignedTo ? assignedTo+' notified on their phone' : 'no artisan assigned'),'success');
   }catch(e){toast('Error: '+e.message,'error');}
 };
 
