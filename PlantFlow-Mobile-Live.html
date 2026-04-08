@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#185FA5"/>
+<title>PlantFlow Mobile</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827}
+.app{height:100vh;display:flex;flex-direction:column;overflow:hidden;max-width:430px;margin:0 auto;background:#f0f2f5;position:relative}
+.scroll-content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px}
+.scroll-content::-webkit-scrollbar{display:none}
+
+/* TOP HEADER */
+.top-header{background:#185FA5;color:#fff;padding:12px 16px;flex-shrink:0}
+.th-row{display:flex;align-items:center;gap:10px}
+.back-btn{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.th-title{font-size:17px;font-weight:800;flex:1}
+.notif-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;flex-shrink:0}
+.notif-badge{position:absolute;top:5px;right:5px;width:9px;height:9px;background:#f59e0b;border-radius:50%;border:2px solid #185FA5}
+
+/* BOTTOM TAB BAR */
+.tab-bar{height:65px;background:#fff;border-top:1px solid #e5e7eb;display:flex;align-items:stretch;flex-shrink:0;position:absolute;bottom:0;left:0;right:0;box-shadow:0 -2px 10px rgba(0,0,0,0.06)}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;padding-bottom:6px;position:relative}
+.tab-item.active{color:#185FA5}
+.tab-item:not(.active){color:#9ca3af}
+.tab-item svg{width:22px;height:22px}
+.tab-label{font-size:10px;font-weight:600}
+.tab-dot{position:absolute;top:8px;right:calc(50% - 16px);background:#dc2626;color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:8px;min-width:16px;text-align:center}
+
+/* SCREENS */
+.screen{display:none;flex-direction:column;height:100%}
+.screen.active{display:flex}
+
+/* ROLE SELECT */
+.role-screen{background:linear-gradient(160deg,#185FA5 0%,#0d3d6b 100%);flex:1;overflow-y:auto;padding:36px 22px 30px}
+.role-logo-icon{width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:6px}
+.role-headline{font-size:26px;font-weight:900;color:#fff;margin:28px 0 8px;line-height:1.2}
+.role-sub{font-size:14px;color:rgba(255,255,255,0.7);margin-bottom:28px;line-height:1.5}
+.role-card{background:#fff;border-radius:16px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,0.12);transition:transform 0.1s}
+.role-card:active{transform:scale(0.97)}
+.role-card-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.role-title{font-size:15px;font-weight:700;color:#111827}
+.role-sub-text{font-size:12px;color:#6b7280;margin-top:2px}
+
+/* HOME HEADER */
+.home-header{background:#185FA5;padding:16px 16px 20px;flex-shrink:0}
+.greeting{font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:2px}
+.user-name{font-size:20px;font-weight:900;color:#fff}
+.role-pill{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.2);color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:10px;margin-top:6px}
+
+/* STATS */
+.home-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 14px 0}
+.home-stat{background:#fff;border-radius:14px;padding:13px 14px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.hs-label{font-size:11px;color:#6b7280;font-weight:500;margin-bottom:4px}
+.hs-val{font-size:22px;font-weight:800;color:#111827;line-height:1}
+.hs-sub{font-size:11px;font-weight:600;margin-top:3px}
+.c-blue{color:#185FA5}.c-amber{color:#d97706}.c-red{color:#dc2626}.c-green{color:#16a34a}
+
+/* SECTION TITLE */
+.section-title{font-size:12px;font-weight:700;color:#374151;padding:14px 14px 6px;text-transform:uppercase;letter-spacing:0.5px}
+
+/* JOB CARDS */
+.job-card{background:#fff;border-radius:14px;margin:0 14px 10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden;cursor:pointer}
+.job-card:active{transform:scale(0.98)}
+.jc-head{padding:13px 14px 10px;display:flex;align-items:flex-start;gap:10px}
+.jc-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.jc-num{font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:2px}
+.jc-title{font-size:14px;font-weight:700;color:#111827;line-height:1.3}
+.jc-loc{font-size:12px;color:#6b7280;margin-top:2px}
+.jc-foot{padding:8px 14px 12px;display:flex;align-items:center;gap:8px;border-top:1px solid #f3f4f6}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.b-blue{background:#dbeafe;color:#1d4ed8}.b-amber{background:#fef3c7;color:#b45309}
+.b-green{background:#dcfce7;color:#15803d}.b-red{background:#fee2e2;color:#b91c1c}
+.b-purple{background:#ede9fe;color:#6d28d9}.b-gray{background:#f3f4f6;color:#6b7280}
+.b-teal{background:#ccfbf1;color:#0f766e}
+
+/* BUTTONS */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;border:none;font-family:'Segoe UI',Arial,sans-serif;transition:transform 0.1s;width:100%}
+.btn:active{transform:scale(0.97)}
+.btn-primary{background:#185FA5;color:#fff}
+.btn-secondary{background:#f3f4f6;color:#374151;border:1.5px solid #e5e7eb}
+.btn-danger{background:#fee2e2;color:#b91c1c;border:1.5px solid #fca5a5}
+.btn-success{background:#dcfce7;color:#15803d;border:1.5px solid #86efac}
+.btn-amber{background:#fef3c7;color:#92400e;border:1.5px solid #fcd34d}
+.btn-sm{padding:9px 14px;font-size:13px;border-radius:10px;width:auto}
+
+/* FORMS */
+.form-section{padding:14px 14px 0}
+.form-group{margin-bottom:13px}
+.form-label{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;display:block}
+.form-input{width:100%;padding:13px 14px;border:1.5px solid #e5e7eb;border-radius:12px;font-size:14px;font-family:'Segoe UI',Arial,sans-serif;color:#111827;background:#fff;outline:none}
+.form-input:focus{border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,0.1)}
+.form-select{width:100%;padding:13px 14px;border:1.5px solid #e5e7eb;border-radius:12px;font-size:14px;font-family:'Segoe UI',Arial,sans-serif;color:#111827;background:#fff;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:38px}
+.form-textarea{width:100%;padding:13px 14px;border:1.5px solid #e5e7eb;border-radius:12px;font-size:14px;font-family:'Segoe UI',Arial,sans-serif;color:#111827;resize:none;outline:none}
+.form-textarea:focus{border-color:#185FA5}
+
+/* PERMIT BANNER */
+.permit-banner{margin:0 14px 10px;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.pb-active{background:#dbeafe;border:1.5px solid #185FA5}
+.pb-pending{background:#fef3c7;border:1.5px solid #f59e0b}
+.pb-blocked{background:#fee2e2;border:1.5px solid #dc2626}
+.pb-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* PERMIT CARD */
+.permit-full{background:#fff;border-radius:16px;margin:0 14px 12px;box-shadow:0 2px 10px rgba(0,0,0,0.06);overflow:hidden}
+.ptw-head{padding:14px;border-bottom:1px solid #f3f4f6}
+.ptw-body{padding:14px}
+.ptw-row{display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px}
+.ptw-label{color:#6b7280;font-weight:500}
+.ptw-val{color:#111827;font-weight:600;text-align:right;max-width:58%}
+
+/* MATERIALS */
+.mat-row{background:#fff;border-radius:12px;margin:0 14px 8px;padding:12px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,0.05)}
+.mat-name{flex:1;font-size:13px;font-weight:600;color:#111827}
+.mat-qty{font-size:13px;color:#6b7280;min-width:55px;text-align:right}
+.mat-del{width:28px;height:28px;border-radius:7px;background:#fee2e2;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+
+/* LIST ITEMS */
+.list-item{background:#fff;border-radius:12px;margin:0 14px 8px;padding:13px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,0.05);cursor:pointer}
+.li-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.li-title{font-size:13px;font-weight:700;color:#111827}
+.li-sub{font-size:11px;color:#6b7280;margin-top:2px}
+.li-right{margin-left:auto;text-align:right;flex-shrink:0}
+
+/* INSPECTION */
+.insp-item{background:#fff;border-radius:12px;margin:0 14px 8px;padding:12px 14px;display:flex;align-items:flex-start;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,0.05)}
+.check-circle{width:26px;height:26px;border-radius:50%;border:2.5px solid #d1d5db;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin-top:1px;transition:all 0.15s;font-size:12px;font-weight:700}
+.check-circle.pass{background:#185FA5;border-color:#185FA5;color:#fff}
+.check-circle.fail{background:#dc2626;border-color:#dc2626;color:#fff}
+
+/* NOTIFICATION */
+.notif-item{background:#fff;border-radius:12px;margin:0 14px 8px;padding:12px 14px;display:flex;align-items:flex-start;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,0.05)}
+.notif-item.unread{border-left:3px solid #185FA5}
+.notif-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.notif-title{font-size:13px;font-weight:700;color:#111827;margin-bottom:2px}
+.notif-body{font-size:12px;color:#6b7280;line-height:1.4}
+.notif-time{font-size:11px;color:#9ca3af;margin-top:4px}
+
+/* SUCCESS SCREEN */
+.success-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center}
+.success-icon{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+.success-title{font-size:22px;font-weight:900;color:#111827;margin-bottom:8px}
+.success-sub{font-size:14px;color:#6b7280;line-height:1.6;margin-bottom:28px}
+
+/* COUNTDOWN */
+.countdown{background:#185FA5;border-radius:12px;margin:0 14px 10px;padding:13px 16px;display:flex;align-items:center;gap:12px;color:#fff}
+.countdown-time{font-size:22px;font-weight:900;letter-spacing:-0.5px}
+
+/* PHOTO UPLOAD */
+.photo-upload{border:2px dashed #d1d5db;border-radius:14px;padding:22px;text-align:center;cursor:pointer;background:#f9fafb;margin:0 14px 14px}
+.photo-upload-icon{font-size:30px;margin-bottom:6px}
+
+/* LOADING */
+.loading-overlay{position:absolute;inset:0;background:rgba(255,255,255,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100}
+.spinner{width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:#185FA5;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* CHIP */
+.chip{display:inline-flex;align-items:center;padding:7px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;margin:0 5px 5px 0;transition:all 0.1s}
+.chip.selected{background:#185FA5;color:#fff;border-color:#185FA5}
+
+/* TOAST */
+.toast-mob{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:#111827;color:#fff;padding:11px 20px;border-radius:12px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:all 0.3s;white-space:nowrap;max-width:90vw}
+.toast-mob.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast-mob.success{background:#16a34a}
+.toast-mob.error{background:#dc2626}
+
+/* SCHED ITEM */
+.sched-item{background:#fff;border-radius:12px;margin:0 14px 8px;display:flex;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.05)}
+.sched-stripe{width:5px;flex-shrink:0}
+.sched-body{flex:1;padding:12px 14px}
+.sched-title{font-size:13px;font-weight:700;color:#111827}
+.sched-meta{font-size:11px;color:#6b7280;margin-top:3px}
+.sched-right{padding:12px 14px;display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
+
+/* EMPTY */
+.empty-state-mob{padding:40px 20px;text-align:center}
+.empty-icon{font-size:44px;margin-bottom:10px}
+.empty-title{font-size:17px;font-weight:700;color:#374151;margin-bottom:6px}
+.empty-sub{font-size:13px;color:#9ca3af;line-height:1.5}
+
+.divider{height:8px;background:#f0f2f5}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- LOADING -->
+  <div class="loading-overlay" id="loading">
+    <div class="spinner"></div>
+    <div style="font-size:14px;font-weight:600;color:#374151">Connecting to PlantFlow...</div>
+    <div style="font-size:12px;color:#9ca3af;margin-top:4px">plantflow-sa</div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast-mob" id="toast-mob"></div>
+
+  <!-- ════════════════════════════════ -->
+  <!-- ROLE SELECT -->
+  <!-- ════════════════════════════════ -->
+  <div class="screen" id="sc-role">
+    <div class="role-screen">
+      <div class="role-logo-icon">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="white"><path d="M3 20V10l10-7 10 7v10l-10 6.5L3 20z" opacity="0.3"/><path d="M13 3L3 10v10l10 6.5L23 20V10L13 3zm0 2.5L21 11v8L13 22.5 5 19V11z"/><rect x="10" y="12" width="6" height="9" rx="1.5"/></svg>
+      </div>
+      <div style="font-size:22px;font-weight:900;color:#fff;margin-top:6px">PlantFlow</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Maintenance OS · plantflow-sa</div>
+      <div class="role-headline">Who are you?</div>
+      <div class="role-sub">Select your role to see your personalised workspace.</div>
+
+      <div class="role-card" onclick="login('artisan')">
+        <div class="role-card-icon" style="background:#dbeafe"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#185FA5" stroke-width="2"><path d="M17.5 7.5a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l2.3-2.3a5 5 0 01-6.6 6.6l-5.8 5.8a2 2 0 01-2.8-2.8l5.8-5.8a5 5 0 016.6-6.6L17.5 7.5z"/></svg></div>
+        <div><div class="role-title">Artisan / Technician</div><div class="role-sub-text">Receive jobs, log materials, submit reports</div></div>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#d1d5db" stroke-width="2" style="margin-left:auto;flex-shrink:0"><path d="M6 12l4-4-4-4"/></svg>
+      </div>
+
+      <div class="role-card" onclick="login('production-manager')">
+        <div class="role-card-icon" style="background:#fef3c7"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#d97706" stroke-width="2"><path d="M11 2l6 2.4V10c0 4.5-6 7-6 7S5 14.5 5 10V4.4L11 2z"/></svg></div>
+        <div><div class="role-title">Production Manager</div><div class="role-sub-text">Issue &amp; approve Permits to Work</div></div>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#d1d5db" stroke-width="2" style="margin-left:auto;flex-shrink:0"><path d="M6 12l4-4-4-4"/></svg>
+      </div>
+
+      <div class="role-card" onclick="login('maintenance-manager')">
+        <div class="role-card-icon" style="background:#dcfce7"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#16a34a" stroke-width="2"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="13" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></div>
+        <div><div class="role-title">Maintenance Manager</div><div class="role-sub-text">Assign jobs, review faults, inspections</div></div>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#d1d5db" stroke-width="2" style="margin-left:auto;flex-shrink:0"><path d="M6 12l4-4-4-4"/></svg>
+      </div>
+
+      <div class="role-card" onclick="login('employee')">
+        <div class="role-card-icon" style="background:#f3f4f6"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#6b7280" stroke-width="2"><circle cx="11" cy="8" r="4"/><path d="M3 20c0-4 3.5-7 8-7s8 3 8 7"/></svg></div>
+        <div><div class="role-title">General Employee</div><div class="role-sub-text">Log a fault or maintenance request</div></div>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#d1d5db" stroke-width="2" style="margin-left:auto;flex-shrink:0"><path d="M6 12l4-4-4-4"/></svg>
+      </div>
+
+      <div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.4);margin-top:20px">PlantFlow v1.0 · Eagle Electrical Ventures</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════ -->
+  <!-- ARTISAN HOME -->
+  <!-- ════════════════════════════════ -->
+  <div class="screen" id="sc-artisan">
+    <div class="scroll-content">
+      <div class="home-header">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div class="greeting">Good morning 👋</div>
+            <div class="user-name" id="artisan-name">Loading...</div>
+            <div class="role-pill"><svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="1.8"><path d="M2 14l2.5-2.5 2 2 4-5"/><circle cx="11" cy="4" r="3"/></svg><span id="artisan-role-label">Artisan</span></div>
+          </div>
+          <div class="notif-btn" onclick="showSC('sc-artisan-notif')"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="1.8"><path d="M9 1.5a5.5 5.5 0 015.5 5.5v3.5l1.5 2.5H2L3.5 10.5V7A5.5 5.5 0 019 1.5z"/><path d="M7 15a2 2 0 004 0"/></svg><div class="notif-badge" id="artisan-notif-dot" style="display:none"></div></div>
+        </div>
+      </div>
+
+      <div class="home-stats">
+        <div class="home-stat"><div class="hs-label">My jobs</div><div class="hs-val" id="artisan-job-count">—</div><div class="hs-sub c-blue" id="artisan-job-sub">Loading...</div></div>
+        <div class="home-stat"><div class="hs-label">Active permit</div><div class="hs-val" style="font-size:15px;padding-top:3px" id="artisan-permit-display">—</div><div class="hs-sub c-amber" id="artisan-permit-sub">Check permits</div></div>
+      </div>
+
+      <div class="section-title" id="my-jobs-title">My job cards</div>
+      <div id="artisan-jobs-container"><div class="empty-state-mob"><div class="empty-icon">📋</div><div class="empty-title">No jobs assigned yet</div><div class="empty-sub">The Maintenance Manager will assign jobs to you from the PC admin panel.</div></div></div>
+
+      <div style="padding:6px 14px 10px">
+        <button class="btn btn-secondary" onclick="showSC('sc-log-fault')" style="margin-bottom:8px">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 1.5l7.5 13H1.5z"/><path d="M9 7v4M9 12.5h.01"/></svg>
+          Log a fault / problem
+        </button>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab-item active" onclick="showSC('sc-artisan');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="13" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><div class="tab-label">Home</div></div>
+      <div class="tab-item" onclick="showSC('sc-artisan-permits');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 2l5.5 2.2V11c0 4-5.5 6-5.5 6S5.5 15 5.5 11V4.2L11 2z"/></svg><div class="tab-label">Permits</div></div>
+      <div class="tab-item" onclick="showSC('sc-log-fault');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 2l9 16H2z"/><path d="M11 9v5M11 15.5h.01"/></svg><div class="tab-label">Log Fault</div></div>
+      <div class="tab-item" onclick="showSC('sc-artisan-materials');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 2h14v18H4z"/><path d="M7 7h8M7 11h8M7 15h4"/></svg><div class="tab-label">Materials</div></div>
+      <div class="tab-item" onclick="showSC('sc-artisan-notif');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 2a7 7 0 017 7v3.5l2 3H2l2-3V9a7 7 0 017-7z"/><path d="M9 19a2 2 0 004 0"/></svg><div class="tab-label">Alerts</div><div class="tab-dot" id="notif-badge-count" style="display:none">0</div></div>
+    </div>
+  </div>
+
+  <!-- ARTISAN JOB DETAIL -->
+  <div class="screen" id="sc-job-detail">
+    <div class="top-header">
+      <div class="th-row">
+        <div class="back-btn" onclick="showSC('sc-artisan')"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.2"><path d="M10 13L5 8l5-5"/></svg></div>
+        <div><div style="font-size:11px;color:rgba(255,255,255,0.7)" id="jd-num">Job card</div><div class="th-title" id="jd-title">Loading...</div></div>
+      </div>
+    </div>
+    <div class="scroll-content">
+      <div style="padding:14px 14px 0">
+        <div style="background:#fff;border-radius:14px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.05);margin-bottom:12px">
+          <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Job details</div>
+          <div class="ptw-row"><div class="ptw-label">Location</div><div class="ptw-val" id="jd-location">—</div></div>
+          <div class="ptw-row"><div class="ptw-label">Asset</div><div class="ptw-val" id="jd-asset">—</div></div>
+          <div class="ptw-row"><div class="ptw-label">Priority</div><div class="ptw-val" id="jd-priority">—</div></div>
+          <div class="ptw-row" style="margin-bottom:0"><div class="ptw-label">Notes</div><div class="ptw-val" id="jd-notes">—</div></div>
+        </div>
+        <div id="jd-permit-section"></div>
+      </div>
+
+      <div class="section-title">Materials used on this job</div>
+      <div id="jd-materials-list"></div>
+      <div style="padding:0 14px 8px">
+        <button class="btn btn-secondary btn-sm" onclick="addMaterialToJob()">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 2v10M2 7h10"/></svg>
+          Add material used
+        </button>
+      </div>
+
+      <div class="section-title">Completion photo</div>
+      <div class="photo-upload" onclick="toastMob('Camera would open here on a real phone','success')">
+        <div class="photo-upload-icon">📷</div>
+        <div style="font-size:13px;font-weight:600;color:#6b7280">Take before &amp; after photo</div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:3px">Required before submitting</div>
+      </div>
+
+      <div class="section-title">Completion notes</div>
+      <div style="padding:0 14px 8px">
+        <textarea class="form-textarea" id="jd-completion-notes" rows="3" placeholder="What was done? Any issues found? Recommendations?"></textarea>
+      </div>
+
+      <div style="padding:8px 14px 20px;display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-success" onclick="submitJobComplete()">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l5 5 7-8"/></svg>
+          Submit job as complete
+        </button>
+        <button class="btn btn-secondary" onclick="showSC('sc-artisan')">Save and continue later</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARTISAN PERMITS -->
+  <div class="screen" id="sc-artisan-permits">
+    <div class="top-header">
+      <div class="th-row">
+        <div class="back-btn" onclick="showSC('sc-artisan')"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.2"><path d="M10 13L5 8l5-5"/></svg></div>
+        <div class="th-title">Permits to Work</div>
+      </div>
+    </div>
+    <div class="scroll-content">
+      <div style="padding:14px 14px 4px;font-size:13px;color:#6b7280;line-height:1.5">Your active and pending permits. You cannot start hazardous work without a valid permit.</div>
+      <div id="artisan-permits-list"><div class="empty-state-mob"><div class="empty-icon">🛡️</div><div class="empty-title">No permits yet</div><div class="empty-sub">Request a permit from the Production Manager for any hazardous work.</div></div></div>
+
+      <div class="section-title">Request a new permit</div>
+      <div class="form-section">
+        <div class="form-group"><div class="form-label">Permit type needed *</div><select class="form-select" id="req-type"><option value="">-- Select --</option><option>General maintenance</option><option>Hot work (welding/cutting/grinding)</option><option>Electrical isolation / LOTO</option><option>Confined space entry</option><option>Working at height</option><option>Chemical handling</option></select></div>
+        <div class="form-group"><div class="form-label">Job card number *</div><input class="form-input" id="req-jobcard" placeholder="e.g. JC-0001"/></div>
+        <div class="form-group"><div class="form-label">Location of work *</div><input class="form-input" id="req-location" placeholder="e.g. Tank Farm — Valve V-04"/></div>
+        <div class="form-group"><div class="form-label">Describe the work scope *</div><textarea class="form-textarea" id="req-scope" rows="3" placeholder="What will you do? What hazards exist?"></textarea></div>
+        <div class="form-group"><div class="form-label">Duration needed</div><select class="form-select" id="req-duration"><option>2 hours</option><option>4 hours</option><option>Full day</option></select></div>
+        <button class="btn btn-primary" style="margin-bottom:20px" onclick="requestPermit()">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="2"><path d="M9 1.5l5 2V9c0 3.5-5 5.5-5 5.5S4 12.5 4 9V3.5L9 1.5z"/></svg>
+          Request permit from manager
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARTISAN MATERIALS LOG -->
+  <div class="screen" id="sc-artisan-materials">
+    <div class="top-header">
+      <div class="th-row">
+        <div class="back-btn" onclick="showSC('sc-artisan')"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.2"><path d="M10 13L5 8l5-5"/></svg></div>
+        <div class="th-title">Log Materials Used</div>
+      </div>
+    </div>
+    <div class="scroll-content">
+      <div style="padding:14px 14px 4px;font-size:13px;color:#6b7280;line-height:1.5">Log every material you use. This feeds directly into the PC admin panel so the manager can track costs and stock.</div>
+      <div class="section-title">Select job card</div>
+      <div class="form-section">
+        <div class="form-group"><select class="form-select" id="mat-jobcard-select" onchange="loadJobMaterials()"><option value="">-- Select job card --</option></select></div>
+      </div>
+      <div class="section-title">Materials used</div>
+      <div id="mat-job-list"><div style="padding:0 14px;font-size:13px;color:#9ca3af">Select a job card above to see materials</div></div>
+      <div class="section-title">Add material from store</div>
+      <div class="form-section">
+        <div class="form-group"><div class="form-label">Select item from register</div><select class="form-select" id="mat-item-select"><option value="">-- Select material --</option></select></div>
+        <div class="form-group"><div class="form-label">Quantity used</div><input class="form-input" id="mat-qty-input" type="number" placeholder="1" min="1"/></div>
+        <button class="btn btn-primary" style="margin-bottom:20px" onclick="logMaterial()">Log material used</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARTISAN NOTIFICATIONS -->
+  <div class="screen" id="sc-artisan-notif">
+    <div class="top-header" style="background:#111827">
+      <div class="th-row">
+        <div class="back-btn" onclick="showSC('sc-artisan')" style="background:rgba(255,255,255,0.1)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.2"><path d="M10 13L5 8l5-5"/></svg></div>
+        <div class="th-title">Notifications</div>
+      </div>
+    </div>
+    <div class="scroll-content" style="padding-top:10px">
+      <div id="notif-list"><div class="empty-state-mob"><div class="empty-icon">🔔</div><div class="empty-title">No notifications yet</div><div class="empty-sub">Job assignments, permit approvals, and alerts appear here.</div></div></div>
+    </div>
+  </div>
+
+  <!-- LOG FAULT (all roles) -->
+  <div class="screen" id="sc-log-fault">
+    <div class="top-header" style="background:#dc2626">
+      <div class="th-row">
+        <div class="back-btn" style="background:rgba(255,255,255,0.2)" onclick="goBack()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.2"><path d="M10 13L5 8l5-5"/></svg></div>
+        <div><div class="th-title">Log a Fault</div><div style="font-size:12px;color:rgba(255,255,255,0.8)">Goes to Maintenance Manager instantly</div></div>
+      </div>
+    </div>
+    <div class="scroll-content" style="padding-top:14px">
+      <div class="form-section">
+        <div class="form-group">
+          <div class="form-label">Where is the fault?</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <button class="btn btn-secondary" id="ft-factory" onclick="selectFaultType('factory')" style="flex-direction:column;gap:6px;padding:16px;height:auto">
+              <span style="font-size:26px">🏭</span><span style="font-size:13px;font-weight:700">Factory floor</span><span style="font-size:11px;color:#9ca3af">Machinery, plant</span>
+            </button>
+            <button class="btn btn-secondary" id="ft-office" onclick="selectFaultType('office')" style="flex-direction:column;gap:6px;padding:16px;height:auto">
+              <span style="font-size:26px">🏢</span><span style="font-size:13px;font-weight:700">Office / facilities</span><span style="font-size:11px;color:#9ca3af">Aircon, lights, taps</span>
+            </button>
+          </div>
+        </div>
+        <div class="form-group"><div class="form-label">Describe the fault *</div><textarea class="form-textarea" id="fault-desc" rows="4" placeholder="What is wrong? Be specific — machine name, what you saw, heard, or smelled. The more detail the faster we fix it."></textarea></div>
+        <div class="form-group"><div class="form-label">Exact location *</div><input class="form-input" id="fault-loc" placeholder="e.g. Factory Floor A — Press 2 / near the conveyor"/></div>
+        <div class="form-group"><div class="form-label">Urgency</div>
+          <div style="display:flex;flex-wrap:wrap;margin-top:4px">
+            <div class="chip selected" onclick="selectChip(this,'urgency')">Not urgent</div>
+            <div class="chip" onclick="selectChip(this,'urgency')">Needs attention today</div>
+            <div class="chip" onclick="selectChip(this,'urgency')">🚨 Safety risk!</div>
+          </div>
+        </div>
+        <div class="form-group"><div class="form-label">Your name</div><input class="form-input" id="fault-name" placeholder="Full name (optional)"/></div>
+        <div class="form-group"><div class="form-label">Department</div><input class="form-input" id="fault-dept" placeholder="e.g. Production, Finance, HR..."/></div>
+      </div>
+      <div class="photo-upload" onclick="toastMob('Camera would open here on phone','success')">
+        <div class="photo-upload-icon">📷</div>
+        <div style="font-size:13px;font-weight:600;color:#6b7280">Photo of the fault (optional)</div>
+      </div>
+      <div style="padding:4px 14px 24px">
+        <button class="btn btn-danger" onclick="submitFaultMobile()">Submit fault report →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAULT SUCCESS -->
+  <div class="screen" id="sc-fault-success">
+    <div class="success-screen">
+      <div class="success-icon" style="background:#fee2e2"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#dc2626" stroke-width="3"><path d="M8 20l8 8 16-16"/></svg></div>
+      <div class="success-title">Fault reported!</div>
+      <div class="success-sub">The Maintenance Manager has been notified and can see your report on the PC admin panel right now.</div>
+      <div style="background:#fef3c7;border-radius:14px;padding:14px;width:100%;margin-bottom:24px;text-align:left">
+        <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:6px">What happens next:</div>
+        <div style="font-size:12px;color:#374151;margin-bottom:4px">1. Manager reviews on PC dashboard</div>
+        <div style="font-size:12px;color:#374151;margin-bottom:4px">2. Job card created &amp; artisan assigned</div>
+        <div style="font-size:12px;color:#374151">3. You get a notification when fixed</div>
+      </div>
+      <button class="btn btn-primary" onclick="goBack()">Back to home</button>
+    </div>
+  </div>
+
+  <!-- JOB COMPLETE SUCCESS -->
+  <div class="screen" id="sc-job-success">
+    <div class="success-screen">
+      <div class="success-icon" style="background:#dcfce7"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#16a34a" stroke-width="3"><path d="M8 20l8 8 16-16"/></svg></div>
+      <div class="success-title">Job submitted!</div>
+      <div class="success-sub">The job has been marked complete. Materials and costs have been updated on the PC admin panel automatically.</div>
+      <div style="background:#dcfce7;border-radius:14px;padding:14px;width:100%;margin-bottom:24px;text-align:left">
+        <div style="font-size:12px;font-weight:700;color:#15803d;margin-bottom:6px">Updated on PC dashboard:</div>
+        <div style="font-size:12px;color:#374151;margin-bottom:4px">✓ Job card status → Completed</div>
+        <div style="font-size:12px;color:#374151;margin-bottom:4px">✓ Materials register updated</div>
+        <div style="font-size:12px;color:#374151">✓ Cost report updated</div>
+      </div>
+      <button class="btn btn-primary" onclick="showSC('sc-artisan')">Back to my jobs</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════ -->
+  <!-- PRODUCTION MANAGER HOME -->
+  <!-- ════════════════════════════════ -->
+  <div class="screen" id="sc-prod-manager">
+    <div class="scroll-content">
+      <div class="home-header" style="background:#d97706">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div class="greeting">Good morning 👋</div>
+            <div class="user-name">Production Manager</div>
+            <div class="role-pill" style="background:rgba(255,255,255,0.2)"><svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="1.8"><path d="M7 1l4 1.6V7c0 3-4 4.5-4 4.5S3 10 3 7V2.6L7 1z"/></svg>Permit authority</div>
+          </div>
+          <div class="notif-btn"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="1.8"><path d="M9 1.5a5.5 5.5 0 015.5 5.5v3.5l1.5 2.5H2L3.5 10.5V7A5.5 5.5 0 019 1.5z"/><path d="M7 15a2 2 0 004 0"/></svg><div class="notif-badge" id="mgr-notif-dot"></div></div>
+        </div>
+      </div>
+
+      <div style="padding:14px 14px 0">
+        <div id="pending-alert-banner"></div>
+      </div>
+
+      <div class="home-stats">
+        <div class="home-stat"><div class="hs-label">Pending approval</div><div class="hs-val c-amber" id="mgr-pending-count">—</div><div class="hs-sub c-amber">Need your action</div></div>
+        <div class="home-stat"><div class="hs-label">Active permits</div><div class="hs-val c-blue" id="mgr-active-count">—</div><div class="hs-sub c-blue">On site now</div></div>
+      </div>
+
+      <div class="section-title">Permits requiring approval</div>
+      <div id="mgr-pending-list"><div class="empty-state-mob"><div class="empty-icon">✅</div><div class="empty-title">No pending permits</div><div class="empty-sub">All permits have been actioned. Artisans will request new permits when needed.</div></div></div>
+
+      <div class="section-title">Active permits today</div>
+      <div id="mgr-active-list"><div style="padding:0 14px;font-size:13px;color:#9ca3af">No active permits</div></div>
+
+      <div style="padding:10px 14px 20px">
+        <button class="btn btn-primary" onclick="showSC('sc-issue-permit')">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="2"><path d="M9 1.5l5 2V9c0 3.5-5 5.5-5 5.5S4 12.5 4 9V3.5L9 1.5z"/></svg>
+          Issue a new permit to work
+        </button>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab-item active" onclick="showSC('sc-prod-manager');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="13" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><div class="tab-label">Dashboard</div></div>
+      <div class="tab-item" onclick="showSC('sc-issue-permit');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4v14M4 11h14"/></svg><div class="tab-label">Issue New</div></div>
+      <div class="tab-item" onclick="showSC('sc-log-fault');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 2l9 16H2z"/><path d="M11 9v5M11 15.5h.01"/></svg><div class="tab-label">Log Fault</div></div>
+    </div>
+  </div>
+
+  <!-- ISSUE PERMIT SCREEN -->
+  <div class="screen" id="sc-issue-permit">
+    <div class="top-header" style="background:#185FA5">
+      <div class="th-row">
+        <div class="back-btn" onclick="showSC('sc-prod-manager')"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.2"><path d="M10 13L5 8l5-5"/></svg></div>
+        <div class="th-title">Issue Permit to Work</div>
+      </div>
+    </div>
+    <div class="scroll-content" style="padding-top:14px">
+      <div class="form-section">
+        <div class="form-group"><div class="form-label">Permit type *</div><select class="form-select" id="issue-type"><option value="">-- Select --</option><option>General maintenance</option><option>Hot work (welding/cutting/grinding)</option><option>Electrical isolation / LOTO</option><option>Confined space entry</option><option>Working at height</option><option>Chemical handling</option></select></div>
+        <div class="form-group"><div class="form-label">Job card # *</div><input class="form-input" id="issue-jc" placeholder="e.g. JC-0001"/></div>
+        <div class="form-group"><div class="form-label">Issued to *</div><select class="form-select" id="issue-artisan"><option value="">-- Select artisan --</option></select></div>
+        <div class="form-group"><div class="form-label">Location *</div><input class="form-input" id="issue-loc" placeholder="e.g. Tank Farm — Valve V-04"/></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group"><div class="form-label">Valid from</div><input class="form-input" type="time" id="issue-from" value="07:30"/></div>
+          <div class="form-group"><div class="form-label">Valid until</div><input class="form-input" type="time" id="issue-until" value="17:00"/></div>
+        </div>
+        <div class="form-group"><div class="form-label">Scope &amp; safety notes *</div><textarea class="form-textarea" id="issue-scope" rows="4" placeholder="Work scope, hazards, PPE required..."></textarea></div>
+        <div style="background:#fff;border-radius:14px;padding:14px;border:1.5px solid #e5e7eb;margin-bottom:14px">
+          <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:10px">Safety checklist before issuing:</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><input type="checkbox" id="ptw-c1" style="width:18px;height:18px"><label for="ptw-c1" style="font-size:13px;color:#374151">Area has been inspected</label></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><input type="checkbox" id="ptw-c2" style="width:18px;height:18px"><label for="ptw-c2" style="font-size:13px;color:#374151">Artisan is certified for this work</label></div>
+          <div style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="ptw-c3" style="width:18px;height:18px"><label for="ptw-c3" style="font-size:13px;color:#374151">I take full responsibility as issuing authority</label></div>
+        </div>
+        <button class="btn btn-primary" style="margin-bottom:24px" onclick="issuePTW()">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="2"><path d="M9 1.5l5 2V9c0 3.5-5 5.5-5 5.5S4 12.5 4 9V3.5L9 1.5z"/></svg>
+          Issue Permit to Work
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PERMIT ISSUED SUCCESS -->
+  <div class="screen" id="sc-permit-success">
+    <div class="success-screen">
+      <div class="success-icon" style="background:#dbeafe"><svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="#185FA5" stroke-width="3"><path d="M20 4l12 5V21c0 9-12 15-12 15S8 30 8 21V9L20 4z"/></svg></div>
+      <div class="success-title">Permit issued!</div>
+      <div class="success-sub" id="permit-success-text">The permit has been issued and saved to the database.</div>
+      <div style="background:#dbeafe;border-radius:14px;padding:14px;width:100%;margin-bottom:24px;text-align:left">
+        <div style="font-size:12px;font-weight:700;color:#1d4ed8;margin-bottom:6px">Automatically updated:</div>
+        <div style="font-size:12px;color:#374151;margin-bottom:4px">✓ PC admin panel → Permits screen</div>
+        <div style="font-size:12px;color:#374151;margin-bottom:4px">✓ Linked job card unblocked</div>
+        <div style="font-size:12px;color:#374151">✓ Artisan can now see it on their phone</div>
+      </div>
+      <button class="btn btn-primary" onclick="showSC('sc-prod-manager')">Back to dashboard</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════ -->
+  <!-- MAINTENANCE MANAGER HOME -->
+  <!-- ════════════════════════════════ -->
+  <div class="screen" id="sc-maint-manager">
+    <div class="scroll-content">
+      <div class="home-header" style="background:#16a34a">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div class="greeting">Good morning 👋</div>
+            <div class="user-name">Maintenance Manager</div>
+            <div class="role-pill" style="background:rgba(255,255,255,0.2)"><svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="1.8"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>Maintenance Manager</div>
+          </div>
+          <div class="notif-btn"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="1.8"><path d="M9 1.5a5.5 5.5 0 015.5 5.5v3.5l1.5 2.5H2L3.5 10.5V7A5.5 5.5 0 019 1.5z"/><path d="M7 15a2 2 0 004 0"/></svg><div class="notif-badge"></div></div>
+        </div>
+      </div>
+
+      <div class="home-stats">
+        <div class="home-stat"><div class="hs-label">New faults</div><div class="hs-val c-red" id="mm-fault-count">—</div><div class="hs-sub c-red">Need action</div></div>
+        <div class="home-stat"><div class="hs-label">Open jobs</div><div class="hs-val" id="mm-job-count">—</div><div class="hs-sub c-amber" id="mm-job-sub">Loading...</div></div>
+      </div>
+
+      <div class="section-title">New fault reports — action needed</div>
+      <div id="mm-faults-list"><div class="empty-state-mob"><div class="empty-icon">✅</div><div class="empty-title">No new faults</div><div class="empty-sub">All faults have been actioned. New employee fault reports appear here in real time.</div></div></div>
+
+      <div class="section-title">Open job cards</div>
+      <div id="mm-jobs-list"><div style="padding:0 14px 10px;font-size:13px;color:#9ca3af">Loading...</div></div>
+
+      <div style="padding:6px 14px 20px;display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-secondary" onclick="showSC('sc-inspection')">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 14l3-3.5 2.5 2.5 4-5"/></svg>
+          Start safety inspection
+        </button>
+        <button class="btn btn-secondary" onclick="showSC('sc-log-fault')">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 1.5l7.5 13H1.5z"/><path d="M9 7v4M9 12.5h.01"/></svg>
+          Log a fault
+        </button>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <div class="tab-item active" onclick="showSC('sc-maint-manager');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="13" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><div class="tab-label">Dashboard</div></div>
+      <div class="tab-item" onclick="showSC('sc-inspection');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 16l4-5 3 3.5 5-7"/></svg><div class="tab-label">Inspect</div></div>
+      <div class="tab-item" onclick="showSC('sc-log-fault');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 2l9 16H2z"/><path d="M11 9v5M11 15.5h.01"/></svg><div class="tab-label">Log Fault</div></div>
+    </div>
+  </div>
+
+  <!-- INSPECTION SCREEN -->
+  <div class="screen" id="sc-inspection">
+    <div class="top-header" style="background:#16a34a">
+      <div class="th-row">
+        <div class="back-btn" onclick="showSC('sc-maint-manager')" style="background:rgba(255,255,255,0.2)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.2"><path d="M10 13L5 8l5-5"/></svg></div>
+        <div><div class="th-title">Safety Inspection</div><div style="font-size:12px;color:rgba(255,255,255,0.8)">OHSA Section 8 · Weekly walkthrough</div></div>
+      </div>
+    </div>
+    <div class="scroll-content" style="padding-top:14px">
+      <div style="padding:0 14px 10px">
+        <div style="background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
+          <div class="form-group" style="margin-bottom:10px"><div class="form-label">Area being inspected</div><input class="form-input" id="insp-area" placeholder="e.g. Factory Floor A"/></div>
+          <div style="font-size:12px;color:#6b7280"><span id="insp-done">0</span> of <span id="insp-total">9</span> items done · <span id="insp-fails" style="color:#dc2626">0 fails</span></div>
+          <div style="height:5px;background:#f3f4f6;border-radius:3px;margin-top:6px;overflow:hidden"><div id="insp-progress" style="height:100%;background:#16a34a;border-radius:3px;width:0%;transition:width 0.3s"></div></div>
+        </div>
+      </div>
+
+      <div style="padding:0 14px 6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px">🔴 Fire Safety</div>
+      <div class="insp-item"><div class="check-circle" onclick="toggleInspItem(this,0)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">Fire extinguishers accessible and in date</div></div></div>
+      <div class="insp-item"><div class="check-circle" onclick="toggleInspItem(this,1)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">Emergency exits clear and signage visible</div></div></div>
+      <div class="insp-item"><div class="check-circle" onclick="toggleInspItem(this,2)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">Fire hose reel pressure adequate and accessible</div></div></div>
+      <div style="padding:8px 14px 6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px">🧪 Chemical Handling</div>
+      <div class="insp-item"><div class="check-circle" onclick="toggleInspItem(this,3)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">SDS sheets accessible at chemical storage</div></div></div>
+      <div class="insp-item"><div class="check-circle" onclick="toggleInspItem(this,4)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">All chemical containers correctly labelled</div></div></div>
+      <div class="insp-item"><div class="check-circle" onclick="toggleInspItem(this,5)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">PPE station stocked — gloves, goggles, aprons</div></div></div>
+      <div style="padding:8px 14px 6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px">⚡ Electrical</div>
+      <div class="insp-item"><div class="check-circle" onclick="toggleInspItem(this,6)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">All DB boards closed and labelled</div></div></div>
+      <div class="insp-item"><div class="check-circle" onclick="toggleInspItem(this,7)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">No exposed wiring or damaged cables visible</div></div></div>
+      <div class="insp-item"><div class="check-circle" onclick="toggleInspItem(this,8)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">All electrical equipment properly guarded</div></div></div>
+
+      <div style="padding:14px 14px 24px;display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-primary" onclick="submitInspection()">Submit inspection to PC dashboard</button>
+        <button class="btn btn-secondary" onclick="showSC('sc-maint-manager')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EMPLOYEE (simple fault only) -->
+  <div class="screen" id="sc-employee">
+    <div style="background:#dc2626;padding:50px 22px 30px;text-align:center">
+      <div style="width:64px;height:64px;border-radius:20px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="white" stroke-width="2.5"><path d="M17 3l14 24H3z"/><path d="M17 14v7M17 23.5h.01"/></svg>
+      </div>
+      <div style="font-size:24px;font-weight:900;color:#fff;margin-bottom:8px">Report a Problem</div>
+      <div style="font-size:14px;color:rgba(255,255,255,0.8);line-height:1.5">Tell the maintenance team what's wrong — office or factory. Quick and easy.</div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px">
+      <div class="form-group">
+        <div class="form-label">Where is the problem?</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px">
+          <button class="btn btn-secondary" id="emp-factory" onclick="selectFaultType('factory')" style="flex-direction:column;gap:6px;padding:16px;height:auto"><span style="font-size:26px">🏭</span><span style="font-size:13px;font-weight:700">Factory floor</span></button>
+          <button class="btn btn-secondary" id="emp-office" onclick="selectFaultType('office')" style="flex-direction:column;gap:6px;padding:16px;height:auto"><span style="font-size:26px">🏢</span><span style="font-size:13px;font-weight:700">Office / facilities</span></button>
+        </div>
+      </div>
+      <div class="form-group"><div class="form-label">What is wrong? *</div><textarea class="form-textarea" id="emp-fault-desc" rows="4" placeholder="Describe the problem — the more detail the faster it gets fixed."></textarea></div>
+      <div class="form-group"><div class="form-label">Where exactly? *</div><input class="form-input" id="emp-fault-loc" placeholder="e.g. Factory Floor A — near Press 2 / Finance office 3rd floor"/></div>
+      <div class="form-group"><div class="form-label">Your name (optional)</div><input class="form-input" id="emp-fault-name" placeholder="Full name"/></div>
+      <button class="btn btn-danger" onclick="submitEmpFault()" style="margin-bottom:12px">Submit fault report →</button>
+      <button class="btn btn-secondary" onclick="showSC('sc-role')">Cancel</button>
+    </div>
+  </div>
+
+</div><!-- end app -->
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, serverTimestamp, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDQuAJF_dy2e8RfWhTvME0Ast6g9B2ZYRI",
+  authDomain: "plantflow-sa.firebaseapp.com",
+  projectId: "plantflow-sa",
+  storageBucket: "plantflow-sa.firebasestorage.app",
+  messagingSenderId: "114430164011",
+  appId: "1:114430164011:web:caa6cd29fe32ff1eb63e6e"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+window.db = db;
+window.fsCollection = collection;
+window.fsAddDoc = addDoc;
+window.fsUpdateDoc = updateDoc;
+window.fsDoc = doc;
+window.fsTimestamp = serverTimestamp;
+window.fsDocs = getDocs;
+window.fsWhere = where;
+window.fsQuery = query;
+window.fsOrderBy = orderBy;
+
+// Hide loading overlay immediately — don't depend on Firebase timing
+document.getElementById('loading').style.display='none';
+showSC('sc-role');
+
+// Live data stores
+let allJobs=[], allFaults=[], allPermits=[], allMaterials=[], allUsers=[], allSchedules=[];
+window._allJobs = allJobs;
+window._allFaults = allFaults;
+window._allPermits = allPermits;
+window._allMaterials = allMaterials;
+window._allUsers = allUsers;
+
+// ── LISTENERS ──
+onSnapshot(query(collection(db,'jobCards'),orderBy('createdAt','desc')), snap=>{
+  allJobs.length=0;
+  snap.docs.forEach(d=>allJobs.push({id:d.id,...d.data()}));
+  renderArtisanJobs();
+  renderMMJobs();
+  updateMMStats();
+  populateJobDropdowns();
+}, err=>{console.error('jobCards listener error:',err.message);toastMob('Firestore error — check rules: '+err.code,'error');});
+
+onSnapshot(query(collection(db,'faults'),orderBy('createdAt','desc')), snap=>{
+  allFaults.length=0;
+  snap.docs.forEach(d=>allFaults.push({id:d.id,...d.data()}));
+  renderMMFaults();
+  updateMMStats();
+}, err=>{console.error('faults listener error:',err.message);});
+
+onSnapshot(query(collection(db,'permits'),orderBy('createdAt','desc')), snap=>{
+  allPermits.length=0;
+  snap.docs.forEach(d=>allPermits.push({id:d.id,...d.data()}));
+  renderMgrPermits();
+  renderArtisanPermits();
+  updateMgrStats();
+}, err=>{console.error('permits listener error:',err.message);});
+
+onSnapshot(query(collection(db,'materials'),orderBy('description','asc')), snap=>{
+  allMaterials.length=0;
+  snap.docs.forEach(d=>allMaterials.push({id:d.id,...d.data()}));
+  populateMaterialDropdown();
+}, err=>{console.error('materials listener error:',err.message);});
+
+onSnapshot(query(collection(db,'users'),orderBy('name','asc')), snap=>{
+  allUsers.length=0;
+  snap.docs.forEach(d=>allUsers.push({id:d.id,...d.data()}));
+  populateArtisanDropdowns();
+}, err=>{console.error('users listener error:',err.message);});
+
+// ── RENDER FUNCTIONS ──
+
+function fmtTime(ts){
+  if(!ts)return '';
+  const d=ts.toDate?ts.toDate():new Date(ts);
+  return d.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+}
+function fmtDateTime(ts){
+  if(!ts)return '—';
+  const d=ts.toDate?ts.toDate():new Date(ts);
+  return d.toLocaleDateString('en-ZA',{day:'2-digit',month:'short'})+' '+d.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+}
+function priorityColor(p){return p==='high'||p==='critical'?'#dc2626':p==='medium'?'#d97706':'#16a34a';}
+
+window.renderArtisanJobs = function(){
+  const name = window._currentUserName || 'Artisan';
+  const myJobs = allJobs.filter(j=>j.assignedTo===name||j.assignedTo===''||!j.assignedTo);
+  const container = document.getElementById('artisan-jobs-container');
+  if(!container)return;
+  const jobCount = document.getElementById('artisan-job-count');
+  if(jobCount) jobCount.textContent = myJobs.length;
+  const jobSub = document.getElementById('artisan-job-sub');
+  const inProg = myJobs.filter(j=>j.status==='in-progress').length;
+  if(jobSub) jobSub.textContent = inProg+' in progress';
+
+  if(!myJobs.length){
+    container.innerHTML='<div class="empty-state-mob"><div class="empty-icon">📋</div><div class="empty-title">No jobs assigned yet</div><div class="empty-sub">Jobs assigned to you from the PC panel appear here in real time.</div></div>';
+    return;
+  }
+  container.innerHTML = myJobs.map(j=>`
+    <div class="job-card" onclick="openJobDetail('${j.id}')">
+      <div class="jc-head">
+        <div class="jc-icon" style="background:${j.priority==='high'||j.priority==='critical'?'#fee2e2':j.priority==='medium'?'#fef3c7':'#dcfce7'}">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="${priorityColor(j.priority)}" stroke-width="1.8"><path d="M9 1.5l7.5 13H1.5z"/><path d="M9 7v4M9 12.5h.01"/></svg>
+        </div>
+        <div style="flex:1">
+          <div class="jc-num">${j.jobNumber||'—'} · <span class="badge b-${j.priority==='high'||j.priority==='critical'?'red':j.priority==='medium'?'amber':'green'}">${j.priority||'medium'}</span></div>
+          <div class="jc-title">${j.description||'—'}</div>
+          <div class="jc-loc">📍 ${j.location||'—'}</div>
+        </div>
+      </div>
+      <div class="jc-foot">
+        <span class="badge b-${j.status==='completed'?'green':j.status==='in-progress'?'amber':j.status==='blocked'?'red':'blue'}">${j.status||'open'}</span>
+        ${j.permitNumber?`<span class="badge b-purple">${j.permitNumber} ✓</span>`:j.permitRequired==='yes'?'<span class="badge b-red">PTW required</span>':'<span class="badge b-green">No permit needed</span>'}
+        <span style="margin-left:auto;font-size:11px;color:#9ca3af">${fmtDateTime(j.createdAt)}</span>
+      </div>
+    </div>`).join('');
+};
+
+window.openJobDetail = function(id){
+  const j = allJobs.find(x=>x.id===id);
+  if(!j)return;
+  window._currentJobId = id;
+  window._currentJob = j;
+  document.getElementById('jd-num').textContent = (j.jobNumber||'—')+' · '+(j.priority||'medium')+' priority';
+  document.getElementById('jd-title').textContent = j.description||'—';
+  document.getElementById('jd-location').textContent = j.location||'—';
+  document.getElementById('jd-asset').textContent = j.asset||'—';
+  document.getElementById('jd-priority').textContent = j.priority||'—';
+  document.getElementById('jd-notes').textContent = j.notes||'None';
+  // Permit section
+  const permitSection = document.getElementById('jd-permit-section');
+  const activePermit = allPermits.find(p=>p.jobCard===j.jobNumber&&p.status==='active');
+  if(activePermit){
+    permitSection.innerHTML=`<div style="background:#dbeafe;border-radius:14px;padding:14px;margin-bottom:12px;border:1.5px solid #185FA5"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#185FA5" stroke-width="1.8"><path d="M8 1.5l4.5 1.8V7c0 3-4.5 4.5-4.5 4.5S3.5 10 3.5 7V3.3L8 1.5z"/></svg><div style="font-size:13px;font-weight:700;color:#1d4ed8">${activePermit.permitNumber} — Active ✓</div></div><div style="font-size:12px;color:#185FA5">${activePermit.type} · Valid until ${activePermit.validUntil}</div></div>`;
+  }else if(j.permitRequired==='yes'){
+    permitSection.innerHTML=`<div style="background:#fee2e2;border-radius:14px;padding:14px;margin-bottom:12px;border:1.5px solid #dc2626"><div style="font-size:13px;font-weight:700;color:#b91c1c;margin-bottom:4px">⚠ Permit required — work blocked</div><div style="font-size:12px;color:#dc2626">You cannot start this job until the Production Manager issues a Permit to Work.</div></div>`;
+  }else{permitSection.innerHTML='';}
+  // Materials list
+  renderJobMaterials(j);
+  showSC('sc-job-detail');
+};
+
+function renderJobMaterials(j){
+  const list = document.getElementById('jd-materials-list');
+  if(!list)return;
+  const mats = j.materials||[];
+  if(!mats.length){list.innerHTML='<div style="padding:0 14px 8px;font-size:13px;color:#9ca3af">No materials logged yet</div>';return;}
+  list.innerHTML = mats.map((m,i)=>`<div class="mat-row"><div class="mat-name">${m.name}</div><div class="mat-qty">${m.qty} ${m.unit||'units'}</div><div style="font-size:12px;font-weight:600;min-width:55px;text-align:right">R ${((m.qty||1)*(m.unitCost||0)).toLocaleString()}</div></div>`).join('');
+}
+
+window.addMaterialToJob = function(){
+  const name = prompt('Material name (e.g. Pump seal kit 65mm):');
+  if(!name)return;
+  const qty = parseInt(prompt('Quantity used:')||'1');
+  const cost = parseFloat(prompt('Unit cost in Rand (e.g. 420):')||'0');
+  if(!window._currentJobId)return;
+  const j = allJobs.find(x=>x.id===window._currentJobId);
+  if(!j)return;
+  const mats = [...(j.materials||[]),{name,qty,unitCost:cost,unit:'units'}];
+  const totalCost = mats.reduce((s,m)=>s+(m.qty||1)*(m.unitCost||0),0);
+  updateDoc(doc(db,'jobCards',window._currentJobId),{materials:mats,totalCost,status:'in-progress'});
+  // Also update material stock
+  const matDoc = allMaterials.find(m=>m.description.toLowerCase()===name.toLowerCase());
+  if(matDoc){
+    const newStock = Math.max(0,(matDoc.inStock||0)-qty);
+    const newUsed = (matDoc.usedMTD||0)+qty;
+    const usedOnJobs = [...(matDoc.usedOnJobs||[])];
+    if(j.jobNumber&&!usedOnJobs.includes(j.jobNumber))usedOnJobs.push(j.jobNumber);
+    updateDoc(doc(db,'materials',matDoc.id),{inStock:newStock,usedMTD:newUsed,usedOnJobs});
+  }
+  toastMob('Material logged — PC dashboard updated','success');
+  // Refresh job detail
+  setTimeout(()=>{
+    const updated = allJobs.find(x=>x.id===window._currentJobId);
+    if(updated)renderJobMaterials(updated);
+  },800);
+};
+
+window.submitJobComplete = async function(){
+  if(!window._currentJobId){toastMob('No job selected','error');return;}
+  const notes = document.getElementById('jd-completion-notes').value;
+  await updateDoc(doc(db,'jobCards',window._currentJobId),{
+    status:'completed',
+    completionNotes:notes,
+    completedAt:serverTimestamp()
+  });
+  showSC('sc-job-success');
+};
+
+window.renderArtisanPermits = function(){
+  const container = document.getElementById('artisan-permits-list');
+  if(!container)return;
+  const myName = window._currentUserName||'';
+  const myPermits = allPermits.filter(p=>!myName||p.issuedTo===myName||p.status==='pending');
+  if(!myPermits.length){container.innerHTML='<div class="empty-state-mob"><div class="empty-icon">🛡️</div><div class="empty-title">No permits yet</div><div class="empty-sub">Request a permit below for hazardous work.</div></div>';return;}
+  const activePermit = myPermits.find(p=>p.status==='active');
+  if(activePermit){
+    const apDisp = document.getElementById('artisan-permit-display');
+    const apSub = document.getElementById('artisan-permit-sub');
+    if(apDisp)apDisp.textContent = activePermit.permitNumber;
+    if(apSub)apSub.textContent = 'Exp '+activePermit.validUntil;
+  }
+  container.innerHTML = myPermits.slice(0,5).map(p=>`
+    <div class="permit-full">
+      <div class="ptw-head" style="background:${p.status==='active'?'#dbeafe':p.status==='pending'?'#fef3c7':'#f9fafb'}">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <div style="font-size:14px;font-weight:800;color:${p.status==='active'?'#1d4ed8':p.status==='pending'?'#92400e':'#374151'};flex:1">${p.permitNumber||'PTW'} — ${p.type||'Permit'}</div>
+          <span class="badge b-${p.status==='active'?'blue':p.status==='pending'?'amber':'gray'}">${p.status}</span>
+        </div>
+      </div>
+      <div class="ptw-body">
+        <div class="ptw-row"><div class="ptw-label">Job card</div><div class="ptw-val">${p.jobCard||'—'}</div></div>
+        <div class="ptw-row"><div class="ptw-label">Location</div><div class="ptw-val">${p.location||'—'}</div></div>
+        <div class="ptw-row"><div class="ptw-label">Valid</div><div class="ptw-val">${p.validFrom||'—'} — ${p.validUntil||'—'}</div></div>
+        ${p.status==='pending'?'<div style="background:#fef3c7;border-radius:8px;padding:8px 10px;font-size:12px;color:#92400e;margin-top:4px">⏳ Awaiting Production Manager approval</div>':''}
+      </div>
+    </div>`).join('');
+};
+
+window.requestPermit = async function(){
+  const type = document.getElementById('req-type').value;
+  const jc = document.getElementById('req-jobcard').value.trim();
+  const loc = document.getElementById('req-location').value.trim();
+  const scope = document.getElementById('req-scope').value.trim();
+  if(!type||!jc||!scope){toastMob('Please fill in all required fields','error');return;}
+  try{
+    const permitCount = allPermits.length+1;
+    await addDoc(collection(db,'permits'),{
+      permitNumber:'PTW-'+String(permitCount).padStart(4,'0'),
+      type,jobCard:jc,location:loc,scope,
+      issuedTo:window._currentUserName||'Artisan',
+      requestedBy:window._currentUserName||'Artisan',
+      validFrom:document.getElementById('req-duration').value==='2 hours'?'07:30':'07:00',
+      validUntil:document.getElementById('req-duration').value==='Full day'?'17:00':'12:00',
+      status:'pending',
+      source:'mobile-artisan',
+      createdAt:serverTimestamp()
+    });
+    ['req-jobcard','req-location','req-scope'].forEach(id=>document.getElementById(id).value='');
+    toastMob('Permit request sent to Production Manager','success');
+  }catch(e){toastMob('Error: '+e.message,'error');}
+};
+
+window.renderMgrPermits = function(){
+  const pending = allPermits.filter(p=>p.status==='pending');
+  const active = allPermits.filter(p=>p.status==='active');
+  const pendCount = document.getElementById('mgr-pending-count');
+  const actCount = document.getElementById('mgr-active-count');
+  if(pendCount)pendCount.textContent = pending.length;
+  if(actCount)actCount.textContent = active.length;
+
+  // Alert banner
+  const banner = document.getElementById('pending-alert-banner');
+  if(banner){
+    if(pending.length){
+      banner.innerHTML=`<div style="background:#fef3c7;border-radius:14px;padding:14px;border:2px solid #f59e0b;margin-bottom:4px"><div style="font-size:13px;font-weight:800;color:#92400e;margin-bottom:6px">⚠ ${pending.length} permit${pending.length>1?'s':''} awaiting your approval</div><div style="font-size:12px;color:#92400e">Artisans are blocked and cannot start work until you approve.</div></div>`;
+    }else{banner.innerHTML='';}
+  }
+
+  const pendList = document.getElementById('mgr-pending-list');
+  if(pendList){
+    if(!pending.length){pendList.innerHTML='<div class="empty-state-mob"><div class="empty-icon">✅</div><div class="empty-title">No pending permits</div><div class="empty-sub">All permits have been actioned.</div></div>';}
+    else{pendList.innerHTML=pending.map(p=>`
+      <div class="permit-full" style="border-left:4px solid #f59e0b">
+        <div class="ptw-head" style="background:#fef3c7">
+          <div style="font-size:14px;font-weight:800;color:#92400e;margin-bottom:4px">${p.permitNumber} — ${p.type}</div>
+          <span class="badge b-amber">Pending your approval</span>
+        </div>
+        <div class="ptw-body">
+          <div class="ptw-row"><div class="ptw-label">Requested by</div><div class="ptw-val">${p.requestedBy||p.issuedTo||'—'}</div></div>
+          <div class="ptw-row"><div class="ptw-label">Job card</div><div class="ptw-val">${p.jobCard||'—'}</div></div>
+          <div class="ptw-row"><div class="ptw-label">Location</div><div class="ptw-val">${p.location||'—'}</div></div>
+          ${p.scope?`<div style="background:#f9fafb;border-radius:8px;padding:10px;font-size:12px;color:#374151;margin:6px 0"><b>Scope:</b> ${p.scope}</div>`:''}
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-success" style="flex:1;padding:11px;font-size:13px" onclick="approvePTW('${p.id}','${p.permitNumber}','${p.jobCard||''}')">✓ Approve</button>
+            <button class="btn btn-danger" style="flex:1;padding:11px;font-size:13px" onclick="rejectPTW('${p.id}')">✕ Reject</button>
+          </div>
+        </div>
+      </div>`).join('');}
+  }
+
+  const actList = document.getElementById('mgr-active-list');
+  if(actList){
+    if(!active.length){actList.innerHTML='<div style="padding:0 14px 10px;font-size:13px;color:#9ca3af">No active permits right now</div>';}
+    else{actList.innerHTML=active.map(p=>`
+      <div class="permit-banner pb-active" style="margin:0 14px 8px">
+        <div class="pb-icon" style="background:#bfdbfe"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#185FA5" stroke-width="1.8"><path d="M8 1.5l4.5 1.8V7c0 3-4.5 4.5-4.5 4.5S3.5 10 3.5 7V3.3L8 1.5z"/></svg></div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1d4ed8">${p.permitNumber} — ${p.type}</div><div style="font-size:11px;color:#185FA5">${p.issuedTo} · Until ${p.validUntil}</div></div>
+        <button class="btn btn-secondary btn-sm" onclick="closePTW('${p.id}')" style="font-size:11px;padding:6px 10px">Close</button>
+      </div>`).join('');}
+  }
+};
+
+window.approvePTW = async function(id,permitNum,jobCard){
+  await updateDoc(doc(db,'permits',id),{status:'active',approvedAt:serverTimestamp(),approvedBy:'Production Manager'});
+  if(jobCard){
+    const snap = await getDocs(query(collection(db,'jobCards'),where('jobNumber','==',jobCard)));
+    snap.forEach(async d=>await updateDoc(doc(db,'jobCards',d.id),{permitNumber:permitNum,status:'in-progress'}));
+  }
+  toastMob('Permit approved — artisan notified','success');
+};
+
+window.rejectPTW = async function(id){
+  await updateDoc(doc(db,'permits',id),{status:'rejected',rejectedAt:serverTimestamp()});
+  toastMob('Permit rejected','error');
+};
+
+window.closePTW = async function(id){
+  await updateDoc(doc(db,'permits',id),{status:'closed',closedAt:serverTimestamp()});
+  toastMob('Permit closed','success');
+};
+
+window.issuePTW = async function(){
+  const type=document.getElementById('issue-type').value;
+  const jc=document.getElementById('issue-jc').value.trim();
+  const loc=document.getElementById('issue-loc').value.trim();
+  const art=document.getElementById('issue-artisan').value;
+  const scope=document.getElementById('issue-scope').value.trim();
+  if(!type||!jc||!scope){toastMob('Please fill in all required fields','error');return;}
+  if(!document.getElementById('ptw-c1').checked||!document.getElementById('ptw-c2').checked||!document.getElementById('ptw-c3').checked){toastMob('Please complete the safety checklist','error');return;}
+  try{
+    const pNum = 'PTW-'+String(allPermits.length+1).padStart(4,'0');
+    await addDoc(collection(db,'permits'),{
+      permitNumber:pNum,type,jobCard:jc,location:loc,
+      issuedTo:art,issuedBy:'Production Manager',
+      validFrom:document.getElementById('issue-from').value,
+      validUntil:document.getElementById('issue-until').value,
+      scope,status:'active',source:'mobile-manager',
+      createdAt:serverTimestamp()
+    });
+    if(jc){
+      const snap = await getDocs(query(collection(db,'jobCards'),where('jobNumber','==',jc)));
+      snap.forEach(async d=>await updateDoc(doc(db,'jobCards',d.id),{permitNumber:pNum,status:'in-progress'}));
+    }
+    document.getElementById('permit-success-text').textContent = pNum+' has been issued. Artisan '+art+' can now proceed.';
+    ['issue-jc','issue-loc','issue-scope'].forEach(id=>document.getElementById(id).value='');
+    ['ptw-c1','ptw-c2','ptw-c3'].forEach(id=>document.getElementById(id).checked=false);
+    showSC('sc-permit-success');
+  }catch(e){toastMob('Error: '+e.message,'error');}
+};
+
+window.renderMMFaults = function(){
+  const list = document.getElementById('mm-faults-list');
+  if(!list)return;
+  const newFaults = allFaults.filter(f=>f.status==='new');
+  const count = document.getElementById('mm-fault-count');
+  if(count)count.textContent = newFaults.length;
+  if(!newFaults.length){list.innerHTML='<div class="empty-state-mob"><div class="empty-icon">✅</div><div class="empty-title">No new faults</div><div class="empty-sub">All clear — new employee fault reports appear here in real time.</div></div>';return;}
+  list.innerHTML = newFaults.slice(0,5).map(f=>`
+    <div class="list-item" style="border-left:4px solid ${f.priority==='high'||f.priority==='critical'?'#dc2626':'#f59e0b'}">
+      <div class="li-icon" style="background:${f.type==='factory'?'#fee2e2':'#fef3c7'}">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="${f.type==='factory'?'#dc2626':'#d97706'}" stroke-width="1.8"><path d="M9 1.5l7.5 13H1.5z"/><path d="M9 7v4M9 12.5h.01"/></svg>
+      </div>
+      <div style="flex:1">
+        <div class="li-title">${(f.description||'—').substring(0,40)}${(f.description||'').length>40?'...':''}</div>
+        <div class="li-sub">${f.location||'—'} · ${f.loggedBy||'Anonymous'} · ${fmtDateTime(f.createdAt)}</div>
+      </div>
+      <div class="li-right">
+        <span class="badge b-${f.priority==='high'||f.priority==='critical'?'red':'amber'}">${f.priority}</span>
+        <div style="font-size:11px;color:#185FA5;margin-top:4px;cursor:pointer" onclick="convertFaultMobile('${f.id}','${(f.description||'').replace(/'/g,"\\'")}','${f.location||''}','${f.priority||'medium'}')">Convert to job →</div>
+      </div>
+    </div>`).join('');
+};
+
+window.renderMMJobs = function(){
+  const list = document.getElementById('mm-jobs-list');
+  if(!list)return;
+  const openJobs = allJobs.filter(j=>j.status!=='completed');
+  const jobCount = document.getElementById('mm-job-count');
+  const jobSub = document.getElementById('mm-job-sub');
+  if(jobCount)jobCount.textContent = openJobs.length;
+  if(jobSub)jobSub.textContent = allJobs.filter(j=>j.status==='blocked').length+' blocked';
+  if(!openJobs.length){list.innerHTML='<div style="padding:0 14px 10px;font-size:13px;color:#9ca3af">No open jobs</div>';return;}
+  list.innerHTML = openJobs.slice(0,5).map(j=>`
+    <div class="sched-item">
+      <div class="sched-stripe" style="background:${j.priority==='high'||j.priority==='critical'?'#dc2626':j.priority==='medium'?'#d97706':'#185FA5'}"></div>
+      <div class="sched-body">
+        <div class="sched-title">${j.description||'—'}</div>
+        <div class="sched-meta">${j.location||'—'} · ${j.assignedTo||'Unassigned'}</div>
+      </div>
+      <div class="sched-right">
+        <span class="badge b-${j.status==='blocked'?'red':j.status==='in-progress'?'amber':'blue'}">${j.status||'open'}</span>
+      </div>
+    </div>`).join('');
+};
+
+window.updateMMStats = function(){};
+window.updateMgrStats = function(){};
+
+window.convertFaultMobile = async function(id,desc,loc,priority){
+  const jNum = 'JC-'+String(allJobs.length+1).padStart(4,'0');
+  await addDoc(collection(db,'jobCards'),{
+    jobNumber:jNum,description:desc,location:loc,priority,
+    loggedBy:'Converted from fault',status:'open',
+    permitRequired:'no',materials:[],totalCost:0,
+    source:'converted-fault-mobile',
+    createdAt:serverTimestamp()
+  });
+  await updateDoc(doc(db,'faults',id),{status:'converted',jobNumber:jNum});
+  toastMob('Fault converted to '+jNum,'success');
+};
+
+window.submitFaultMobile = async function(){
+  const desc = document.getElementById('fault-desc').value.trim();
+  const loc = document.getElementById('fault-loc').value.trim();
+  if(!desc||!loc){toastMob('Please fill in description and location','error');return;}
+  const urgency = document.querySelector('[onclick*="selectChip"].selected')?.textContent||'medium';
+  const priority = urgency.includes('Safety')?'critical':urgency.includes('today')?'medium':'low';
+  try{
+    await addDoc(collection(db,'faults'),{
+      faultNumber:'FR-'+String(allFaults.length+1).padStart(4,'0'),
+      type:window._faultType||'factory',
+      description:desc,location:loc,priority,
+      loggedBy:document.getElementById('fault-name').value||'Anonymous',
+      department:document.getElementById('fault-dept').value||'Unknown',
+      status:'new',source:'mobile',
+      createdAt:serverTimestamp()
+    });
+    ['fault-desc','fault-loc','fault-name','fault-dept'].forEach(id=>document.getElementById(id).value='');
+    showSC('sc-fault-success');
+  }catch(e){toastMob('Error: '+e.message,'error');}
+};
+
+window.submitEmpFault = async function(){
+  const desc = document.getElementById('emp-fault-desc').value.trim();
+  const loc = document.getElementById('emp-fault-loc').value.trim();
+  if(!desc||!loc){toastMob('Please fill in description and location','error');return;}
+  try{
+    await addDoc(collection(db,'faults'),{
+      faultNumber:'FR-'+String(allFaults.length+1).padStart(4,'0'),
+      type:window._faultType||'office',
+      description:desc,location:loc,priority:'medium',
+      loggedBy:document.getElementById('emp-fault-name').value||'Employee',
+      department:'General',
+      status:'new',source:'mobile-employee',
+      createdAt:serverTimestamp()
+    });
+    showSC('sc-fault-success');
+  }catch(e){toastMob('Error: '+e.message,'error');}
+};
+
+// Inspection
+let inspItems = new Array(9).fill(null);
+window.toggleInspItem = function(el,idx){
+  if(el.classList.contains('pass')){el.classList.remove('pass');el.classList.add('fail');el.textContent='✕';inspItems[idx]='fail';}
+  else if(el.classList.contains('fail')){el.classList.remove('fail');el.textContent='';inspItems[idx]=null;}
+  else{el.classList.add('pass');el.textContent='✓';inspItems[idx]='pass';}
+  const done=inspItems.filter(x=>x!==null).length;
+  const fails=inspItems.filter(x=>x==='fail').length;
+  document.getElementById('insp-done').textContent=done;
+  document.getElementById('insp-fails').textContent=fails+' fails';
+  document.getElementById('insp-progress').style.width=Math.round(done/9*100)+'%';
+};
+
+window.submitInspection = async function(){
+  const done=inspItems.filter(x=>x!==null).length;
+  const passed=inspItems.filter(x=>x==='pass').length;
+  const failed=inspItems.filter(x=>x==='fail').length;
+  const area=document.getElementById('insp-area').value||'General area';
+  try{
+    await addDoc(collection(db,'inspections'),{
+      type:'Weekly safety walkthrough',
+      inspector:'Maintenance Manager',
+      area,totalItems:9,passed,failed,
+      status:failed>0?'fails':'passed',
+      createdAt:serverTimestamp()
+    });
+    toastMob('Inspection submitted to PC dashboard','success');
+    setTimeout(()=>showSC('sc-maint-manager'),1200);
+  }catch(e){toastMob('Error: '+e.message,'error');}
+};
+
+// Populate dropdowns
+function populateArtisanDropdowns(){
+  const artisans = allUsers.filter(u=>u.role==='artisan'||u.role==='contractor');
+  ['issue-artisan'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.innerHTML='<option value="">-- Select artisan --</option>'+artisans.map(u=>`<option value="${u.name}">${u.name} (${u.role})</option>`).join('');
+  });
+}
+
+function populateMaterialDropdown(){
+  const el=document.getElementById('mat-item-select');
+  if(!el)return;
+  el.innerHTML='<option value="">-- Select material --</option>'+allMaterials.map(m=>`<option value="${m.id}">${m.description} (R${m.unitCost} · ${m.inStock} in stock)</option>`).join('');
+}
+
+function populateJobDropdowns(){
+  const el=document.getElementById('mat-jobcard-select');
+  if(!el)return;
+  const openJobs=allJobs.filter(j=>j.status!=='completed');
+  el.innerHTML='<option value="">-- Select job card --</option>'+openJobs.map(j=>`<option value="${j.id}">${j.jobNumber} — ${(j.description||'').substring(0,30)}</option>`).join('');
+}
+
+window.loadJobMaterials = function(){
+  const id=document.getElementById('mat-jobcard-select').value;
+  const list=document.getElementById('mat-job-list');
+  if(!id||!list){if(list)list.innerHTML='<div style="padding:0 14px;font-size:13px;color:#9ca3af">Select a job card</div>';return;}
+  const j=allJobs.find(x=>x.id===id);
+  if(!j||!(j.materials||[]).length){list.innerHTML='<div style="padding:0 14px 8px;font-size:13px;color:#9ca3af">No materials logged for this job yet</div>';return;}
+  list.innerHTML=j.materials.map(m=>`<div class="mat-row"><div class="mat-name">${m.name}</div><div class="mat-qty">${m.qty}</div><div style="font-weight:600;min-width:60px;text-align:right">R ${((m.qty||1)*(m.unitCost||0)).toLocaleString()}</div></div>`).join('');
+};
+
+window.logMaterial = async function(){
+  const matId=document.getElementById('mat-item-select').value;
+  const qty=parseInt(document.getElementById('mat-qty-input').value)||1;
+  const jobId=document.getElementById('mat-jobcard-select').value;
+  if(!matId||!jobId){toastMob('Select a job card and material','error');return;}
+  const mat=allMaterials.find(m=>m.id===matId);
+  const job=allJobs.find(j=>j.id===jobId);
+  if(!mat||!job)return;
+  const mats=[...(job.materials||[]),{name:mat.description,qty,unitCost:mat.unitCost,unit:'units'}];
+  const totalCost=mats.reduce((s,m)=>s+(m.qty||1)*(m.unitCost||0),0);
+  await updateDoc(doc(db,'jobCards',jobId),{materials:mats,totalCost,status:'in-progress'});
+  const newStock=Math.max(0,(mat.inStock||0)-qty);
+  const newUsed=(mat.usedMTD||0)+qty;
+  const usedOnJobs=[...(mat.usedOnJobs||[])];
+  if(job.jobNumber&&!usedOnJobs.includes(job.jobNumber))usedOnJobs.push(job.jobNumber);
+  await updateDoc(doc(db,'materials',matId),{inStock:newStock,usedMTD:newUsed,usedOnJobs});
+  document.getElementById('mat-qty-input').value='';
+  toastMob('Material logged — stock and cost updated on PC','success');
+  loadJobMaterials();
+};
+</script>
+
+<script>
+// Non-module utilities
+let _prevScreen = 'sc-role';
+let _currentRole = '';
+
+window._faultType = 'factory';
+window._currentUserName = '';
+
+function showSC(id){
+  const screens=document.querySelectorAll('.screen');
+  screens.forEach(s=>{if(s.classList.contains('active'))_prevScreen=s.id;s.classList.remove('active');});
+  const sc=document.getElementById(id);
+  if(sc)sc.classList.add('active');
+}
+window.showSC=showSC;
+
+function goBack(){showSC(_prevScreen);}
+window.goBack=goBack;
+
+function login(role){
+  _currentRole=role;
+  if(role==='artisan'){showSC('sc-artisan');}
+  else if(role==='production-manager'){showSC('sc-prod-manager');}
+  else if(role==='maintenance-manager'){showSC('sc-maint-manager');}
+  else if(role==='employee'){showSC('sc-employee');}
+}
+window.login=login;
+
+function setTab(el){
+  const bar=el.closest('.tab-bar');
+  if(bar)bar.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+}
+window.setTab=setTab;
+
+function selectFaultType(type){
+  window._faultType=type;
+  ['factory','office'].forEach(t=>{
+    const el=document.getElementById('ft-'+t)||document.getElementById('emp-'+t);
+    if(el){el.style.borderColor=t===type?'#dc2626':'#e5e7eb';el.style.background=t===type?'#fff5f5':'#fff';el.style.color=t===type?'#dc2626':'#374151';}
+  });
+}
+window.selectFaultType=selectFaultType;
+
+function selectChip(el,group){
+  const parent=el.parentElement;
+  parent.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+window.selectChip=selectChip;
+
+function toastMob(msg,type=''){
+  const t=document.getElementById('toast-mob');
+  t.textContent=msg;t.className='toast-mob '+(type||'');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+window.toastMob=toastMob;
+</script>
+</body>
+</html>

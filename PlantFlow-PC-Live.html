@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PlantFlow — Admin Panel</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;font-size:13px}
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:230px;min-width:230px;background:#fff;border-right:1px solid #e5e7eb;display:flex;flex-direction:column}
+.sidebar-logo{padding:18px 16px 14px;border-bottom:1px solid #e5e7eb}
+.logo-mark{display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;border-radius:8px;background:#185FA5;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-text{font-size:15px;font-weight:700;color:#111827}
+.logo-sub{font-size:10px;color:#9ca3af;letter-spacing:0.6px;text-transform:uppercase}
+.nav-section{flex:1;overflow-y:auto;padding:8px 0}
+.nav-label{font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.8px;padding:10px 16px 4px;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;font-size:12.5px;color:#6b7280;border-left:3px solid transparent;transition:all 0.12s}
+.nav-item:hover{background:#f9fafb;color:#111827}
+.nav-item.active{background:#eff6ff;color:#185FA5;border-left-color:#185FA5;font-weight:600}
+.nav-item svg{width:15px;height:15px;flex-shrink:0}
+.nbadge{margin-left:auto;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:20px;text-align:center;color:#fff}
+.nb-red{background:#dc2626}.nb-amber{background:#d97706}.nb-blue{background:#185FA5}
+.sidebar-user{padding:12px 16px;border-top:1px solid #e5e7eb;display:flex;align-items:center;gap:9px;background:#f9fafb}
+.av{border-radius:50%;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;font-size:12px}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.conn-bar{background:#185FA5;color:#fff;font-size:11px;padding:5px 20px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block;flex-shrink:0;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 22px;height:52px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.topbar-title{font-size:14px;font-weight:600;flex:1;color:#111827}
+.tb-btn{display:flex;align-items:center;gap:5px;font-size:12px;padding:6px 13px;border:1px solid #d1d5db;border-radius:7px;cursor:pointer;background:#fff;color:#374151;font-family:'Segoe UI',Arial,sans-serif;font-weight:500;transition:all 0.1s}
+.tb-btn:hover{background:#f9fafb}
+.tb-btn.primary{background:#185FA5;color:#fff;border-color:#185FA5}
+.tb-btn.danger{background:#fee2e2;color:#b91c1c;border-color:#fca5a5}
+.content{flex:1;overflow-y:auto;padding:20px 22px;background:#f0f2f5}
+.screen{display:none}.screen.active{display:block}
+.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}
+.stat-card{background:#fff;border-radius:10px;padding:13px 15px;border:1px solid #e5e7eb}
+.stat-label{font-size:11px;color:#6b7280;margin-bottom:5px;font-weight:500}
+.stat-value{font-size:21px;font-weight:700;line-height:1;margin-bottom:3px;color:#111827}
+.stat-sub{font-size:11px;font-weight:500}
+.up{color:#16a34a}.down{color:#dc2626}.warn{color:#d97706}.muted{color:#9ca3af}
+.panel{background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;margin-bottom:16px}
+.panel-head{padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e5e7eb;background:#fafafa}
+.panel-title{font-size:13px;font-weight:600;flex:1;color:#111827}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{text-align:left;font-weight:600;font-size:11px;color:#6b7280;padding:8px 14px;border-bottom:1px solid #e5e7eb;background:#f9fafb;text-transform:uppercase;letter-spacing:0.4px}
+.tbl td{padding:9px 14px;border-bottom:1px solid #f3f4f6;vertical-align:middle;color:#374151}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#f9fafb}
+.badge{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.b-blue{background:#dbeafe;color:#1d4ed8}.b-amber{background:#fef3c7;color:#b45309}
+.b-green{background:#dcfce7;color:#15803d}.b-red{background:#fee2e2;color:#b91c1c}
+.b-purple{background:#ede9fe;color:#6d28d9}.b-teal{background:#ccfbf1;color:#0f766e}
+.b-gray{background:#f3f4f6;color:#6b7280}
+.pdot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px}
+.pd-high{background:#dc2626}.pd-med{background:#f59e0b}.pd-low{background:#16a34a}
+.two-col{display:grid;grid-template-columns:1fr 350px;gap:16px}
+.two-equal{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.four-col{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.list-item{padding:10px 16px;border-bottom:1px solid #f3f4f6;display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.list-item:last-child{border-bottom:none}
+.list-item:hover{background:#f9fafb}
+.form-group{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.form-label{font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.4px}
+.form-input{padding:8px 10px;border:1px solid #d1d5db;border-radius:7px;font-size:12.5px;font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111827;width:100%}
+.form-input:focus{outline:none;border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,0.1)}
+.form-select{padding:8px 10px;border:1px solid #d1d5db;border-radius:7px;font-size:12.5px;font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111827;width:100%}
+.form-textarea{padding:8px 10px;border:1px solid #d1d5db;border-radius:7px;font-size:12.5px;font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111827;width:100%;resize:vertical}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.permit-card{border:1px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:10px;background:#fff}
+.permit-card.pending{border-left:4px solid #f59e0b}
+.permit-card.active-p{border-left:4px solid #185FA5}
+.permit-card.closed-p{border-left:4px solid #16a34a}
+.permit-card.rejected{border-left:4px solid #dc2626}
+.section-head{font-size:13px;font-weight:700;margin-bottom:10px;color:#111827}
+.page-sub{font-size:12px;color:#6b7280;margin-bottom:16px;line-height:1.6}
+.kpi-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;text-align:center}
+.kpi-val{font-size:24px;font-weight:700;margin-bottom:4px;color:#111827}
+.kpi-label{font-size:11px;color:#6b7280;font-weight:500}
+.empty-state{padding:30px;text-align:center;color:#9ca3af;font-size:12px}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;width:500px;max-width:95vw;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;display:flex;flex-direction:column}
+.modal-head{padding:16px 18px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;background:#fafafa;flex-shrink:0}
+.modal-title{font-size:14px;font-weight:700;flex:1}
+.modal-close{cursor:pointer;font-size:22px;color:#9ca3af;line-height:1;padding:0 4px}
+.modal-body{padding:18px;overflow-y:auto;flex:1}
+.modal-foot{padding:12px 18px;border-top:1px solid #e5e7eb;display:flex;gap:8px;justify-content:flex-end;background:#fafafa;flex-shrink:0}
+.toast{position:fixed;bottom:24px;right:24px;background:#111827;color:#fff;padding:12px 18px;border-radius:10px;font-size:12.5px;font-weight:500;z-index:9999;transform:translateY(100px);opacity:0;transition:all 0.3s}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:#16a34a}
+.toast.error{background:#dc2626}
+.freq-tag{display:inline-flex;align-items:center;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase}
+.ft-day{background:#dbeafe;color:#1d4ed8}.ft-week{background:#ede9fe;color:#6d28d9}.ft-month{background:#ccfbf1;color:#0f766e}
+.stock-ok{background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
+.stock-low{background:#fef3c7;color:#b45309;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
+.stock-out{background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
+.ohsa-item{display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid #f3f4f6;gap:12px}
+.ohsa-item:last-child{border-bottom:none}
+.ohsa-score{font-size:18px;font-weight:700;min-width:44px}
+.ohsa-bar-bg{height:5px;background:#f3f4f6;border-radius:3px;margin-top:5px;overflow:hidden}
+.ohsa-bar-fill{height:100%;border-radius:3px}
+.user-row{display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid #f3f4f6;gap:10px}
+.user-row:last-child{border-bottom:none}
+.user-row:hover{background:#f9fafb}
+.settings-section{background:#fff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:14px}
+.settings-row{display:flex;align-items:center;padding:11px 16px;border-bottom:1px solid #f3f4f6;gap:10px}
+.settings-row:last-child{border-bottom:none}
+.toggle{width:38px;height:21px;border-radius:11px;cursor:pointer;position:relative;flex-shrink:0;transition:background 0.2s}
+.toggle.on{background:#185FA5}.toggle.off{background:#d1d5db}
+.toggle::after{content:'';width:17px;height:17px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.toggle.on::after{left:19px}.toggle.off::after{left:2px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M2 14V7l7-5 7 5v7l-7 4.5L2 14z" opacity="0.3"/><path d="M9 2L2 7v7l7 4.5L16 14V7L9 2zm0 2L14 8v5.5L9 16.3 4 13.5V8z"/><rect x="7" y="8" width="4" height="6" rx="1"/></svg>
+      </div>
+      <div><div class="logo-text">PlantFlow</div><div class="logo-sub">Admin Panel</div></div>
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Overview</div>
+    <div class="nav-item active" onclick="nav('dashboard',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>Dashboard</div>
+    <div class="nav-label">Maintenance</div>
+    <div class="nav-item" onclick="nav('schedules',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="2.5" width="14" height="12" rx="2"/><path d="M4 2.5V1M12 2.5V1M1 7h14"/></svg>PM Schedules</div>
+    <div class="nav-item" onclick="nav('jobcards',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4h10M3 8h7M3 12h5"/><circle cx="13" cy="11" r="2.5"/></svg>Job Cards<span class="nbadge nb-red" id="badge-jobs">0</span></div>
+    <div class="nav-item" onclick="nav('faults',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5l6.5 11H1.5z"/><path d="M8 6.5v4M8 12h.01"/></svg>Fault Reports<span class="nbadge nb-red" id="badge-faults">0</span></div>
+    <div class="nav-label">Safety</div>
+    <div class="nav-item" onclick="nav('permits',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5l5.5 2.2V9c0 3.5-5.5 5.5-5.5 5.5S2.5 12.5 2.5 9V3.7L8 1.5z"/></svg>Permits to Work<span class="nbadge nb-amber" id="badge-permits">0</span></div>
+    <div class="nav-item" onclick="nav('inspections',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 13l4-4.5 3 3 5-7"/></svg>Inspections</div>
+    <div class="nav-item" onclick="nav('ohsa',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5l2 1.5"/></svg>OHSA Compliance</div>
+    <div class="nav-label">Resources</div>
+    <div class="nav-item" onclick="nav('materials',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 1.5h8v13H4z"/><path d="M6 6h4M6 9h4M6 12h2"/></svg>Materials &amp; Spares<span class="nbadge nb-amber" id="badge-stock">0</span></div>
+    <div class="nav-item" onclick="nav('artisans',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="5" r="3"/><path d="M1 15c0-3 2.5-5 5-5s5 2 5 5"/><circle cx="12" cy="6" r="2"/><path d="M10.5 15c0-2 1-3 1.5-3"/></svg>Artisans &amp; Contractors</div>
+    <div class="nav-item" onclick="nav('reports',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 12V4l3 3 3-5 3 5 3-3v8H2z"/></svg>Reports</div>
+    <div class="nav-item" onclick="nav('users',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="5" r="3"/><path d="M2 15c0-3 2.5-5 6-5s6 2 6 5"/></svg>Manage Users</div>
+    <div class="nav-item" onclick="nav('settings',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="2.5"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2"/></svg>Settings</div>
+  </div>
+  <div class="sidebar-user">
+    <div class="av" style="width:32px;height:32px;">JV</div>
+    <div><div style="font-size:12px;font-weight:600;color:#111827">Johan van V.</div><div style="font-size:10px;color:#9ca3af">Admin · plantflow-sa</div></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="conn-bar">
+    <span class="live-dot" id="conn-dot"></span>
+    <span id="conn-text">Connecting to Firebase...</span>
+    <span style="margin-left:auto;opacity:0.75" id="last-sync"></span>
+  </div>
+
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Dashboard</div>
+    <div style="font-size:11px;color:#9ca3af" id="live-date"></div>
+    <button class="tb-btn" onclick="openModal('fault-modal')"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 1v10M1 6h10"/></svg>Log Fault</button>
+    <button class="tb-btn" onclick="openModal('jobcard-modal')"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 1v10M1 6h10"/></svg>New Job Card</button>
+    <button class="tb-btn primary" onclick="openModal('permit-modal')"><svg viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="1.8"><path d="M6 1l4.5 1.8V7c0 3-4.5 4.5-4.5 4.5S1.5 10 1.5 7V2.8L6 1z"/></svg>Issue Permit</button>
+  </div>
+
+  <div class="content">
+
+  <!-- DASHBOARD -->
+  <div class="screen active" id="s-dashboard">
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">Open Job Cards</div><div class="stat-value" id="stat-jobs">—</div><div class="stat-sub warn" id="stat-jobs-sub">Loading...</div></div>
+      <div class="stat-card"><div class="stat-label">Active Permits</div><div class="stat-value" id="stat-permits">—</div><div class="stat-sub" id="stat-permits-sub" style="color:#9ca3af">Loading...</div></div>
+      <div class="stat-card"><div class="stat-label">Fault Reports</div><div class="stat-value" id="stat-faults">—</div><div class="stat-sub down" id="stat-faults-sub">Loading...</div></div>
+      <div class="stat-card"><div class="stat-label">Materials Cost (MTD)</div><div class="stat-value" id="stat-cost">R0</div><div class="stat-sub muted">This month</div></div>
+      <div class="stat-card"><div class="stat-label">Low Stock Alerts</div><div class="stat-value" id="stat-stock">—</div><div class="stat-sub down" id="stat-stock-sub">Loading...</div></div>
+    </div>
+    <div class="two-col">
+      <div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Live Job Cards <span class="live-dot" style="margin-left:5px;width:6px;height:6px"></span></div></div>
+          <table class="tbl">
+            <thead><tr><th>Job #</th><th>Description</th><th>Location</th><th>Assigned to</th><th>Permit</th><th>Status</th></tr></thead>
+            <tbody id="dash-jobs"><tr><td colspan="6" class="empty-state">Waiting for data...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">New Fault Reports <span class="live-dot" style="margin-left:5px;width:6px;height:6px"></span></div><span class="badge b-red" id="dash-fault-badge">0 new</span></div>
+          <table class="tbl">
+            <thead><tr><th>Fault #</th><th>Description</th><th>Location</th><th>Logged by</th><th>Priority</th><th>Time</th><th>Action</th></tr></thead>
+            <tbody id="dash-faults"><tr><td colspan="7" class="empty-state">No faults yet — employees log from their phones</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="panel" style="margin-bottom:14px">
+          <div class="panel-head"><div class="panel-title">Permits to Work <span class="live-dot" style="margin-left:5px;width:6px;height:6px"></span></div></div>
+          <div id="dash-permits"><div class="empty-state">No permits yet</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Materials Used (Live)</div></div>
+          <table class="tbl">
+            <thead><tr><th>Item</th><th>Job</th><th>Qty</th><th>Cost</th></tr></thead>
+            <tbody id="dash-materials"><tr><td colspan="4" class="empty-state">Artisans log materials from phone</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PM SCHEDULES -->
+  <div class="screen" id="s-schedules">
+    <div class="page-sub">Preventive maintenance tasks — pushed to artisan phones automatically on schedule.</div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">PM Schedule</div><button class="tb-btn primary" style="font-size:11px;padding:5px 10px" onclick="openModal('schedule-modal')">+ Add task</button></div>
+      <table class="tbl">
+        <thead><tr><th>Freq.</th><th>Task</th><th>Asset/Area</th><th>Assigned to</th><th>Est. time</th><th>Next due</th><th>Materials req.</th><th>Permit req.</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="schedules-tbody"><tr><td colspan="10" class="empty-state">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- JOB CARDS -->
+  <div class="screen" id="s-jobcards">
+    <div class="page-sub">All job cards — logged from any phone or this panel. Hazardous jobs blocked until a valid Permit to Work is issued by the Production Manager.</div>
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">All Job Cards <span class="live-dot" style="margin-left:5px;width:6px;height:6px"></span></div>
+        <select class="form-select" style="width:auto;font-size:11px;padding:4px 8px" id="jobs-filter" onchange="renderJobCards()"><option value="">All status</option><option value="open">Open</option><option value="in-progress">In progress</option><option value="blocked">Blocked</option><option value="completed">Completed</option></select>
+        <button class="tb-btn primary" style="font-size:11px;padding:5px 10px;margin-left:8px" onclick="openModal('jobcard-modal')">+ New Job Card</button>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>Job #</th><th>Priority</th><th>Description</th><th>Location</th><th>Logged by</th><th>Assigned to</th><th>Permit #</th><th>Materials used</th><th>Total cost</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="jobcards-tbody"><tr><td colspan="12" class="empty-state">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FAULT REPORTS -->
+  <div class="screen" id="s-faults">
+    <div class="page-sub">Faults logged from any employee phone — factory or office. Review and convert to a job card with one click.</div>
+    <div class="two-equal" style="margin-bottom:16px">
+      <div class="stat-card"><div class="stat-label">Unreviewed faults</div><div class="stat-value" id="fault-new-count">—</div><div class="stat-sub down">Need action</div></div>
+      <div class="stat-card"><div class="stat-label">Converted to jobs (MTD)</div><div class="stat-value" id="fault-done-count">—</div><div class="stat-sub up">Actioned</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">All Fault Reports <span class="live-dot" style="margin-left:5px;width:6px;height:6px"></span></div></div>
+      <table class="tbl">
+        <thead><tr><th>Fault #</th><th>Type</th><th>Description</th><th>Location</th><th>Logged by</th><th>Department</th><th>Priority</th><th>Date &amp; time</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="faults-tbody"><tr><td colspan="10" class="empty-state">No faults logged yet — employees log from their phones</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PERMITS -->
+  <div class="screen" id="s-permits">
+    <div class="page-sub">Permits issued by the Production Manager only. No artisan may start hazardous work without a valid active permit linked to their job card.</div>
+    <div class="two-equal" style="margin-bottom:16px">
+      <div class="stat-card"><div class="stat-label">Pending approval</div><div class="stat-value" id="permit-pending-count" style="color:#d97706">—</div><div class="stat-sub warn">Action required</div></div>
+      <div class="stat-card"><div class="stat-label">Active permits today</div><div class="stat-value" id="permit-active-count" style="color:#185FA5">—</div><div class="stat-sub muted">On site now</div></div>
+    </div>
+    <div class="two-col">
+      <div id="permits-cards-list"><div class="empty-state">Loading permits...</div></div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Issue New Permit to Work</div></div>
+        <div style="padding:16px">
+          <div class="form-group"><div class="form-label">Permit type *</div><select class="form-select" id="ptw-type"><option value="">-- Select type --</option><option>General maintenance</option><option>Hot work (welding/cutting/grinding)</option><option>Electrical isolation / LOTO</option><option>Confined space entry</option><option>Working at height</option><option>Chemical handling / hazardous substances</option></select></div>
+          <div class="form-grid-2">
+            <div class="form-group"><div class="form-label">Job Card # *</div><input class="form-input" id="ptw-jobcard" placeholder="e.g. JC-0001"/></div>
+            <div class="form-group"><div class="form-label">Location *</div><input class="form-input" id="ptw-location" placeholder="e.g. Tank Farm"/></div>
+          </div>
+          <div class="form-group"><div class="form-label">Issued to (artisan/contractor) *</div><select class="form-select" id="ptw-artisan"><option value="">-- Select --</option></select></div>
+          <div class="form-grid-2">
+            <div class="form-group"><div class="form-label">Valid from</div><input class="form-input" type="time" id="ptw-from" value="07:30"/></div>
+            <div class="form-group"><div class="form-label">Valid until</div><input class="form-input" type="time" id="ptw-until" value="17:00"/></div>
+          </div>
+          <div class="form-group"><div class="form-label">Scope of work &amp; safety notes *</div><textarea class="form-textarea" id="ptw-scope" rows="3" placeholder="Work scope, identified hazards, PPE required..."></textarea></div>
+          <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:14px"><input type="checkbox" id="ptw-confirm" style="margin-top:3px;width:15px;height:15px"><label for="ptw-confirm" style="font-size:12px;color:#374151">I confirm all safety measures are in place and take responsibility as the issuing authority.</label></div>
+          <button class="tb-btn primary" style="width:100%;justify-content:center;padding:10px" onclick="issuePermit()">Issue Permit to Work</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSPECTIONS -->
+  <div class="screen" id="s-inspections">
+    <div class="page-sub">Inspection results submitted by artisans from their phones — linked to OHSA and SANS standards.</div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Inspection Results <span class="live-dot" style="margin-left:5px;width:6px;height:6px"></span></div></div>
+      <table class="tbl">
+        <thead><tr><th>Date</th><th>Inspection type</th><th>Inspector</th><th>Area</th><th>Items</th><th>Passed</th><th>Failed</th><th>Status</th></tr></thead>
+        <tbody id="inspections-tbody"><tr><td colspan="8" class="empty-state">No inspections submitted yet — artisans submit from their phones</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- OHSA -->
+  <div class="screen" id="s-ohsa">
+    <div class="page-sub">Live OHSA and SANS compliance scores driven by inspections, permits issued, training records and incident logs.</div>
+    <div class="four-col" style="margin-bottom:16px">
+      <div class="kpi-card"><div class="kpi-val" style="color:#16a34a" id="ohsa-overall">87%</div><div class="kpi-label">Overall compliance</div></div>
+      <div class="kpi-card"><div class="kpi-val" style="color:#185FA5" id="ohsa-actions">3</div><div class="kpi-label">Open action items</div></div>
+      <div class="kpi-card"><div class="kpi-val" style="color:#d97706">1</div><div class="kpi-label">Overdue tasks</div></div>
+      <div class="kpi-card"><div class="kpi-val" style="color:#16a34a">0</div><div class="kpi-label">Incidents MTD</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">OHSA Compliance by Section</div></div>
+      <div class="ohsa-item"><div class="ohsa-score" style="color:#16a34a">94%</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">General safety provisions — Section 8</div><div style="font-size:11px;color:#6b7280">Safety reps appointed, hazard identification complete</div><div class="ohsa-bar-bg"><div class="ohsa-bar-fill" style="width:94%;background:#16a34a"></div></div></div><span class="badge b-green">Good</span></div>
+      <div class="ohsa-item"><div class="ohsa-score" style="color:#16a34a">91%</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Hazardous chemical substances — HCS Regs</div><div style="font-size:11px;color:#6b7280">SDS available, storage compliant, PPE stocked</div><div class="ohsa-bar-bg"><div class="ohsa-bar-fill" style="width:91%;background:#16a34a"></div></div></div><span class="badge b-green">Good</span></div>
+      <div class="ohsa-item"><div class="ohsa-score" style="color:#d97706">76%</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Driven Machinery Regulations — DMR</div><div style="font-size:11px;color:#6b7280">Thermography overdue · 2 machine guards missing</div><div class="ohsa-bar-bg"><div class="ohsa-bar-fill" style="width:76%;background:#d97706"></div></div></div><span class="badge b-amber">Review</span></div>
+      <div class="ohsa-item"><div class="ohsa-score" style="color:#16a34a">88%</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Electrical installation regulations</div><div style="font-size:11px;color:#6b7280">COC up to date, panel labels done</div><div class="ohsa-bar-bg"><div class="ohsa-bar-fill" style="width:88%;background:#16a34a"></div></div></div><span class="badge b-green">Good</span></div>
+      <div class="ohsa-item"><div class="ohsa-score" style="color:#d97706">79%</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Pressure vessel regulations — SANS 347</div><div style="font-size:11px;color:#6b7280">Annual inspection due in 18 days</div><div class="ohsa-bar-bg"><div class="ohsa-bar-fill" style="width:79%;background:#d97706"></div></div></div><span class="badge b-amber">Review</span></div>
+      <div class="ohsa-item"><div class="ohsa-score" style="color:#16a34a">95%</div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Fire precautions — SANS 10400-T</div><div style="font-size:11px;color:#6b7280">All extinguishers serviced · Evacuation drills done</div><div class="ohsa-bar-bg"><div class="ohsa-bar-fill" style="width:95%;background:#16a34a"></div></div></div><span class="badge b-green">Good</span></div>
+    </div>
+  </div>
+
+  <!-- MATERIALS -->
+  <div class="screen" id="s-materials">
+    <div class="page-sub">Every material an artisan logs against a job card feeds this register automatically. Managers see real-time consumption, costs, and stock levels.</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">Items tracked</div><div class="stat-value" id="mat-total">—</div></div>
+      <div class="stat-card"><div class="stat-label">Low stock</div><div class="stat-value" style="color:#d97706" id="mat-low">—</div></div>
+      <div class="stat-card"><div class="stat-label">Out of stock</div><div class="stat-value" style="color:#dc2626" id="mat-out">—</div></div>
+      <div class="stat-card"><div class="stat-label">Used MTD</div><div class="stat-value" id="mat-cost-display">R0</div></div>
+      <div class="stat-card"><div class="stat-label">Pending orders</div><div class="stat-value" id="mat-orders">0</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Materials &amp; Spares Register <span class="live-dot" style="margin-left:5px;width:6px;height:6px"></span></div><button class="tb-btn primary" style="font-size:11px;padding:5px 10px" onclick="openModal('material-modal')">+ Add item</button><button class="tb-btn" style="font-size:11px;padding:5px 10px;margin-left:6px" onclick="exportMaterials()">Export Excel</button></div>
+      <table class="tbl">
+        <thead><tr><th>Code</th><th>Description</th><th>Category</th><th>Unit cost</th><th>In stock</th><th>Min. level</th><th>Used MTD</th><th>Cost MTD</th><th>Used on jobs</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="materials-tbody"><tr><td colspan="11" class="empty-state">Loading materials register...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ARTISANS -->
+  <div class="screen" id="s-artisans">
+    <div class="page-sub">Internal artisans and external contractors. Add a user here — they receive their job assignments on their phone.</div>
+    <div class="two-equal">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Artisans</div><button class="tb-btn primary" style="font-size:11px;padding:5px 10px" onclick="openModal('user-modal')">+ Add artisan</button></div>
+        <div id="artisans-list"><div class="empty-state">Loading...</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Contractors</div><button class="tb-btn primary" style="font-size:11px;padding:5px 10px" onclick="openModal('user-modal')">+ Add contractor</button></div>
+        <div id="contractors-list"><div class="empty-state">Loading...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="screen" id="s-reports">
+    <div class="page-sub">Live cost reports, breakdown analysis, and permit audit trail. All driven by real data logged on the system.</div>
+    <div class="four-col" style="margin-bottom:16px">
+      <div class="kpi-card"><div class="kpi-val" id="rep-cost">R0</div><div class="kpi-label">Materials cost MTD</div></div>
+      <div class="kpi-card"><div class="kpi-val" id="rep-jobs">0</div><div class="kpi-label">Jobs completed MTD</div></div>
+      <div class="kpi-card"><div class="kpi-val" id="rep-permits">0</div><div class="kpi-label">Permits issued MTD</div></div>
+      <div class="kpi-card"><div class="kpi-val" id="rep-faults">0</div><div class="kpi-label">Faults logged MTD</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Materials cost by job (MTD)</div><button class="tb-btn" style="font-size:11px;padding:5px 10px" onclick="exportReport()">Export Excel</button></div>
+      <table class="tbl">
+        <thead><tr><th>Job #</th><th>Description</th><th>Location</th><th>Materials logged</th><th>Total cost</th><th>Artisan</th><th>Date completed</th></tr></thead>
+        <tbody id="reports-tbody"><tr><td colspan="7" class="empty-state">No completed jobs yet</td></tr></tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">Permit audit trail</div></div>
+      <table class="tbl">
+        <thead><tr><th>PTW #</th><th>Type</th><th>Issued to</th><th>Job card</th><th>Issued by</th><th>Date</th><th>Valid until</th><th>Status</th></tr></thead>
+        <tbody id="permit-audit-tbody"><tr><td colspan="8" class="empty-state">No permits issued yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MANAGE USERS -->
+  <div class="screen" id="s-users">
+    <div class="page-sub">All PlantFlow users. Add users here — they log in on their phone using their phone number. Each role sees only what they need.</div>
+    <div class="panel">
+      <div class="panel-head"><div class="panel-title">All Users</div><button class="tb-btn primary" style="font-size:11px;padding:5px 10px" onclick="openModal('user-modal')">+ Add user</button></div>
+      <table class="tbl">
+        <thead><tr><th>Name</th><th>Phone number</th><th>Role</th><th>Trade / Dept</th><th>Added</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="users-tbody"><tr><td colspan="7" class="empty-state">No users added yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="screen" id="s-settings">
+    <div class="two-equal">
+      <div>
+        <div class="section-head">Factory configuration</div>
+        <div class="settings-section">
+          <div class="settings-row"><div style="flex:1;font-size:12.5px;font-weight:500">Company name</div><input class="form-input" id="set-company" value="" style="width:200px;font-size:12px;padding:5px 9px" placeholder="Your company name"/></div>
+          <div class="settings-row"><div style="flex:1;font-size:12.5px;font-weight:500">Industry type</div><select class="form-select" id="set-industry" style="width:200px;font-size:12px;padding:5px 9px"><option>Chemical manufacturing</option><option>General manufacturing</option><option>Mining</option><option>Food &amp; beverage</option></select></div>
+          <div class="settings-row"><div style="flex:1;font-size:12.5px;font-weight:500">OHSA standard</div><select class="form-select" style="width:200px;font-size:12px;padding:5px 9px"><option>OHSA Act 85 of 1993</option></select></div>
+          <div class="settings-row"><div style="flex:1;font-size:12.5px;font-weight:500">Currency</div><select class="form-select" style="width:200px;font-size:12px;padding:5px 9px"><option>ZAR (R)</option><option>USD ($)</option></select></div>
+          <div style="padding:12px 16px"><button class="tb-btn primary" style="width:100%;justify-content:center" onclick="saveSettings()">Save settings</button></div>
+        </div>
+        <div class="section-head" style="margin-top:16px">Notification rules</div>
+        <div class="settings-section">
+          <div class="settings-row"><div style="flex:1"><div style="font-size:12.5px;font-weight:500">New fault report alert</div><div style="font-size:11px;color:#6b7280">Notify Maintenance Manager instantly</div></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+          <div class="settings-row"><div style="flex:1"><div style="font-size:12.5px;font-weight:500">Permit approval request</div><div style="font-size:11px;color:#6b7280">Notify Production Manager immediately</div></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+          <div class="settings-row"><div style="flex:1"><div style="font-size:12.5px;font-weight:500">Low stock alert</div><div style="font-size:11px;color:#6b7280">When item drops below minimum level</div></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+          <div class="settings-row"><div style="flex:1"><div style="font-size:12.5px;font-weight:500">Overdue PM task reminder</div><div style="font-size:11px;color:#6b7280">Daily at 07:00</div></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+          <div class="settings-row"><div style="flex:1"><div style="font-size:12.5px;font-weight:500">Permit expiry warning</div><div style="font-size:11px;color:#6b7280">30 min before permit expires</div></div><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="section-head">Permit types enabled</div>
+        <div class="settings-section">
+          <div class="settings-row"><span style="flex:1;font-size:12.5px">General maintenance</span><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+          <div class="settings-row"><span style="flex:1;font-size:12.5px">Hot work</span><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+          <div class="settings-row"><span style="flex:1;font-size:12.5px">Electrical isolation / LOTO</span><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+          <div class="settings-row"><span style="flex:1;font-size:12.5px">Confined space entry</span><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+          <div class="settings-row"><span style="flex:1;font-size:12.5px">Working at height</span><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+          <div class="settings-row"><span style="flex:1;font-size:12.5px">Chemical handling</span><div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+          <div class="settings-row"><span style="flex:1;font-size:12.5px">Cold work</span><div class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off')"></div></div>
+        </div>
+        <div class="section-head" style="margin-top:16px">Firebase connection</div>
+        <div class="settings-section">
+          <div class="settings-row"><div style="flex:1;font-size:12.5px;font-weight:500">Project ID</div><span style="font-size:12px;color:#185FA5;font-family:monospace">plantflow-sa</span></div>
+          <div class="settings-row"><div style="flex:1;font-size:12.5px;font-weight:500">Database</div><span style="font-size:12px;color:#6b7280">Firestore (default)</span></div>
+          <div class="settings-row"><div style="flex:1;font-size:12.5px;font-weight:500">Status</div><span class="live-dot"></span><span style="font-size:12px;color:#16a34a;margin-left:5px" id="firebase-status">Connected</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- end content -->
+</div><!-- end main -->
+</div><!-- end app -->
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- FAULT MODAL -->
+<div class="modal-overlay" id="fault-modal" onclick="if(event.target===this)closeModal('fault-modal')">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Log a Fault / Maintenance Request</div><div class="modal-close" onclick="closeModal('fault-modal')">×</div></div>
+    <div class="modal-body">
+      <div class="form-group"><div class="form-label">Fault type</div><select class="form-select" id="f-type"><option value="factory">Factory floor / machinery</option><option value="office">Office / facilities</option></select></div>
+      <div class="form-group"><div class="form-label">Description *</div><textarea class="form-textarea" id="f-desc" rows="3" placeholder="What is wrong? Be specific — machine name, what you saw/heard/smelled..."></textarea></div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Exact location *</div><input class="form-input" id="f-loc" placeholder="e.g. Factory Floor A — Press 2"/></div>
+        <div class="form-group"><div class="form-label">Priority</div><select class="form-select" id="f-priority"><option value="low">Low — not urgent</option><option value="medium" selected>Medium — today</option><option value="high">High — production at risk</option><option value="critical">Critical — stopped / danger</option></select></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Logged by</div><input class="form-input" id="f-name" placeholder="Your name"/></div>
+        <div class="form-group"><div class="form-label">Department</div><input class="form-input" id="f-dept" placeholder="e.g. Production, HR, Finance"/></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="tb-btn" onclick="closeModal('fault-modal')">Cancel</button><button class="tb-btn primary" onclick="submitFault()">Submit fault report</button></div>
+  </div>
+</div>
+
+<!-- JOB CARD MODAL -->
+<div class="modal-overlay" id="jobcard-modal" onclick="if(event.target===this)closeModal('jobcard-modal')">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Create New Job Card</div><div class="modal-close" onclick="closeModal('jobcard-modal')">×</div></div>
+    <div class="modal-body">
+      <div class="form-group"><div class="form-label">Description *</div><input class="form-input" id="jc-desc" placeholder="What needs to be done?"/></div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Priority</div><select class="form-select" id="jc-priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+        <div class="form-group"><div class="form-label">Location *</div><input class="form-input" id="jc-location" placeholder="e.g. Factory Floor B"/></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Assigned to</div><select class="form-select" id="jc-assigned"><option value="">-- Select artisan --</option></select></div>
+        <div class="form-group"><div class="form-label">Asset / Equipment</div><input class="form-input" id="jc-asset" placeholder="e.g. Chemical Pump A"/></div>
+      </div>
+      <div class="form-group"><div class="form-label">Permit required?</div><select class="form-select" id="jc-permit-req"><option value="no">No — general maintenance</option><option value="yes">Yes — hazardous work</option></select></div>
+      <div class="form-group"><div class="form-label">Notes / instructions</div><textarea class="form-textarea" id="jc-notes" rows="2" placeholder="Any special instructions for the artisan..."></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="tb-btn" onclick="closeModal('jobcard-modal')">Cancel</button><button class="tb-btn primary" onclick="createJobCard()">Create job card</button></div>
+  </div>
+</div>
+
+<!-- PERMIT MODAL (quick issue) -->
+<div class="modal-overlay" id="permit-modal" onclick="if(event.target===this)closeModal('permit-modal')">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Issue Permit to Work</div><div class="modal-close" onclick="closeModal('permit-modal')">×</div></div>
+    <div class="modal-body">
+      <div class="form-group"><div class="form-label">Permit type *</div><select class="form-select" id="pm-type"><option value="">-- Select --</option><option>General maintenance</option><option>Hot work (welding/cutting/grinding)</option><option>Electrical isolation / LOTO</option><option>Confined space entry</option><option>Working at height</option><option>Chemical handling</option></select></div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Job Card # *</div><input class="form-input" id="pm-jobcard" placeholder="e.g. JC-0001"/></div>
+        <div class="form-group"><div class="form-label">Location *</div><input class="form-input" id="pm-location" placeholder="e.g. Tank Farm"/></div>
+      </div>
+      <div class="form-group"><div class="form-label">Issued to *</div><select class="form-select" id="pm-artisan"><option value="">-- Select artisan --</option></select></div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Valid from</div><input class="form-input" type="time" id="pm-from" value="07:30"/></div>
+        <div class="form-group"><div class="form-label">Valid until</div><input class="form-input" type="time" id="pm-until" value="17:00"/></div>
+      </div>
+      <div class="form-group"><div class="form-label">Scope &amp; safety notes *</div><textarea class="form-textarea" id="pm-scope" rows="3" placeholder="Work scope, hazards, PPE required..."></textarea></div>
+      <div style="display:flex;align-items:flex-start;gap:8px"><input type="checkbox" id="pm-confirm" style="margin-top:3px;width:15px;height:15px"><label for="pm-confirm" style="font-size:12px;color:#374151">I confirm all safety measures are in place and take responsibility as the issuing authority.</label></div>
+    </div>
+    <div class="modal-foot"><button class="tb-btn" onclick="closeModal('permit-modal')">Cancel</button><button class="tb-btn primary" onclick="issuePermitModal()">Issue Permit</button></div>
+  </div>
+</div>
+
+<!-- MATERIAL MODAL -->
+<div class="modal-overlay" id="material-modal" onclick="if(event.target===this)closeModal('material-modal')">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Add Material / Spare Part</div><div class="modal-close" onclick="closeModal('material-modal')">×</div></div>
+    <div class="modal-body">
+      <div class="form-group"><div class="form-label">Description *</div><input class="form-input" id="mat-desc" placeholder="e.g. Pump seal kit 65mm"/></div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Category</div><select class="form-select" id="mat-cat"><option>Seals &amp; gaskets</option><option>Bearings</option><option>Electrical</option><option>Lubricants</option><option>Filters</option><option>Belts &amp; drives</option><option>Pipe fittings</option><option>General</option></select></div>
+        <div class="form-group"><div class="form-label">Unit cost (R) *</div><input class="form-input" id="mat-cost" type="number" placeholder="0.00"/></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Current stock</div><input class="form-input" id="mat-stock" type="number" placeholder="0"/></div>
+        <div class="form-group"><div class="form-label">Minimum level</div><input class="form-input" id="mat-min" type="number" placeholder="0"/></div>
+      </div>
+      <div class="form-group"><div class="form-label">Item code</div><input class="form-input" id="mat-code" placeholder="e.g. MAT-0001 (auto-generated if blank)"/></div>
+    </div>
+    <div class="modal-foot"><button class="tb-btn" onclick="closeModal('material-modal')">Cancel</button><button class="tb-btn primary" onclick="addMaterial()">Add to register</button></div>
+  </div>
+</div>
+
+<!-- SCHEDULE MODAL -->
+<div class="modal-overlay" id="schedule-modal" onclick="if(event.target===this)closeModal('schedule-modal')">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Add PM Schedule Task</div><div class="modal-close" onclick="closeModal('schedule-modal')">×</div></div>
+    <div class="modal-body">
+      <div class="form-group"><div class="form-label">Task description *</div><input class="form-input" id="sc-task" placeholder="e.g. Lubrication check — Conveyor Belt 1"/></div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Frequency *</div><select class="form-select" id="sc-freq"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option></select></div>
+        <div class="form-group"><div class="form-label">Asset / Area *</div><input class="form-input" id="sc-asset" placeholder="e.g. Conveyor Belt 1"/></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Assigned to</div><select class="form-select" id="sc-assigned"><option value="">-- Select artisan --</option></select></div>
+        <div class="form-group"><div class="form-label">Est. time</div><input class="form-input" id="sc-time" placeholder="e.g. 30 min"/></div>
+      </div>
+      <div class="form-group"><div class="form-label">Materials required</div><input class="form-input" id="sc-mats" placeholder="e.g. Grease 500g, Filter element"/></div>
+      <div class="form-group"><div class="form-label">Permit required?</div><select class="form-select" id="sc-permit"><option value="no">No</option><option value="yes">Yes — PTW required</option></select></div>
+    </div>
+    <div class="modal-foot"><button class="tb-btn" onclick="closeModal('schedule-modal')">Cancel</button><button class="tb-btn primary" onclick="addSchedule()">Add PM task</button></div>
+  </div>
+</div>
+
+<!-- USER MODAL -->
+<div class="modal-overlay" id="user-modal" onclick="if(event.target===this)closeModal('user-modal')">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Add User to PlantFlow</div><div class="modal-close" onclick="closeModal('user-modal')">×</div></div>
+    <div class="modal-body">
+      <div style="background:#dbeafe;border-radius:10px;padding:12px;font-size:12px;color:#1e40af;margin-bottom:14px">The user will log in on their phone using their phone number. No password needed.</div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Full name *</div><input class="form-input" id="u-name" placeholder="e.g. Sipho Dlamini"/></div>
+        <div class="form-group"><div class="form-label">Phone number *</div><input class="form-input" id="u-phone" placeholder="e.g. 0821234567"/></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Role *</div><select class="form-select" id="u-role"><option value="artisan">Artisan (internal)</option><option value="contractor">Contractor (external)</option><option value="production-manager">Production Manager</option><option value="maintenance-manager">Maintenance Manager</option><option value="employee">Employee (fault log only)</option><option value="admin">Admin</option></select></div>
+        <div class="form-group"><div class="form-label">Trade / Department</div><input class="form-input" id="u-trade" placeholder="e.g. Electrician, HR, Finance"/></div>
+      </div>
+      <div class="form-group"><div class="form-label">Employee / Contractor #</div><input class="form-input" id="u-empno" placeholder="e.g. EMP-0041 or CONT-001"/></div>
+    </div>
+    <div class="modal-foot"><button class="tb-btn" onclick="closeModal('user-modal')">Cancel</button><button class="tb-btn primary" onclick="addUser()">Add user</button></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, serverTimestamp, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDQuAJF_dy2e8RfWhTvME0Ast6g9B2ZYRI",
+  authDomain: "plantflow-sa.firebaseapp.com",
+  projectId: "plantflow-sa",
+  storageBucket: "plantflow-sa.firebasestorage.app",
+  messagingSenderId: "114430164011",
+  appId: "1:114430164011:web:caa6cd29fe32ff1eb63e6e"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+window.db = db;
+
+// Connection indicator
+document.getElementById('conn-text').textContent = 'Connected to plantflow-sa Firebase — live sync active';
+document.getElementById('firebase-status').textContent = 'Connected';
+setSync();
+
+function setSync(){
+  const now = new Date();
+  document.getElementById('last-sync').textContent = 'Last sync: ' + now.toLocaleTimeString('en-ZA');
+}
+
+// ── COUNTERS ──
+let allJobs=[], allFaults=[], allPermits=[], allMaterials=[], allUsers=[], allSchedules=[], allInspections=[];
+
+// ── LIVE LISTENERS ──
+
+// Jobs
+onSnapshot(query(collection(db,'jobCards'),orderBy('createdAt','desc')), snap => {
+  allJobs = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderJobCards();
+  renderDashJobs();
+  updateJobStats();
+  setSync();
+});
+
+// Faults
+onSnapshot(query(collection(db,'faults'),orderBy('createdAt','desc')), snap => {
+  allFaults = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderFaults();
+  renderDashFaults();
+  updateFaultStats();
+  setSync();
+});
+
+// Permits
+onSnapshot(query(collection(db,'permits'),orderBy('createdAt','desc')), snap => {
+  allPermits = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderPermits();
+  renderDashPermits();
+  updatePermitStats();
+  renderPermitAudit();
+  setSync();
+});
+
+// Materials
+onSnapshot(query(collection(db,'materials'),orderBy('description','asc')), snap => {
+  allMaterials = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderMaterials();
+  renderDashMaterials();
+  updateMaterialStats();
+  setSync();
+});
+
+// Users
+onSnapshot(query(collection(db,'users'),orderBy('name','asc')), snap => {
+  allUsers = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderUsers();
+  populateArtisanDropdowns();
+  setSync();
+});
+
+// Schedules
+onSnapshot(query(collection(db,'schedules'),orderBy('createdAt','desc')), snap => {
+  allSchedules = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderSchedules();
+  setSync();
+});
+
+// Inspections
+onSnapshot(query(collection(db,'inspections'),orderBy('createdAt','desc')), snap => {
+  allInspections = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderInspections();
+  setSync();
+});
+
+// ── RENDER FUNCTIONS ──
+
+function statusBadge(s){
+  const map={open:'b-blue',assigned:'b-blue','in-progress':'b-amber',blocked:'b-red',completed:'b-green',pending:'b-amber',active:'b-blue',closed:'b-teal',rejected:'b-red',approved:'b-green',new:'b-red',reviewed:'b-amber',converted:'b-green'};
+  return `<span class="badge ${map[s]||'b-gray'}">${s}</span>`;
+}
+function priorityDot(p){
+  const map={low:'pd-low',medium:'pd-med',high:'pd-high',critical:'pd-high'};
+  return `<span class="pdot ${map[p]||'pd-med'}"></span>`;
+}
+function fmtDate(ts){
+  if(!ts)return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'2-digit'});
+}
+function fmtTime(ts){
+  if(!ts)return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+}
+function fmtDateTime(ts){
+  if(!ts)return '—';
+  return fmtDate(ts)+' '+fmtTime(ts);
+}
+
+window.renderJobCards = function(){
+  const filter = document.getElementById('jobs-filter')?.value||'';
+  let jobs = allJobs;
+  if(filter) jobs = jobs.filter(j=>j.status===filter);
+  const tbody = document.getElementById('jobcards-tbody');
+  if(!tbody)return;
+  if(!jobs.length){tbody.innerHTML='<tr><td colspan="12" class="empty-state">No job cards yet — create one above or employees log faults from their phones</td></tr>';return;}
+  tbody.innerHTML = jobs.map(j=>`
+    <tr>
+      <td style="color:#9ca3af;font-size:11px">${j.jobNumber||'—'}</td>
+      <td><span class="badge b-${j.priority==='high'||j.priority==='critical'?'red':j.priority==='medium'?'amber':'teal'}">${j.priority||'medium'}</span></td>
+      <td>${priorityDot(j.priority)}<b>${j.description||'—'}</b></td>
+      <td style="color:#6b7280">${j.location||'—'}</td>
+      <td>${j.loggedBy||'—'}</td>
+      <td>${j.assignedTo||'<span style="color:#9ca3af">Unassigned</span>'}</td>
+      <td>${j.permitNumber?`<span class="badge b-purple">${j.permitNumber}</span>`:j.permitRequired==='yes'?'<span class="badge b-red">Required</span>':'<span class="badge b-gray">N/A</span>'}</td>
+      <td style="font-size:11px;color:#6b7280">${(j.materials||[]).map(m=>m.name).join(', ')||'—'}</td>
+      <td style="font-weight:600">${j.totalCost?'R '+j.totalCost.toLocaleString():'—'}</td>
+      <td style="font-size:11px">${fmtDate(j.createdAt)}</td>
+      <td>${statusBadge(j.status||'open')}</td>
+      <td>
+        ${j.status!=='completed'?`<button class="tb-btn" style="font-size:11px;padding:3px 8px" onclick="completeJob('${j.id}')">Complete</button>`:''}
+        ${j.permitRequired==='yes'&&!j.permitNumber?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="quickPermit('${j.jobNumber}','${j.assignedTo}')">Issue PTW</button>`:''}
+      </td>
+    </tr>`).join('');
+};
+
+window.renderDashJobs = function(){
+  const tbody = document.getElementById('dash-jobs');
+  if(!tbody)return;
+  const jobs = allJobs.slice(0,6);
+  if(!jobs.length){tbody.innerHTML='<tr><td colspan="6" class="empty-state">No job cards yet</td></tr>';return;}
+  tbody.innerHTML = jobs.map(j=>`
+    <tr>
+      <td style="color:#9ca3af;font-size:11px">${j.jobNumber||'—'}</td>
+      <td>${priorityDot(j.priority)}<b>${j.description||'—'}</b></td>
+      <td style="color:#6b7280">${j.location||'—'}</td>
+      <td>${j.assignedTo||'—'}</td>
+      <td>${j.permitNumber?`<span class="badge b-purple">${j.permitNumber}</span>`:j.permitRequired==='yes'?'<span class="badge b-red">Required</span>':'<span class="badge b-gray">N/A</span>'}</td>
+      <td>${statusBadge(j.status||'open')}</td>
+    </tr>`).join('');
+};
+
+window.renderFaults = function(){
+  const tbody = document.getElementById('faults-tbody');
+  if(!tbody)return;
+  if(!allFaults.length){tbody.innerHTML='<tr><td colspan="10" class="empty-state">No faults logged yet — employees and artisans log from their phones</td></tr>';return;}
+  tbody.innerHTML = allFaults.map(f=>`
+    <tr>
+      <td style="color:#9ca3af;font-size:11px">${f.faultNumber||'—'}</td>
+      <td><span class="badge ${f.type==='factory'?'b-red':'b-amber'}">${f.type==='factory'?'Factory':'Office'}</span></td>
+      <td><b>${f.description||'—'}</b></td>
+      <td>${f.location||'—'}</td>
+      <td>${f.loggedBy||'Anonymous'}</td>
+      <td>${f.department||'—'}</td>
+      <td><span class="badge b-${f.priority==='high'||f.priority==='critical'?'red':f.priority==='medium'?'amber':'teal'}">${f.priority||'medium'}</span></td>
+      <td style="font-size:11px">${fmtDateTime(f.createdAt)}</td>
+      <td>${statusBadge(f.status||'new')}</td>
+      <td>${f.status==='new'?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="convertFault('${f.id}','${(f.description||'').replace(/'/g,"\\'")}','${f.location||''}','${f.priority||'medium'}')">Convert to Job →</button>`:f.status==='converted'?`<span style="font-size:11px;color:#16a34a">→ ${f.jobNumber||'Job created'}</span>`:''}</td>
+    </tr>`).join('');
+
+  const newFaults = allFaults.filter(f=>f.status==='new');
+  document.getElementById('fault-unreview-count').textContent = newFaults.length;
+  document.getElementById('fault-done-count').textContent = allFaults.filter(f=>f.status==='converted').length;
+};
+
+window.renderDashFaults = function(){
+  const tbody = document.getElementById('dash-faults');
+  if(!tbody)return;
+  const faults = allFaults.filter(f=>f.status==='new').slice(0,5);
+  const badge = document.getElementById('dash-fault-badge');
+  if(badge) badge.textContent = allFaults.filter(f=>f.status==='new').length+' new';
+  if(!faults.length){tbody.innerHTML='<tr><td colspan="7" class="empty-state">No new faults</td></tr>';return;}
+  tbody.innerHTML = faults.map(f=>`
+    <tr>
+      <td style="font-size:11px;color:#9ca3af">${f.faultNumber||'—'}</td>
+      <td><b>${(f.description||'—').substring(0,40)}${(f.description||'').length>40?'...':''}</b></td>
+      <td>${f.location||'—'}</td>
+      <td>${f.loggedBy||'—'}</td>
+      <td><span class="badge b-${f.priority==='high'||f.priority==='critical'?'red':f.priority==='medium'?'amber':'teal'}">${f.priority||'medium'}</span></td>
+      <td style="font-size:11px">${fmtDateTime(f.createdAt)}</td>
+      <td><button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="convertFault('${f.id}','${(f.description||'').replace(/'/g,"\\'")}','${f.location||''}','${f.priority||'medium'}')">Convert to Job →</button></td>
+    </tr>`).join('');
+};
+
+window.renderPermits = function(){
+  const container = document.getElementById('permits-cards-list');
+  if(!container)return;
+  const pending = allPermits.filter(p=>p.status==='pending');
+  const active = allPermits.filter(p=>p.status==='active');
+  const closed = allPermits.filter(p=>p.status==='closed'||p.status==='rejected');
+  document.getElementById('permit-pending-count').textContent = pending.length;
+  document.getElementById('permit-active-count').textContent = active.length;
+
+  let html = '';
+  [...pending,...active,...closed.slice(0,3)].forEach(p=>{
+    const cls = p.status==='pending'?'pending':p.status==='active'?'active-p':p.status==='rejected'?'rejected':'closed-p';
+    html += `<div class="permit-card ${cls}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700;flex:1">${p.permitNumber||'PTW'} — ${p.type||'Permit'}</div>
+        ${statusBadge(p.status||'pending')}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px;color:#6b7280;margin-bottom:8px">
+        <div><b>Issued to:</b> ${p.issuedTo||'—'}</div>
+        <div><b>Location:</b> ${p.location||'—'}</div>
+        <div><b>Job card:</b> ${p.jobCard||'—'}</div>
+        <div><b>Valid:</b> ${p.validFrom||'—'} — ${p.validUntil||'—'}</div>
+      </div>
+      ${p.scope?`<div style="font-size:11px;color:#374151;background:#f9fafb;padding:8px;border-radius:6px;margin-bottom:8px">${p.scope}</div>`:''}
+      ${p.status==='pending'?`
+        <div style="display:flex;gap:6px">
+          <button class="tb-btn primary" style="flex:1;justify-content:center;font-size:11px" onclick="approvePermit('${p.id}')">✓ Approve</button>
+          <button class="tb-btn danger" style="font-size:11px" onclick="rejectPermit('${p.id}')">✕ Reject</button>
+        </div>`:
+        p.status==='active'?`<div style="display:flex;gap:6px"><button class="tb-btn" style="font-size:11px" onclick="closePermit('${p.id}')">Close permit</button></div>`:''}
+    </div>`;
+  });
+  container.innerHTML = html||'<div class="empty-state">No permits yet</div>';
+};
+
+window.renderDashPermits = function(){
+  const container = document.getElementById('dash-permits');
+  if(!container)return;
+  const permits = allPermits.slice(0,5);
+  if(!permits.length){container.innerHTML='<div class="empty-state">No permits yet</div>';return;}
+  container.innerHTML = permits.map(p=>`
+    <div class="list-item">
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:600">${p.permitNumber||'PTW'} — ${p.type||'—'}</div>
+        <div style="font-size:11px;color:#6b7280">${p.issuedTo||'—'} · ${p.location||'—'}</div>
+      </div>
+      ${statusBadge(p.status||'pending')}
+    </div>`).join('');
+};
+
+window.renderMaterials = function(){
+  const tbody = document.getElementById('materials-tbody');
+  if(!tbody)return;
+  if(!allMaterials.length){tbody.innerHTML='<tr><td colspan="11" class="empty-state">No materials added yet — add items to the register</td></tr>';return;}
+  tbody.innerHTML = allMaterials.map(m=>{
+    const stockStatus = m.inStock<=0?'stock-out':m.inStock<=m.minLevel?'stock-low':'stock-ok';
+    const stockLabel = m.inStock<=0?'Out of stock':m.inStock<=m.minLevel?'Low stock':'In stock';
+    const usedCost = (m.usedMTD||0)*(m.unitCost||0);
+    return `<tr>
+      <td style="font-size:11px;color:#9ca3af">${m.code||'—'}</td>
+      <td><b>${m.description||'—'}</b></td>
+      <td>${m.category||'—'}</td>
+      <td>R ${(m.unitCost||0).toLocaleString()}</td>
+      <td style="font-weight:600;color:${m.inStock<=0?'#dc2626':m.inStock<=m.minLevel?'#d97706':'#111827'}">${m.inStock||0}</td>
+      <td>${m.minLevel||0}</td>
+      <td>${m.usedMTD||0}</td>
+      <td style="font-weight:600">R ${usedCost.toLocaleString()}</td>
+      <td style="font-size:11px;color:#6b7280">${(m.usedOnJobs||[]).join(', ')||'—'}</td>
+      <td><span class="${stockStatus}">${stockLabel}</span></td>
+      <td>
+        ${m.inStock<=m.minLevel?'<button class="tb-btn primary" style="font-size:11px;padding:3px 8px">Reorder</button>':''}
+        <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="editStock('${m.id}',${m.inStock||0})">Edit stock</button>
+      </td>
+    </tr>`;
+  }).join('');
+};
+
+window.renderDashMaterials = function(){
+  const tbody = document.getElementById('dash-materials');
+  if(!tbody)return;
+  const recent = allMaterials.filter(m=>m.usedMTD>0).slice(0,5);
+  if(!recent.length){tbody.innerHTML='<tr><td colspan="4" class="empty-state">Materials logged from artisan phones appear here</td></tr>';return;}
+  tbody.innerHTML = recent.map(m=>`<tr>
+    <td>${m.description||'—'}</td>
+    <td style="font-size:11px;color:#6b7280">${(m.usedOnJobs||[]).join(', ')||'—'}</td>
+    <td>${m.usedMTD||0}</td>
+    <td style="font-weight:600">R ${((m.usedMTD||0)*(m.unitCost||0)).toLocaleString()}</td>
+  </tr>`).join('');
+};
+
+window.renderUsers = function(){
+  const tbody = document.getElementById('users-tbody');
+  const artDiv = document.getElementById('artisans-list');
+  const contDiv = document.getElementById('contractors-list');
+  const artisans = allUsers.filter(u=>u.role==='artisan'||u.role==='maintenance-manager'||u.role==='production-manager'||u.role==='employee'||u.role==='admin');
+  const contractors = allUsers.filter(u=>u.role==='contractor');
+
+  if(tbody){
+    if(!allUsers.length){tbody.innerHTML='<tr><td colspan="7" class="empty-state">No users added yet</td></tr>';}
+    else tbody.innerHTML = allUsers.map(u=>`<tr>
+      <td><b>${u.name||'—'}</b></td>
+      <td>${u.phone||'—'}</td>
+      <td><span class="badge b-blue">${u.role||'—'}</span></td>
+      <td>${u.trade||'—'}</td>
+      <td style="font-size:11px">${fmtDate(u.createdAt)}</td>
+      <td><span class="badge b-green">Active</span></td>
+      <td><button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteUser('${u.id}')">Remove</button></td>
+    </tr>`).join('');
+  }
+
+  if(artDiv){
+    artDiv.innerHTML = artisans.length?artisans.map(u=>`
+      <div class="user-row">
+        <div class="av" style="width:36px;height:36px;font-size:13px;background:${roleColor(u.role)}">${initials(u.name)}</div>
+        <div style="flex:1">
+          <div style="font-size:12.5px;font-weight:700">${u.name}</div>
+          <div style="font-size:11px;color:#6b7280">${u.trade||u.role} · ${u.phone||'—'}</div>
+        </div>
+        <span class="badge b-blue">${u.role}</span>
+      </div>`).join(''):'<div class="empty-state">No artisans added yet</div>';
+  }
+  if(contDiv){
+    contDiv.innerHTML = contractors.length?contractors.map(u=>`
+      <div class="user-row">
+        <div class="av" style="width:36px;height:36px;font-size:13px;background:#6d28d9">${initials(u.name)}</div>
+        <div style="flex:1">
+          <div style="font-size:12.5px;font-weight:700">${u.name}</div>
+          <div style="font-size:11px;color:#6b7280">${u.trade||'Contractor'} · ${u.phone||'—'}</div>
+        </div>
+        <span class="badge b-purple">Contractor</span>
+      </div>`).join(''):'<div class="empty-state">No contractors added yet</div>';
+  }
+};
+
+window.renderSchedules = function(){
+  const tbody = document.getElementById('schedules-tbody');
+  if(!tbody)return;
+  if(!allSchedules.length){tbody.innerHTML='<tr><td colspan="10" class="empty-state">No PM tasks yet — add tasks above</td></tr>';return;}
+  const freqClass={daily:'ft-day',weekly:'ft-week',monthly:'ft-month',quarterly:'ft-month'};
+  tbody.innerHTML = allSchedules.map(s=>`<tr>
+    <td><span class="freq-tag ${freqClass[s.frequency]||'ft-week'}">${s.frequency||'weekly'}</span></td>
+    <td><b>${s.task||'—'}</b></td>
+    <td>${s.asset||'—'}</td>
+    <td>${s.assignedTo||'Unassigned'}</td>
+    <td>${s.estTime||'—'}</td>
+    <td>${s.nextDue||'—'}</td>
+    <td style="font-size:11px">${s.materialsRequired||'None'}</td>
+    <td>${s.permitRequired==='yes'?'<span class="badge b-red">Yes — PTW</span>':'<span class="badge b-green">No</span>'}</td>
+    <td><span class="badge b-blue">Scheduled</span></td>
+    <td><button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteDoc_('schedules','${s.id}')">Delete</button></td>
+  </tr>`).join('');
+};
+
+window.renderInspections = function(){
+  const tbody = document.getElementById('inspections-tbody');
+  if(!tbody)return;
+  if(!allInspections.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">No inspections submitted yet — artisans submit from their phones</td></tr>';return;}
+  tbody.innerHTML = allInspections.map(i=>`<tr>
+    <td>${fmtDate(i.createdAt)}</td>
+    <td><b>${i.type||'Safety inspection'}</b></td>
+    <td>${i.inspector||'—'}</td>
+    <td>${i.area||'—'}</td>
+    <td>${i.totalItems||'—'}</td>
+    <td style="color:#16a34a;font-weight:600">${i.passed||'—'}</td>
+    <td style="color:${i.failed>0?'#dc2626':'#16a34a'};font-weight:600">${i.failed||0}</td>
+    <td>${i.failed>0?'<span class="badge b-amber">'+i.failed+' fail(s)</span>':'<span class="badge b-green">All pass</span>'}</td>
+  </tr>`).join('');
+};
+
+window.renderPermitAudit = function(){
+  const tbody = document.getElementById('permit-audit-tbody');
+  if(!tbody)return;
+  if(!allPermits.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">No permits issued yet</td></tr>';return;}
+  tbody.innerHTML = allPermits.map(p=>`<tr>
+    <td style="font-size:11px;color:#9ca3af">${p.permitNumber||'—'}</td>
+    <td>${p.type||'—'}</td>
+    <td>${p.issuedTo||'—'}</td>
+    <td>${p.jobCard||'—'}</td>
+    <td>${p.issuedBy||'Admin'}</td>
+    <td style="font-size:11px">${fmtDate(p.createdAt)}</td>
+    <td>${p.validFrom||'—'} — ${p.validUntil||'—'}</td>
+    <td>${statusBadge(p.status||'pending')}</td>
+  </tr>`).join('');
+};
+
+// ── STATS UPDATE ──
+function updateJobStats(){
+  const open = allJobs.filter(j=>j.status!=='completed').length;
+  const overdue = allJobs.filter(j=>j.status==='blocked').length;
+  document.getElementById('stat-jobs').textContent = open;
+  document.getElementById('stat-jobs-sub').textContent = overdue+' blocked';
+  document.getElementById('badge-jobs').textContent = open;
+  document.getElementById('rep-jobs').textContent = allJobs.filter(j=>j.status==='completed').length;
+}
+function updateFaultStats(){
+  const newF = allFaults.filter(f=>f.status==='new').length;
+  document.getElementById('stat-faults').textContent = allFaults.length;
+  document.getElementById('stat-faults-sub').textContent = newF+' unreviewed';
+  document.getElementById('badge-faults').textContent = newF;
+  document.getElementById('rep-faults').textContent = allFaults.length;
+}
+function updatePermitStats(){
+  const pending = allPermits.filter(p=>p.status==='pending').length;
+  const active = allPermits.filter(p=>p.status==='active').length;
+  document.getElementById('stat-permits').textContent = active;
+  document.getElementById('stat-permits-sub').textContent = pending+' pending approval';
+  document.getElementById('badge-permits').textContent = pending;
+  document.getElementById('rep-permits').textContent = allPermits.length;
+}
+function updateMaterialStats(){
+  const low = allMaterials.filter(m=>m.inStock>0&&m.inStock<=m.minLevel).length;
+  const out = allMaterials.filter(m=>m.inStock<=0).length;
+  const totalCost = allMaterials.reduce((sum,m)=>(sum+(m.usedMTD||0)*(m.unitCost||0)),0);
+  document.getElementById('stat-stock').textContent = low+out;
+  document.getElementById('stat-stock-sub').textContent = out+' out of stock';
+  document.getElementById('badge-stock').textContent = low+out;
+  document.getElementById('stat-cost').textContent = 'R '+totalCost.toLocaleString();
+  document.getElementById('mat-total').textContent = allMaterials.length;
+  document.getElementById('mat-low').textContent = low;
+  document.getElementById('mat-out').textContent = out;
+  document.getElementById('mat-cost-display').textContent = 'R '+totalCost.toLocaleString();
+  document.getElementById('rep-cost').textContent = 'R '+totalCost.toLocaleString();
+}
+
+// ── POPULATE DROPDOWNS ──
+function populateArtisanDropdowns(){
+  const artisans = allUsers.filter(u=>u.role==='artisan'||u.role==='contractor');
+  ['ptw-artisan','pm-artisan','jc-assigned','sc-assigned'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el)return;
+    const cur = el.value;
+    el.innerHTML = '<option value="">-- Select --</option>'+artisans.map(u=>`<option value="${u.name}">${u.name} (${u.role})</option>`).join('');
+    if(cur) el.value = cur;
+  });
+}
+
+// ── HELPERS ──
+function initials(name){return (name||'??').split(' ').map(w=>w[0]).join('').toUpperCase().substring(0,2);}
+function roleColor(role){const map={artisan:'#185FA5','maintenance-manager':'#16a34a','production-manager':'#d97706',employee:'#6b7280',admin:'#dc2626',contractor:'#6d28d9'};return map[role]||'#185FA5';}
+let jobCounter=0,faultCounter=0,permitCounter=0,matCounter=0;
+function nextJobNum(){jobCounter=(allJobs.length||0)+1;return 'JC-'+String(jobCounter).padStart(4,'0');}
+function nextFaultNum(){faultCounter=(allFaults.length||0)+1;return 'FR-'+String(faultCounter).padStart(4,'0');}
+function nextPermitNum(){permitCounter=(allPermits.length||0)+1;return 'PTW-'+String(permitCounter).padStart(4,'0');}
+function nextMatCode(){matCounter=(allMaterials.length||0)+1;return 'MAT-'+String(matCounter).padStart(4,'0');}
+
+// ── ACTIONS ──
+window.submitFault = async function(){
+  const desc=document.getElementById('f-desc').value.trim();
+  const loc=document.getElementById('f-loc').value.trim();
+  if(!desc||!loc){toast('Please fill in description and location','error');return;}
+  try{
+    await addDoc(collection(db,'faults'),{
+      faultNumber:nextFaultNum(),
+      type:document.getElementById('f-type').value,
+      description:desc,
+      location:loc,
+      priority:document.getElementById('f-priority').value,
+      loggedBy:document.getElementById('f-name').value||'Admin',
+      department:document.getElementById('f-dept').value||'Management',
+      status:'new',
+      source:'pc-admin',
+      createdAt:serverTimestamp()
+    });
+    closeModal('fault-modal');
+    ['f-desc','f-loc','f-name','f-dept'].forEach(id=>document.getElementById(id).value='');
+    toast('Fault report submitted — visible on mobile app immediately','success');
+  }catch(e){toast('Error: '+e.message,'error');}
+};
+
+window.createJobCard = async function(){
+  const desc=document.getElementById('jc-desc').value.trim();
+  const loc=document.getElementById('jc-location').value.trim();
+  if(!desc||!loc){toast('Please fill in description and location','error');return;}
+  try{
+    await addDoc(collection(db,'jobCards'),{
+      jobNumber:nextJobNum(),
+      description:desc,
+      priority:document.getElementById('jc-priority').value,
+      location:loc,
+      assignedTo:document.getElementById('jc-assigned').value,
+      asset:document.getElementById('jc-asset').value,
+      permitRequired:document.getElementById('jc-permit-req').value,
+      notes:document.getElementById('jc-notes').value,
+      loggedBy:'Admin',
+      status:document.getElementById('jc-assigned').value?'assigned':'open',
+      materials:[],
+      totalCost:0,
+      source:'pc-admin',
+      createdAt:serverTimestamp()
+    });
+    closeModal('jobcard-modal');
+    ['jc-desc','jc-location','jc-asset','jc-notes'].forEach(id=>document.getElementById(id).value='');
+    toast('Job card created — assigned artisan sees it on their phone now','success');
+  }catch(e){toast('Error: '+e.message,'error');}
+};
+
+window.issuePermit = async function(){
+  const type=document.getElementById('ptw-type').value;
+  const jc=document.getElementById('ptw-jobcard').value.trim();
+  const loc=document.getElementById('ptw-location').value.trim();
+  const art=document.getElementById('ptw-artisan').value;
+  const scope=document.getElementById('ptw-scope').value.trim();
+  if(!type||!jc||!loc||!scope){toast('Please fill in all required fields','error');return;}
+  if(!document.getElementById('ptw-confirm').checked){toast('Please confirm the safety checklist','error');return;}
+  try{
+    const pNum = nextPermitNum();
+    await addDoc(collection(db,'permits'),{
+      permitNumber:pNum,
+      type:type,
+      jobCard:jc,
+      location:loc,
+      issuedTo:art,
+      issuedBy:'Admin (Johan van V.)',
+      validFrom:document.getElementById('ptw-from').value,
+      validUntil:document.getElementById('ptw-until').value,
+      scope:scope,
+      status:'active',
+      source:'pc-admin',
+      createdAt:serverTimestamp()
+    });
+    // Update job card with permit number
+    const jobSnap = await getDocs(query(collection(db,'jobCards'),where('jobNumber','==',jc)));
+    jobSnap.forEach(async d=>await updateDoc(doc(db,'jobCards',d.id),{permitNumber:pNum,status:'in-progress'}));
+    ['ptw-jobcard','ptw-location','ptw-scope'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('ptw-confirm').checked=false;
+    toast(pNum+' issued — artisan notified on their phone','success');
+  }catch(e){toast('Error: '+e.message,'error');}
+};
+
+window.issuePermitModal = async function(){
+  const type=document.getElementById('pm-type').value;
+  const jc=document.getElementById('pm-jobcard').value.trim();
+  const loc=document.getElementById('pm-location').value.trim();
+  const scope=document.getElementById('pm-scope').value.trim();
+  if(!type||!jc||!loc||!scope){toast('Please fill in all required fields','error');return;}
+  if(!document.getElementById('pm-confirm').checked){toast('Please confirm the safety checklist','error');return;}
+  try{
+    const pNum = nextPermitNum();
+    await addDoc(collection(db,'permits'),{
+      permitNumber:pNum,
+      type:type,
+      jobCard:jc,
+      location:loc,
+      issuedTo:document.getElementById('pm-artisan').value,
+      issuedBy:'Admin (Johan van V.)',
+      validFrom:document.getElementById('pm-from').value,
+      validUntil:document.getElementById('pm-until').value,
+      scope:scope,
+      status:'active',
+      source:'pc-admin',
+      createdAt:serverTimestamp()
+    });
+    closeModal('permit-modal');
+    toast(pNum+' issued successfully','success');
+  }catch(e){toast('Error: '+e.message,'error');}
+};
+
+window.approvePermit = async function(id){
+  await updateDoc(doc(db,'permits',id),{status:'active',approvedAt:serverTimestamp(),approvedBy:'Admin'});
+  const p = allPermits.find(x=>x.id===id);
+  if(p){
+    const jobSnap = await getDocs(query(collection(db,'jobCards'),where('jobNumber','==',p.jobCard)));
+    jobSnap.forEach(async d=>await updateDoc(doc(db,'jobCards',d.id),{permitNumber:p.permitNumber,status:'in-progress'}));
+  }
+  toast('Permit approved — artisan can now start work','success');
+};
+
+window.rejectPermit = async function(id){
+  await updateDoc(doc(db,'permits',id),{status:'rejected',rejectedAt:serverTimestamp()});
+  toast('Permit rejected','error');
+};
+
+window.closePermit = async function(id){
+  await updateDoc(doc(db,'permits',id),{status:'closed',closedAt:serverTimestamp()});
+  toast('Permit closed','success');
+};
+
+window.completeJob = async function(id){
+  await updateDoc(doc(db,'jobCards',id),{status:'completed',completedAt:serverTimestamp()});
+  toast('Job marked as complete','success');
+};
+
+window.convertFault = async function(id,desc,loc,priority){
+  const jNum = nextJobNum();
+  await addDoc(collection(db,'jobCards'),{
+    jobNumber:jNum,
+    description:desc,
+    location:loc,
+    priority:priority,
+    loggedBy:'Converted from fault',
+    status:'open',
+    permitRequired:'no',
+    materials:[],
+    totalCost:0,
+    source:'converted-fault',
+    createdAt:serverTimestamp()
+  });
+  await updateDoc(doc(db,'faults',id),{status:'converted',jobNumber:jNum});
+  toast('Fault converted to '+jNum+' — visible on mobile now','success');
+};
+
+window.addMaterial = async function(){
+  const desc=document.getElementById('mat-desc').value.trim();
+  const cost=parseFloat(document.getElementById('mat-cost').value)||0;
+  if(!desc){toast('Please enter a description','error');return;}
+  try{
+    await addDoc(collection(db,'materials'),{
+      code:document.getElementById('mat-code').value||nextMatCode(),
+      description:desc,
+      category:document.getElementById('mat-cat').value,
+      unitCost:cost,
+      inStock:parseInt(document.getElementById('mat-stock').value)||0,
+      minLevel:parseInt(document.getElementById('mat-min').value)||0,
+      usedMTD:0,
+      usedOnJobs:[],
+      createdAt:serverTimestamp()
+    });
+    closeModal('material-modal');
+    ['mat-desc','mat-cost','mat-stock','mat-min','mat-code'].forEach(id=>document.getElementById(id).value='');
+    toast('Material added to register','success');
+  }catch(e){toast('Error: '+e.message,'error');}
+};
+
+window.editStock = async function(id,current){
+  const newStock = prompt('Update stock level (current: '+current+'):',current);
+  if(newStock===null)return;
+  await updateDoc(doc(db,'materials',id),{inStock:parseInt(newStock)||0});
+  toast('Stock level updated','success');
+};
+
+window.addSchedule = async function(){
+  const task=document.getElementById('sc-task').value.trim();
+  if(!task){toast('Please enter a task description','error');return;}
+  try{
+    await addDoc(collection(db,'schedules'),{
+      task:task,
+      frequency:document.getElementById('sc-freq').value,
+      asset:document.getElementById('sc-asset').value,
+      assignedTo:document.getElementById('sc-assigned').value,
+      estTime:document.getElementById('sc-time').value,
+      materialsRequired:document.getElementById('sc-mats').value,
+      permitRequired:document.getElementById('sc-permit').value,
+      status:'scheduled',
+      nextDue:'Next scheduled',
+      createdAt:serverTimestamp()
+    });
+    closeModal('schedule-modal');
+    document.getElementById('sc-task').value='';
+    toast('PM task added — artisan will receive on their phone','success');
+  }catch(e){toast('Error: '+e.message,'error');}
+};
+
+window.addUser = async function(){
+  const name=document.getElementById('u-name').value.trim();
+  const phone=document.getElementById('u-phone').value.trim();
+  if(!name||!phone){toast('Name and phone number are required','error');return;}
+  try{
+    await addDoc(collection(db,'users'),{
+      name:name,
+      phone:phone,
+      role:document.getElementById('u-role').value,
+      trade:document.getElementById('u-trade').value,
+      empNo:document.getElementById('u-empno').value,
+      status:'active',
+      createdAt:serverTimestamp()
+    });
+    closeModal('user-modal');
+    ['u-name','u-phone','u-trade','u-empno'].forEach(id=>document.getElementById(id).value='');
+    toast(name+' added — they can now log in on their phone','success');
+  }catch(e){toast('Error: '+e.message,'error');}
+};
+
+window.deleteUser = async function(id){
+  if(!confirm('Remove this user?'))return;
+  const {deleteDoc} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  await deleteDoc(doc(db,'users',id));
+  toast('User removed','success');
+};
+
+window.deleteDoc_ = async function(col,id){
+  if(!confirm('Delete this item?'))return;
+  const {deleteDoc} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  await deleteDoc(doc(db,col,id));
+  toast('Deleted','success');
+};
+
+window.quickPermit = function(jobNum,artisan){
+  document.getElementById('ptw-jobcard').value=jobNum;
+  document.getElementById('ptw-artisan').value=artisan;
+  nav('permits',document.querySelector('.nav-item:nth-child(9)'));
+};
+
+window.saveSettings = async function(){
+  toast('Settings saved','success');
+};
+
+window.exportMaterials = function(){
+  const rows = [['Code','Description','Category','Unit Cost','In Stock','Min Level','Used MTD','Cost MTD']];
+  allMaterials.forEach(m=>rows.push([m.code,m.description,m.category,'R '+m.unitCost,m.inStock,m.minLevel,m.usedMTD,'R '+((m.usedMTD||0)*(m.unitCost||0))]));
+  const csv = rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(csv);a.download='PlantFlow-Materials.csv';a.click();
+  toast('Materials exported to CSV','success');
+};
+
+window.exportReport = function(){
+  toast('Generating report...','success');
+};
+</script>
+
+<script>
+// ── NON-MODULE UTILITIES ──
+function nav(id,el){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const sc=document.getElementById('s-'+id);
+  if(sc)sc.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el)el.classList.add('active');
+  const titles={dashboard:'Dashboard',schedules:'PM Schedules',jobcards:'Job Cards',faults:'Fault Reports',permits:'Permits to Work',inspections:'Inspections',ohsa:'OHSA Compliance',materials:'Materials & Spares',artisans:'Artisans & Contractors',reports:'Reports',users:'Manage Users',settings:'Settings'};
+  document.getElementById('page-title').textContent=titles[id]||id;
+}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function toast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast '+(type||'');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+// Date/time
+function setDate(){
+  const d=new Date();
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const el=document.getElementById('live-date');
+  if(el)el.textContent=days[d.getDay()]+' '+d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();
+}
+setDate();
+</script>
+</body>
+</html>
