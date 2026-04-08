@@ -293,8 +293,9 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
       </div>
     </div>
     <div class="scroll-content">
+      <!-- Job info card -->
       <div style="padding:14px 14px 0">
-        <div style="background:#fff;border-radius:14px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.05);margin-bottom:12px">
+        <div style="background:#fff;border-radius:14px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.05);margin-bottom:10px">
           <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Job details</div>
           <div class="ptw-row"><div class="ptw-label">Location</div><div class="ptw-val" id="jd-location">—</div></div>
           <div class="ptw-row"><div class="ptw-label">Asset</div><div class="ptw-val" id="jd-asset">—</div></div>
@@ -304,28 +305,67 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
         <div id="jd-permit-section"></div>
       </div>
 
-      <div class="section-title">Materials used on this job</div>
-      <div id="jd-materials-list"></div>
-      <div style="padding:0 14px 8px">
-        <button class="btn btn-secondary btn-sm" onclick="addMaterialToJob()">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 2v10M2 7h10"/></svg>
-          Add material used
+      <!-- MATERIALS SECTION -->
+      <div class="section-title">Materials &amp; Spares Used</div>
+
+      <!-- Existing materials list -->
+      <div id="jd-materials-list" style="padding:0 14px"></div>
+
+      <!-- Total cost banner -->
+      <div id="jd-total-banner" style="display:none;margin:0 14px 10px;background:#185FA5;border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.85)">Total job cost</div>
+        <div style="font-size:22px;font-weight:900;color:#fff" id="jd-grand-total">R 0.00</div>
+      </div>
+
+      <!-- Add new material line -->
+      <div style="margin:0 14px 10px;background:#fff;border-radius:14px;border:2px dashed #d1d5db;padding:14px">
+        <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#185FA5" stroke-width="2"><path d="M7 2v10M2 7h10"/></svg>
+          Add material / spare part
+        </div>
+        <div class="form-group" style="margin-bottom:8px">
+          <div class="form-label">Description *</div>
+          <input class="form-input" id="mat-line-desc" placeholder="e.g. Air pipe 2m, Coupling, Cable ties"/>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div class="form-group" style="margin-bottom:0">
+            <div class="form-label">Qty *</div>
+            <input class="form-input" id="mat-line-qty" type="number" min="0.1" step="0.1" placeholder="e.g. 2"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <div class="form-label">Unit (optional)</div>
+            <select class="form-select" id="mat-line-unit">
+              <option value="units">units</option>
+              <option value="m">m (metres)</option>
+              <option value="kg">kg</option>
+              <option value="L">L (litres)</option>
+              <option value="box">box</option>
+              <option value="roll">roll</option>
+              <option value="pair">pair</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px">
+          <div class="form-label">Unit price (R) *</div>
+          <input class="form-input" id="mat-line-price" type="number" min="0" step="0.01" placeholder="e.g. 2.50"/>
+        </div>
+        <!-- Live line total preview -->
+        <div id="mat-line-preview" style="background:#f0f9ff;border-radius:8px;padding:8px 12px;font-size:13px;color:#185FA5;font-weight:600;margin-bottom:10px;display:none">
+          Line total: R 0.00
+        </div>
+        <button class="btn btn-primary" style="padding:11px" onclick="addMaterialLine()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2"><path d="M8 2v12M2 8h12"/></svg>
+          Add to job
         </button>
       </div>
 
-      <div class="section-title">Completion photo</div>
-      <div class="photo-upload" onclick="toastMob('Camera would open here on a real phone','success')">
-        <div class="photo-upload-icon">📷</div>
-        <div style="font-size:13px;font-weight:600;color:#6b7280">Take before &amp; after photo</div>
-        <div style="font-size:11px;color:#9ca3af;margin-top:3px">Required before submitting</div>
-      </div>
-
+      <!-- Completion notes -->
       <div class="section-title">Completion notes</div>
       <div style="padding:0 14px 8px">
         <textarea class="form-textarea" id="jd-completion-notes" rows="3" placeholder="What was done? Any issues found? Recommendations?"></textarea>
       </div>
 
-      <div style="padding:8px 14px 20px;display:flex;flex-direction:column;gap:10px">
+      <div style="padding:8px 14px 24px;display:flex;flex-direction:column;gap:10px">
         <button class="btn btn-success" onclick="submitJobComplete()">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l5 5 7-8"/></svg>
           Submit job as complete
@@ -833,8 +873,9 @@ function fmtDateTime(ts){
 function priorityColor(p){return p==='high'||p==='critical'?'#dc2626':p==='medium'?'#d97706':'#16a34a';}
 
 window.renderArtisanJobs = function(){
-  const name = window._currentUserName || 'Artisan';
-  const myJobs = allJobs.filter(j=>j.assignedTo===name||j.assignedTo===''||!j.assignedTo);
+  const name = window._currentUserName || '';
+  // Only show jobs explicitly assigned to this artisan - not unassigned ones
+  const myJobs = name ? allJobs.filter(j=>j.assignedTo===name&&j.status!=='completed') : [];
   const container = document.getElementById('artisan-jobs-container');
   if(!container)return;
   const jobCount = document.getElementById('artisan-job-count');
@@ -893,46 +934,101 @@ window.openJobDetail = function(id){
 
 function renderJobMaterials(j){
   const list = document.getElementById('jd-materials-list');
+  const banner = document.getElementById('jd-total-banner');
   if(!list)return;
   const mats = j.materials||[];
-  if(!mats.length){list.innerHTML='<div style="padding:0 14px 8px;font-size:13px;color:#9ca3af">No materials logged yet</div>';return;}
-  list.innerHTML = mats.map((m,i)=>`<div class="mat-row"><div class="mat-name">${m.name}</div><div class="mat-qty">${m.qty} ${m.unit||'units'}</div><div style="font-size:12px;font-weight:600;min-width:55px;text-align:right">R ${((m.qty||1)*(m.unitCost||0)).toLocaleString()}</div></div>`).join('');
+  if(!mats.length){
+    list.innerHTML='<div style="font-size:13px;color:#9ca3af;padding:4px 0 10px">No materials logged yet — add items below.</div>';
+    if(banner)banner.style.display='none';
+    return;
+  }
+  const grandTotal = mats.reduce((s,m)=>s+((parseFloat(m.qty)||0)*(parseFloat(m.unitPrice||m.unitCost||0))),0);
+  list.innerHTML = mats.map((m,i)=>{
+    const unitP = parseFloat(m.unitPrice||m.unitCost||0);
+    const lineTotal = (parseFloat(m.qty)||0)*unitP;
+    return `<div style="background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:3px">${m.name}</div>
+          <div style="font-size:12px;color:#6b7280">${m.qty} ${m.unit||'units'} × R ${unitP.toFixed(2)}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:16px;font-weight:800;color:#185FA5">R ${lineTotal.toFixed(2)}</div>
+          <div onclick="removeMaterialLine(${i})" style="font-size:11px;color:#dc2626;cursor:pointer;margin-top:3px">✕ Remove</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  if(banner){
+    banner.style.display='flex';
+    const gt = document.getElementById('jd-grand-total');
+    if(gt) gt.textContent = 'R '+grandTotal.toFixed(2);
+  }
 }
 
-window.addMaterialToJob = function(){
-  const name = prompt('Material name (e.g. Pump seal kit 65mm):');
-  if(!name)return;
-  const qty = parseInt(prompt('Quantity used:')||'1');
-  const cost = parseFloat(prompt('Unit cost in Rand (e.g. 420):')||'0');
-  if(!window._currentJobId)return;
-  const j = allJobs.find(x=>x.id===window._currentJobId);
-  if(!j)return;
-  const mats = [...(j.materials||[]),{name,qty,unitCost:cost,unit:'units'}];
-  const totalCost = mats.reduce((s,m)=>s+(m.qty||1)*(m.unitCost||0),0);
-  updateDoc(doc(db,'jobCards',window._currentJobId),{materials:mats,totalCost,status:'in-progress'});
-  // Also update material stock
-  const matDoc = allMaterials.find(m=>m.description.toLowerCase()===name.toLowerCase());
-  if(matDoc){
-    const newStock = Math.max(0,(matDoc.inStock||0)-qty);
-    const newUsed = (matDoc.usedMTD||0)+qty;
-    const usedOnJobs = [...(matDoc.usedOnJobs||[])];
-    if(j.jobNumber&&!usedOnJobs.includes(j.jobNumber))usedOnJobs.push(j.jobNumber);
-    updateDoc(doc(db,'materials',matDoc.id),{inStock:newStock,usedMTD:newUsed,usedOnJobs});
-  }
-  toastMob('Material logged — PC dashboard updated','success');
-  // Refresh job detail
-  setTimeout(()=>{
-    const updated = allJobs.find(x=>x.id===window._currentJobId);
-    if(updated)renderJobMaterials(updated);
-  },800);
+window.addMaterialLine = function(){
+  const desc = (document.getElementById('mat-line-desc').value||'').trim();
+  const qty = parseFloat(document.getElementById('mat-line-qty').value)||0;
+  const unit = document.getElementById('mat-line-unit').value;
+  const price = parseFloat(document.getElementById('mat-line-price').value)||0;
+  if(!desc){toastMob('Please enter a description','error');return;}
+  if(qty<=0){toastMob('Please enter a valid quantity','error');return;}
+  if(price<=0){toastMob('Please enter a unit price','error');return;}
+  const j = allJobs.find(x=>x.id===window._currentJobId)||window._currentJob;
+  if(!j){toastMob('Job not found','error');return;}
+  const newMat = {name:desc,qty,unit,unitPrice:price,lineTotal:qty*price};
+  const mats = [...(j.materials||[]),newMat];
+  const totalCost = mats.reduce((s,m)=>s+((parseFloat(m.qty)||0)*(parseFloat(m.unitPrice||m.unitCost||0))),0);
+  updateDoc(doc(db,'jobCards',window._currentJobId),{materials:mats,totalCost,status:'in-progress'})
+    .then(()=>{
+      document.getElementById('mat-line-desc').value='';
+      document.getElementById('mat-line-qty').value='';
+      document.getElementById('mat-line-price').value='';
+      document.getElementById('mat-line-preview').style.display='none';
+      toastMob(desc+' — R '+(qty*price).toFixed(2)+' added','success');
+      const updated={...j,materials:mats,totalCost};
+      window._currentJob=updated;
+      renderJobMaterials(updated);
+    }).catch(e=>toastMob('Error: '+e.message,'error'));
 };
+
+window.removeMaterialLine = function(idx){
+  const j = allJobs.find(x=>x.id===window._currentJobId)||window._currentJob;
+  if(!j)return;
+  const mats=[...(j.materials||[])];
+  mats.splice(idx,1);
+  const totalCost=mats.reduce((s,m)=>s+((parseFloat(m.qty)||0)*(parseFloat(m.unitPrice||m.unitCost||0))),0);
+  updateDoc(doc(db,'jobCards',window._currentJobId),{materials:mats,totalCost}).then(()=>{
+    const updated={...j,materials:mats,totalCost};
+    window._currentJob=updated;
+    renderJobMaterials(updated);
+    toastMob('Item removed','success');
+  });
+};
+
+// Live price preview as user types
+document.addEventListener('input',function(e){
+  if(e.target.id==='mat-line-qty'||e.target.id==='mat-line-price'){
+    const qty=parseFloat(document.getElementById('mat-line-qty').value)||0;
+    const price=parseFloat(document.getElementById('mat-line-price').value)||0;
+    const preview=document.getElementById('mat-line-preview');
+    if(preview&&qty>0&&price>0){
+      preview.style.display='block';
+      preview.textContent='Line total: R '+(qty*price).toFixed(2)+' ('+qty+' × R '+price.toFixed(2)+')';
+    } else if(preview){preview.style.display='none';}
+  }
+});
 
 window.submitJobComplete = async function(){
   if(!window._currentJobId){toastMob('No job selected','error');return;}
-  const notes = document.getElementById('jd-completion-notes').value;
+  const j=allJobs.find(x=>x.id===window._currentJobId)||window._currentJob;
+  const notes=document.getElementById('jd-completion-notes').value;
+  const mats=j?j.materials||[]:[];
+  const totalCost=mats.reduce((s,m)=>s+((parseFloat(m.qty)||0)*(parseFloat(m.unitPrice||m.unitCost||0))),0);
   await updateDoc(doc(db,'jobCards',window._currentJobId),{
     status:'completed',
     completionNotes:notes,
+    totalCost,
     completedAt:serverTimestamp()
   });
   showSC('sc-job-success');

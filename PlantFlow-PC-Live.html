@@ -173,6 +173,23 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
 
   <!-- DASHBOARD -->
   <div class="screen active" id="s-dashboard">
+    <!-- SEARCH BAR -->
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,0.04)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#9ca3af" stroke-width="1.8"><circle cx="6.5" cy="6.5" r="5"/><path d="M11 11l3.5 3.5"/></svg>
+      <input id="dash-search" type="text" placeholder="Search job description, job number (e.g. JC-0001) or permit number (e.g. PTW-0001)..." style="border:none;outline:none;flex:1;font-size:12.5px;font-family:'Segoe UI',Arial,sans-serif;color:#111827;background:transparent" oninput="runDashSearch(this.value)"/>
+      <button class="tb-btn primary" style="padding:5px 14px;font-size:12px;flex-shrink:0" onclick="runDashSearch(document.getElementById('dash-search').value)">Search</button>
+      <button class="tb-btn" style="padding:5px 10px;font-size:12px;flex-shrink:0" onclick="document.getElementById('dash-search').value='';runDashSearch('')">Clear</button>
+    </div>
+    <!-- SEARCH RESULTS (hidden until search) -->
+    <div id="search-results-panel" style="display:none;margin-bottom:14px">
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title" id="search-results-title">Search results</div><button class="tb-btn" style="font-size:11px;padding:4px 10px" onclick="document.getElementById('search-results-panel').style.display='none'">✕ Close</button></div>
+        <table class="tbl">
+          <thead><tr><th>Type</th><th>Number</th><th>Description</th><th>Location</th><th>Assigned to</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="search-results-tbody"></tbody>
+        </table>
+      </div>
+    </div>
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-label">Open Job Cards</div><div class="stat-value" id="stat-jobs">—</div><div class="stat-sub warn" id="stat-jobs-sub">Loading...</div></div>
       <div class="stat-card"><div class="stat-label">Active Permits</div><div class="stat-value" id="stat-permits">—</div><div class="stat-sub" id="stat-permits-sub" style="color:#9ca3af">Loading...</div></div>
@@ -363,10 +380,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
       <div class="kpi-card"><div class="kpi-val" id="rep-faults">0</div><div class="kpi-label">Faults logged MTD</div></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><div class="panel-title">Materials cost by job (MTD)</div><button class="tb-btn" style="font-size:11px;padding:5px 10px" onclick="exportReport()">Export Excel</button></div>
+      <div class="panel-head"><div class="panel-title">Materials &amp; Cost per Job <span class="live-dot" style="margin-left:5px;width:6px;height:6px"></span></div><button class="tb-btn" style="font-size:11px;padding:5px 10px" onclick="exportReport()">Export CSV</button></div>
       <table class="tbl">
-        <thead><tr><th>Job #</th><th>Description</th><th>Location</th><th>Materials logged</th><th>Total cost</th><th>Artisan</th><th>Date completed</th></tr></thead>
-        <tbody id="reports-tbody"><tr><td colspan="7" class="empty-state">No completed jobs yet</td></tr></tbody>
+        <thead><tr><th>Job #</th><th>Description</th><th>Location</th><th>Artisan</th><th>Materials breakdown</th><th>Total cost</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody id="reports-tbody"><tr><td colspan="8" class="empty-state">No jobs with materials yet</td></tr></tbody>
       </table>
     </div>
     <div class="panel">
@@ -616,6 +633,7 @@ onSnapshot(query(collection(db,'jobCards'),orderBy('createdAt','desc')), snap =>
   renderJobCards();
   renderDashJobs();
   updateJobStats();
+  renderReports();
   setSync();
 });
 
@@ -1288,7 +1306,86 @@ window.exportMaterials = function(){
 };
 
 window.exportReport = function(){
-  toast('Generating report...','success');
+  const rows = [['Job #','Description','Location','Artisan','Material','Qty','Unit','Unit Price','Line Total','Job Total','Status','Date']];
+  allJobs.filter(j=>(j.materials||[]).length>0).forEach(j=>{
+    const mats = j.materials||[];
+    if(!mats.length){
+      rows.push([j.jobNumber,j.description,j.location,j.assignedTo,'—','','','','',j.totalCost||0,j.status,j.createdAt?new Date(j.createdAt.seconds*1000).toLocaleDateString('en-ZA'):'']);
+    } else {
+      mats.forEach((m,i)=>{
+        const unitP=parseFloat(m.unitPrice||m.unitCost||0);
+        const lineT=(parseFloat(m.qty)||0)*unitP;
+        rows.push([i===0?j.jobNumber:'',i===0?j.description:'',i===0?j.location:'',i===0?(j.assignedTo||''):'',m.name,m.qty,m.unit||'units','R '+unitP.toFixed(2),'R '+lineT.toFixed(2),i===0?'R '+(j.totalCost||0).toFixed(2):'',i===0?j.status:'',i===0&&j.createdAt?new Date(j.createdAt.seconds*1000).toLocaleDateString('en-ZA'):'']);
+      });
+    }
+  });
+  const csv = rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv,'+encodeURIComponent(csv);a.download='PlantFlow-Job-Cost-Report.csv';a.click();
+  toast('Report exported to CSV','success');
+};
+
+window.renderReports = function(){
+  const tbody = document.getElementById('reports-tbody');
+  if(!tbody)return;
+  const jobsWithMats = allJobs.filter(j=>(j.materials||[]).length>0);
+  const totalCost = allJobs.reduce((s,j)=>s+(parseFloat(j.totalCost)||0),0);
+  const el = document.getElementById('rep-cost');
+  if(el) el.textContent='R '+totalCost.toFixed(2);
+  if(!jobsWithMats.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">No jobs with materials logged yet — artisans log materials from their phones</td></tr>';return;}
+  tbody.innerHTML = jobsWithMats.map(j=>{
+    const mats=j.materials||[];
+    const breakdown = mats.map(m=>{
+      const unitP=parseFloat(m.unitPrice||m.unitCost||0);
+      const lineT=(parseFloat(m.qty)||0)*unitP;
+      return `<div style="font-size:11px;color:#374151;padding:2px 0"><span style="color:#6b7280">${m.qty} ${m.unit||'units'} × </span><b>${m.name}</b><span style="color:#6b7280"> @ R${unitP.toFixed(2)}</span> = <span style="font-weight:700;color:#185FA5">R${lineT.toFixed(2)}</span></div>`;
+    }).join('');
+    const total = parseFloat(j.totalCost)||mats.reduce((s,m)=>s+((parseFloat(m.qty)||0)*(parseFloat(m.unitPrice||m.unitCost||0))),0);
+    return `<tr>
+      <td style="font-size:11px;color:#9ca3af;font-weight:600">${j.jobNumber||'—'}</td>
+      <td><b>${j.description||'—'}</b></td>
+      <td style="color:#6b7280">${j.location||'—'}</td>
+      <td>${j.assignedTo||'—'}</td>
+      <td>${breakdown||'<span style="color:#9ca3af">No line items</span>'}</td>
+      <td style="font-size:15px;font-weight:800;color:#185FA5;white-space:nowrap">R ${total.toFixed(2)}</td>
+      <td>${statusBadge(j.status||'open')}</td>
+      <td style="font-size:11px">${fmtDate(j.createdAt)}</td>
+    </tr>`;
+  }).join('');
+};
+
+window.runDashSearch = function(val){
+  const q=(val||'').trim().toLowerCase();
+  const panel=document.getElementById('search-results-panel');
+  const tbody=document.getElementById('search-results-tbody');
+  const title=document.getElementById('search-results-title');
+  if(!q){panel.style.display='none';return;}
+  // Search jobs and permits
+  const matchJobs=allJobs.filter(j=>(j.jobNumber||'').toLowerCase().includes(q)||(j.description||'').toLowerCase().includes(q)||(j.location||'').toLowerCase().includes(q));
+  const matchPermits=allPermits.filter(p=>(p.permitNumber||'').toLowerCase().includes(q)||(p.type||'').toLowerCase().includes(q));
+  const total=matchJobs.length+matchPermits.length;
+  title.textContent=total+' result'+(total!==1?'s':'')+ ' for "'+val+'"';
+  panel.style.display='block';
+  if(!total){tbody.innerHTML='<tr><td colspan="7" class="empty-state">No results found — try a job number like JC-0001 or a keyword</td></tr>';return;}
+  const jobRows=matchJobs.map(j=>`<tr>
+    <td><span class="badge b-blue">Job card</span></td>
+    <td style="font-weight:700;color:#185FA5">${j.jobNumber||'—'}</td>
+    <td><b>${j.description||'—'}</b></td>
+    <td>${j.location||'—'}</td>
+    <td>${j.assignedTo||'<span style="color:#9ca3af">Unassigned</span>'}</td>
+    <td>${statusBadge(j.status||'open')}</td>
+    <td><button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="openAssignModal('${j.id}','${j.jobNumber}','${(j.assignedTo||'').replace(/'/g,"\\'")}')">Assign</button>
+    <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="nav('jobcards',document.querySelectorAll('.nav-item')[3])">Open →</button></td>
+  </tr>`).join('');
+  const permitRows=matchPermits.map(p=>`<tr>
+    <td><span class="badge b-purple">Permit</span></td>
+    <td style="font-weight:700;color:#6d28d9">${p.permitNumber||'—'}</td>
+    <td><b>${p.type||'—'}</b></td>
+    <td>${p.location||'—'}</td>
+    <td>${p.issuedTo||'—'}</td>
+    <td>${statusBadge(p.status||'pending')}</td>
+    <td><button class="tb-btn" style="font-size:11px;padding:3px 8px" onclick="nav('permits',document.querySelectorAll('.nav-item')[7])">Open →</button></td>
+  </tr>`).join('');
+  tbody.innerHTML=jobRows+permitRows;
 };
 
 window.openAssignModal = function(jobId, jobNum, currentAssignee){
