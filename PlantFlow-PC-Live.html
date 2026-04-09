@@ -314,7 +314,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div>
           <b>When does an inspection appear here?</b><br>
-          An inspection appears when a <b>Maintenance Manager or Artisan</b> submits one from their phone. On the mobile app, tap the <b>Schedule tab → Start safety inspection</b>. They tick each checklist item as Pass or Fail, then tap "Submit inspection to PC dashboard". It appears here immediately.
+          An inspection appears when a <b>Maintenance Manager or Artisan</b> submits one from their phone.<br>
+          • <b>Artisans:</b> Tap the 📅 Schedule tab → "Start safety inspection" button → tick each item → Submit<br>
+          • <b>Maintenance Manager:</b> Tap the 📊 Inspect tab → tick items → Submit
         </div>
         <div>
           <b>When should inspections be done?</b><br>
@@ -585,6 +587,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
           <div class="panel">
             <div class="panel-head"><div class="panel-title">Super Admin Settings</div></div>
             <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+              <div class="form-group">
+                <div class="form-label">Your company name <span style="color:#185FA5;font-weight:600">(appears under PlantFlow logo in sidebar)</span></div>
+                <input class="form-input" id="sa-company-name-input" placeholder="e.g. Acme Chemical (Pty) Ltd" oninput="document.getElementById('sidebar-company-name').textContent=this.value||'Admin Panel'"/>
+              </div>
               <div class="form-group"><div class="form-label">App name</div><input class="form-input" id="sa-app-name" value="PlantFlow — Maintenance OS"/></div>
               <div class="form-group"><div class="form-label">Support email</div><input class="form-input" id="sa-support-email" value="infobookanartisan01@gmail.com"/></div>
               <div class="form-group"><div class="form-label">Change super admin password</div><input class="form-input" type="password" id="sa-new-password" placeholder="New password"/></div>
@@ -819,7 +825,20 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
         <div class="form-group"><div class="form-label">Est. time</div><input class="form-input" id="sc-time" placeholder="e.g. 30 min"/></div>
       </div>
       <div class="form-group"><div class="form-label">Materials required</div><input class="form-input" id="sc-mats" placeholder="e.g. Grease 500g, Filter element"/></div>
-      <div class="form-group"><div class="form-label">Permit required?</div><select class="form-select" id="sc-permit"><option value="no">No</option><option value="yes">Yes — PTW required</option></select></div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Permit required?</div><select class="form-select" id="sc-permit"><option value="no">No</option><option value="yes">Yes — PTW required</option></select></div>
+        <div class="form-group">
+          <div class="form-label">Inspection type (for artisan checklist)</div>
+          <select class="form-select" id="sc-insp-type">
+            <option value="electrical">⚡ Electrical — panels, wiring, LOTO, guards</option>
+            <option value="mechanical">🔧 Mechanical — machinery, bearings, belts, guards</option>
+            <option value="fire">🔴 Fire safety — extinguishers, exits, hose reels</option>
+            <option value="chemical">🧪 Chemical — SDS, labelling, PPE, storage</option>
+            <option value="pressure">🔵 Pressure vessels — boilers, compressors, relief valves</option>
+            <option value="general">📋 General safety — walkthrough, housekeeping</option>
+          </select>
+        </div>
+      </div>
     </div>
     <div class="modal-foot"><button class="tb-btn" onclick="closeModal('schedule-modal')">Cancel</button><button class="tb-btn primary" onclick="addSchedule()">Add PM task</button></div>
   </div>
@@ -901,7 +920,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
 <!-- FIREBASE SDK -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, serverTimestamp, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, serverTimestamp, where, getDocs, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDQuAJF_dy2e8RfWhTvME0Ast6g9B2ZYRI",
@@ -922,6 +941,7 @@ window._doc = doc;
 window._updateDoc = updateDoc;
 window._serverTimestamp = serverTimestamp;
 window._getDocs = getDocs;
+window._getDoc = getDoc;
 window._query = query;
 window._orderBy = orderBy;
 window._where = where;
@@ -1479,6 +1499,27 @@ async function loadOHSAScores(){
 }
 loadOHSAScores();
 
+// Load saved company name from Firestore on startup
+(async function loadSavedCompanyName(){
+  try{
+    const docSnap = await getDoc(doc(db,'config','superadmin'));
+    if(docSnap.exists()){
+      const data = docSnap.data();
+      if(data.companyName){
+        const sideEl = document.getElementById('sidebar-company-name');
+        if(sideEl) sideEl.textContent = data.companyName;
+        const inputEl = document.getElementById('sa-company-name-input');
+        if(inputEl) inputEl.value = data.companyName;
+      }
+      // Also restore other SA settings fields
+      if(data.subscriptionPrice) { const el=document.getElementById('sa-sub-price'); if(el) el.value=data.subscriptionPrice; }
+      if(data.trialDays) { const el=document.getElementById('sa-trial'); if(el) el.value=data.trialDays; }
+      if(data.pfMerchant) { const el=document.getElementById('sa-pf-merchant'); if(el) el.value=data.pfMerchant; }
+      if(data.pfKey) { const el=document.getElementById('sa-pf-key'); if(el) el.value=data.pfKey; }
+    }
+  }catch(e){ console.log('loadSavedCompanyName:',e.message); }
+})();
+
 window.renderSchedules = function(){
   const tbody = document.getElementById('schedules-tbody');
   if(!tbody)return;
@@ -2008,6 +2049,7 @@ window.addSchedule = async function(){
       estTime: document.getElementById('sc-time').value,
       materialsRequired: document.getElementById('sc-mats').value,
       permitRequired: document.getElementById('sc-permit').value,
+      inspectionType: document.getElementById('sc-insp-type')?.value||'general',
       status: 'scheduled',
       startDate: startDateVal||firstDue.toISOString().split('T')[0],
       extraDates,
@@ -2378,22 +2420,33 @@ window.saveSASettings = async function(){
   const newPw = document.getElementById('sa-new-password')?.value||'';
   const confPw = document.getElementById('sa-confirm-password')?.value||'';
   if(newPw&&newPw!==confPw){toast('Passwords do not match','error');return;}
+  const companyName = document.getElementById('sa-company-name-input')?.value.trim()||'';
+  const data = {
+    id:'superadmin',
+    subscriptionPrice: parseFloat(document.getElementById('sa-sub-price')?.value)||299,
+    currency: document.getElementById('sa-currency')?.value||'ZAR',
+    trialDays: parseInt(document.getElementById('sa-trial')?.value)||30,
+    pfMerchant: document.getElementById('sa-pf-merchant')?.value||'',
+    pfKey: document.getElementById('sa-pf-key')?.value||'',
+    appName: document.getElementById('sa-app-name')?.value||'PlantFlow',
+    companyName: companyName,
+    supportEmail: document.getElementById('sa-support-email')?.value||'',
+    updatedAt: window._serverTimestamp()
+  };
   try{
-    await _upd('config','superadmin',{
-      subscriptionPrice: parseFloat(document.getElementById('sa-sub-price').value)||299,
-      currency: document.getElementById('sa-currency').value,
-      trialDays: parseInt(document.getElementById('sa-trial').value)||30,
-      pfMerchant: document.getElementById('sa-pf-merchant').value,
-      pfKey: document.getElementById('sa-pf-key').value,
-      appName: document.getElementById('sa-app-name')?.value||'PlantFlow',
-      supportEmail: document.getElementById('sa-support-email')?.value||'',
-      updatedAt: window._serverTimestamp()
-    });
+    // Use setDoc with merge so it creates or updates the fixed-ID doc
+    const {setDoc} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await setDoc(window._doc(window.db,'config','superadmin'), data, {merge:true});
   }catch(e){
-    try{ await _add('config',{id:'superadmin',updatedAt:window._serverTimestamp()}); }catch(e2){}
+    console.error('saveSASettings error:',e);
+    toast('Error saving: '+e.message,'error');
+    return;
   }
+  // Update sidebar immediately — no waiting for Firestore
+  const sideEl = document.getElementById('sidebar-company-name');
+  if(sideEl) sideEl.textContent = companyName||'Admin Panel';
   updateTrialCountdown();
-  toast('Settings saved','success');
+  toast('Settings saved'+(companyName?' — "'+companyName+'" now shows in sidebar':''),'success');
 };
 
 window.addSACompany = async function(){
@@ -2650,6 +2703,12 @@ function setDate(){
   if(el)el.textContent=days[d.getDay()]+' '+d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();
 }
 setDate();
+// Auto-refresh every 10 minutes — Firestore onSnapshot listeners handle live data,
+// but this catches any edge cases and refreshes computed values like OHSA stats
+setInterval(function(){
+  if(typeof renderOHSA==='function') renderOHSA();
+  if(typeof updateTrialCountdown==='function') updateTrialCountdown();
+}, 10*60*1000);
 </script>
 </body>
 </html>
