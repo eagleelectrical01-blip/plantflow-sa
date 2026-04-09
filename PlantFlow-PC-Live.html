@@ -336,7 +336,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
         <span style="font-size:11px;color:#6b7280">Submitted from Maintenance Manager and Artisan phones</span>
       </div>
       <table class="tbl">
-        <thead><tr><th>Date</th><th>Inspection type</th><th>Inspector</th><th>Area</th><th>Items checked</th><th>Passed</th><th>Failed</th><th>Result</th></tr></thead>
+        <thead><tr><th>Date</th><th>Inspection type</th><th>Inspector</th><th>Area</th><th>Items checked</th><th>Passed</th><th>Failed</th><th>Result</th><th></th></tr></thead>
         <tbody id="inspections-tbody"><tr><td colspan="8" class="empty-state">No inspections yet — Maintenance Manager submits inspections from their phone (Schedule tab → Start safety inspection)</td></tr></tbody>
       </table>
     </div>
@@ -1500,25 +1500,39 @@ async function loadOHSAScores(){
 loadOHSAScores();
 
 // Load saved company name from Firestore on startup
-(async function loadSavedCompanyName(){
+async function loadSavedCompanyName(){
   try{
+    // Try fixed document ID first (new saves use this)
     const docSnap = await getDoc(doc(db,'config','superadmin'));
     if(docSnap.exists()){
       const data = docSnap.data();
-      if(data.companyName){
-        const sideEl = document.getElementById('sidebar-company-name');
-        if(sideEl) sideEl.textContent = data.companyName;
-        const inputEl = document.getElementById('sa-company-name-input');
-        if(inputEl) inputEl.value = data.companyName;
-      }
-      // Also restore other SA settings fields
-      if(data.subscriptionPrice) { const el=document.getElementById('sa-sub-price'); if(el) el.value=data.subscriptionPrice; }
-      if(data.trialDays) { const el=document.getElementById('sa-trial'); if(el) el.value=data.trialDays; }
-      if(data.pfMerchant) { const el=document.getElementById('sa-pf-merchant'); if(el) el.value=data.pfMerchant; }
-      if(data.pfKey) { const el=document.getElementById('sa-pf-key'); if(el) el.value=data.pfKey; }
+      applySavedSettings(data);
+      return;
+    }
+    // Fallback: query by id field (old saves used addDoc with auto-ID)
+    const snap = await getDocs(query(collection(db,'config'),where('id','==','superadmin')));
+    if(!snap.empty){
+      applySavedSettings(snap.docs[0].data());
     }
   }catch(e){ console.log('loadSavedCompanyName:',e.message); }
-})();
+}
+
+function applySavedSettings(data){
+  if(data.companyName){
+    const sideEl = document.getElementById('sidebar-company-name');
+    if(sideEl) sideEl.textContent = data.companyName;
+    const inputEl = document.getElementById('sa-company-name-input');
+    if(inputEl) inputEl.value = data.companyName;
+  }
+  if(data.subscriptionPrice){ const el=document.getElementById('sa-sub-price'); if(el) el.value=data.subscriptionPrice; }
+  if(data.trialDays){ const el=document.getElementById('sa-trial'); if(el) el.value=data.trialDays; }
+  if(data.pfMerchant){ const el=document.getElementById('sa-pf-merchant'); if(el) el.value=data.pfMerchant; }
+  if(data.pfKey){ const el=document.getElementById('sa-pf-key'); if(el) el.value=data.pfKey; }
+}
+
+// Run immediately and again after 2s to ensure DOM is ready
+loadSavedCompanyName();
+setTimeout(loadSavedCompanyName, 2000);
 
 window.renderSchedules = function(){
   const tbody = document.getElementById('schedules-tbody');
@@ -1542,17 +1556,25 @@ window.renderSchedules = function(){
 window.renderInspections = function(){
   const tbody = document.getElementById('inspections-tbody');
   if(!tbody)return;
-  if(!allInspections.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">No inspections submitted yet — artisans submit from their phones</td></tr>';return;}
+  if(!allInspections.length){tbody.innerHTML='<tr><td colspan="9" class="empty-state">No inspections submitted yet — artisans submit from their phones via the Schedule tab</td></tr>';return;}
   tbody.innerHTML = allInspections.map(i=>`<tr>
-    <td>${fmtDate(i.createdAt)}</td>
-    <td><b>${i.type||'Safety inspection'}</b></td>
-    <td>${i.inspector||'—'}</td>
+    <td style="font-size:11px">${fmtDate(i.createdAt)}</td>
+    <td><b>${i.type||'Safety inspection'}</b>${i.scheduleTask?`<br><span style="font-size:10px;color:#6b7280">${i.scheduleTask}</span>`:''}</td>
+    <td>${i.inspector||i.submittedBy||'—'}</td>
     <td>${i.area||'—'}</td>
     <td>${i.totalItems||'—'}</td>
-    <td style="color:#16a34a;font-weight:600">${i.passed||'—'}</td>
+    <td style="color:#16a34a;font-weight:600">${i.passed||0}</td>
     <td style="color:${i.failed>0?'#dc2626':'#16a34a'};font-weight:600">${i.failed||0}</td>
     <td>${i.failed>0?'<span class="badge b-amber">'+i.failed+' fail(s)</span>':'<span class="badge b-green">All pass</span>'}</td>
+    <td><button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteInspection('${i.id}')">🗑</button></td>
   </tr>`).join('');
+};
+
+window.deleteInspection = async function(id){
+  if(!confirm('Delete this inspection record?'))return;
+  const {deleteDoc} = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+  await deleteDoc(doc(db,'inspections',id));
+  toast('Inspection deleted','success');
 };
 
 window.renderPermitAudit = function(){

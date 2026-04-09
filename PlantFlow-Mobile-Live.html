@@ -516,7 +516,7 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
       <!-- Selected day tasks -->
       <div style="padding:10px 14px 4px;font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px" id="cal-day-label">Tasks this month</div>
       <div id="cal-tasks-list">
-        <div class="empty-state-mob"><div class="empty-icon">📅</div><div class="empty-title">No scheduled tasks</div><div class="empty-sub">The manager assigns PM tasks to you from the Admin Panel. They appear here.</div></div>
+        <div class="empty-state-mob"><div class="empty-icon">🗓️</div><div class="empty-title">No tasks assigned to you yet</div><div class="empty-sub" id="cal-empty-hint">The manager assigns PM tasks in the Admin Panel → PM Schedules → Add Task → select your name from the "Assigned to" dropdown.</div></div>
       </div>
     </div>
   </div>
@@ -1117,7 +1117,8 @@ function renderCalTasks(mySchedules, taskDays){
   }
 
   if(!tasks.length){
-    list.innerHTML='<div class="empty-state-mob"><div class="empty-icon">📅</div><div class="empty-title">No tasks assigned</div><div class="empty-sub">The manager assigns PM tasks to you in the Admin Panel. They appear here with colour-coded dots on the calendar.</div></div>';
+    const name = window._currentUserName||'you';
+    list.innerHTML='<div class="empty-state-mob"><div class="empty-icon">🗓️</div><div class="empty-title">No tasks assigned to '+name+'</div><div class="empty-sub">The manager must go to PC Admin Panel → PM Schedules → Add Task → select <b>'+name+'</b> from the "Assigned to" dropdown. The name must match exactly.</div></div>';
     return;
   }
 
