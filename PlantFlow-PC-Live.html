@@ -612,10 +612,45 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
           </table>
         </div>
       </div>
+
+      <!-- HOW BILLING WORKS -->
+      <div class="panel" style="margin-top:0">
+        <div class="panel-head"><div class="panel-title">💳 How billing works — your process</div></div>
+        <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:12.5px;line-height:1.8;color:#374151">
+          <div>
+            <div style="font-weight:700;color:#185FA5;margin-bottom:8px">Step 1 — Add the company</div>
+            Click "+ Add company" above. Enter their name, email, phone, industry, subscription price and trial days. The trial countdown starts immediately from today.
+            <div style="font-weight:700;color:#185FA5;margin-top:12px;margin-bottom:8px">Step 2 — Send them a payment request</div>
+            Click "📧 Send payment request" on any company row (appears when trial is close to expiring). This opens an email to the client with a PayFast payment link and their subscription details.
+            <div style="font-weight:700;color:#185FA5;margin-top:12px;margin-bottom:8px">Step 3 — Confirm payment</div>
+            When they pay (EFT, card, or PayFast), open the company detail, set Status to <b>Active — paid</b>, update the Expires date, and save. The trial countdown changes to "✓ Subscription active".
+          </div>
+          <div>
+            <div style="font-weight:700;color:#dc2626;margin-bottom:8px">If they don't pay</div>
+            Click ⏸ Hold on their row. Their PlantFlow login still works but you can see their status is "held" — use this as a flag to follow up. Currently PlantFlow does not block access automatically (you control this manually).
+            <div style="font-weight:700;color:#374151;margin-top:12px;margin-bottom:8px">Payment methods you can use</div>
+            • <b>EFT / bank transfer</b> — send your banking details in the email<br>
+            • <b>PayFast</b> — paste your PayFast payment link in the email template<br>
+            • <b>SnapScan</b> — include your SnapScan QR code<br>
+            • <b>Cash</b> — mark as active manually after receiving
+            <div style="background:#fef3c7;border-radius:8px;padding:10px;margin-top:10px;font-size:12px;color:#92400e">
+              <b>Tip:</b> Set the trial to 30 days so clients have time to test. Follow up on day 25 with a payment request email. After payment, extend their expiry by 30 days and set status to Active.
+            </div>
+          </div>
+        </div>
+        <div style="padding:0 16px 16px">
+          <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px">Quick payment email — select a company and send:</div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <select class="form-select" id="billing-company-select" style="flex:1;font-size:12.5px">
+              <option value="">-- Select company to send payment request --</option>
+            </select>
+            <button class="tb-btn primary" style="padding:8px 16px;white-space:nowrap" onclick="sendPaymentRequest()">📧 Send payment request</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-
-  </div><!-- end content -->
+  </div>
 </div><!-- end main -->
 </div><!-- end app -->
 
@@ -2510,6 +2545,17 @@ window.loadSACompanies = async function(){
     const countEl = document.getElementById('sa-company-count');
     if(countEl) countEl.textContent = snap.size;
 
+    // Populate billing dropdown
+    const billingSelect = document.getElementById('billing-company-select');
+    if(billingSelect){
+      billingSelect.innerHTML = '<option value="">-- Select company to send payment request --</option>'+
+        snap.docs.map(d=>{
+          const c=d.data();
+          return '<option value="'+[c.name||'',c.adminEmail||'',c.price||'299',c.trialDays||'30'].join('||')+'">'+
+            (c.name||'—')+' · '+(c.adminEmail||'no email')+' · R'+(c.price||'299')+'/mo</option>';
+        }).join('');
+    }
+
     // Update sidebar with first company name
     if(!snap.empty){
       const firstName = snap.docs[0].data().name;
@@ -2646,32 +2692,93 @@ window.deleteCompanyById = async function(id,name){
   toast(name+' deleted','success');
 };
 
+window.sendPaymentRequest = function(){
+  const sel = document.getElementById('billing-company-select');
+  if(!sel||!sel.value){toast('Please select a company first','error');return;}
+  const parts = sel.value.split('||');
+  const name = parts[0]||'';
+  const email = parts[1]||'';
+  const price = parts[2]||'299';
+  const days = parts[3]||'30';
+  const pfMerchant = document.getElementById('sa-pf-merchant')?.value||'';
+  const subject = encodeURIComponent('PlantFlow Subscription — Payment Required');
+  const body = encodeURIComponent(
+    'Dear '+name+',\n\n'+
+    'Thank you for using PlantFlow — Maintenance OS.\n\n'+
+    'Your free trial period is ending soon. To continue using PlantFlow without interruption, please arrange payment of:\n\n'+
+    '   R '+price+' per month\n\n'+
+    'Payment options:\n'+
+    '• EFT / Bank transfer — contact us for banking details\n'+
+    '• PayFast — Merchant ID: '+pfMerchant+'\n'+
+    '• Contact us on WhatsApp to arrange payment\n\n'+
+    'Once payment is received, your subscription will be activated for the next 30 days.\n\n'+
+    'If you have any questions, please reply to this email or contact us directly.\n\n'+
+    'Kind regards,\n'+
+    'Eagle Electrical Ventures\n'+
+    'PlantFlow — Maintenance OS\n'+
+    'infobookanartisan01@gmail.com'
+  );
+  if(!email){toast('This company has no email address — open their detail page to add one','error');return;}
+  window.open('mailto:'+email+'?subject='+subject+'&body='+body);
+  toast('Payment email opened for '+name,'success');
+};
+
 function updateTrialCountdown(){
-  if(!window._getDocs||!window._collection||!window.db) return;
+  const el = document.getElementById('trial-countdown');
+  if(!el||!window._getDocs||!window._collection||!window.db) return;
+  // Try companies collection first, fall back to config/superadmin
   window._getDocs(window._collection(window.db,'companies')).then(snap=>{
-    const el = document.getElementById('trial-countdown');
-    if(!el) return;
-    if(snap.empty){el.style.display='none';return;}
-    const c = snap.docs[0].data();
-    if(!c.trialStart||!c.trialDays){el.style.display='none';return;}
-    const exp = new Date(c.trialStart);
-    exp.setDate(exp.getDate()+(c.trialDays||30));
-    const diff = Math.ceil((exp-new Date())/(1000*60*60*24));
-    if(diff<=0){
-      el.innerHTML='<span style="color:#dc2626;font-weight:700;font-size:12px">⚠ Free trial expired</span>';
-    } else {
-      const color = diff<=5?'#dc2626':diff<=14?'#d97706':'#16a34a';
-      el.innerHTML='<span style="color:'+color+';font-weight:700;font-size:12px">🕐 '+diff+' trial day'+(diff!==1?'s':'')+' left</span>';
+    if(!snap.empty){
+      const c = snap.docs[0].data();
+      if(c.trialStart&&c.trialDays){
+        showCountdown(el, c.trialStart, c.trialDays, c.status);
+        const sideEl = document.getElementById('sidebar-company-name');
+        if(sideEl&&c.name) sideEl.textContent = c.name;
+        return;
+      }
     }
-    el.style.display='flex';
-    // Update sidebar company name while we're here
-    const sideEl = document.getElementById('sidebar-company-name');
-    if(sideEl&&c.name) sideEl.textContent = c.name;
-  }).catch(()=>{});
+    // No company yet — try config/superadmin for global trial days
+    if(window._getDoc&&window._doc){
+      window._getDoc(window._doc(window.db,'config','superadmin')).then(docSnap=>{
+        if(docSnap.exists()){
+          const d = docSnap.data();
+          if(d.companyName){
+            const sideEl = document.getElementById('sidebar-company-name');
+            if(sideEl) sideEl.textContent = d.companyName;
+          }
+        }
+      }).catch(()=>{});
+    }
+    el.style.display='none';
+  }).catch(()=>{el.style.display='none';});
 }
+
+function showCountdown(el, trialStart, trialDays, status){
+  if(status==='active'){
+    el.innerHTML='<span style="color:#16a34a;font-weight:700;font-size:12px">✓ Subscription active</span>';
+    el.style.display='flex'; return;
+  }
+  if(status==='held'){
+    el.innerHTML='<span style="color:#dc2626;font-weight:700;font-size:12px">⏸ Account on hold</span>';
+    el.style.display='flex'; return;
+  }
+  const exp = new Date(trialStart);
+  exp.setDate(exp.getDate()+(trialDays||30));
+  const diff = Math.ceil((exp-new Date())/(1000*60*60*24));
+  if(diff<=0){
+    el.innerHTML='<span style="color:#dc2626;font-weight:700;font-size:12px">⚠ Trial expired — payment needed</span>';
+  } else {
+    const color = diff<=5?'#dc2626':diff<=14?'#d97706':'#16a34a';
+    el.innerHTML='<span style="color:'+color+';font-weight:700;font-size:12px">🕐 '+diff+' free trial day'+(diff!==1?'s':'')+' left</span>';
+  }
+  el.style.display='flex';
+}
+
 window.updateTrialCountdown = updateTrialCountdown;
-// Run after a short delay to let Firebase module init first
-setTimeout(updateTrialCountdown, 2000);
+// Try at 1s, 3s and 6s to handle slow Firebase init
+setTimeout(updateTrialCountdown, 1000);
+setTimeout(updateTrialCountdown, 3000);
+setTimeout(updateTrialCountdown, 6000);
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){
   document.getElementById(id).classList.remove('open');
