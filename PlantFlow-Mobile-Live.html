@@ -368,6 +368,34 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
         </button>
       </div>
 
+      <!-- Permit number entry -->
+      <div class="section-title">Permit number</div>
+      <div style="padding:0 14px 8px">
+        <input class="form-input" id="jd-permit-num-entry" placeholder="Enter permit number if applicable (e.g. PTW-0005)"/>
+        <div style="font-size:11px;color:#6b7280;margin-top:4px">If a permit was issued for this job, enter the number here so it appears on the dashboard</div>
+      </div>
+
+      <!-- Awaiting spares section -->
+      <div class="section-title">Awaiting spares / parts?</div>
+      <div style="margin:0 14px 12px;background:#fff;border-radius:14px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
+        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:12px">
+          <div id="spares-toggle" onclick="toggleSpares()" style="width:48px;height:26px;border-radius:13px;background:#d1d5db;position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0">
+            <div id="spares-toggle-dot" style="width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2)"></div>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#111827">Job is waiting for spares</div>
+            <div style="font-size:12px;color:#6b7280">Manager will be notified immediately (shows in RED on dashboard)</div>
+          </div>
+        </label>
+        <div id="spares-detail-section" style="display:none">
+          <div style="font-size:11px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Spares / parts needed:</div>
+          <textarea class="form-textarea" id="jd-spares-needed" rows="3" placeholder="List the spares needed e.g.&#10;- 2x Air pipe coupling 25mm&#10;- 1x Pump seal kit 65mm&#10;- Cable ties (pack)"></textarea>
+          <button class="btn btn-amber" style="margin-top:8px;padding:10px;font-size:13px" onclick="saveSpares()">
+            🔧 Send spares request to manager
+          </button>
+        </div>
+      </div>
+
       <!-- Completion notes -->
       <div class="section-title">Completion notes</div>
       <div style="padding:0 14px 8px">
@@ -476,6 +504,14 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
       </div>
       <!-- Calendar grid -->
       <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);background:#fff;padding:4px"></div>
+
+      <!-- Colour legend -->
+      <div style="display:flex;gap:12px;padding:6px 16px 8px;background:#fff;border-top:1px solid #f3f4f6;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#185FA5"></div><span style="font-size:10px;color:#374151;font-weight:600">Daily</span></div>
+        <div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#6d28d9"></div><span style="font-size:10px;color:#374151;font-weight:600">Weekly</span></div>
+        <div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#16a34a"></div><span style="font-size:10px;color:#374151;font-weight:600">Monthly</span></div>
+        <div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#d97706"></div><span style="font-size:10px;color:#374151;font-weight:600">Quarterly</span></div>
+      </div>
 
       <!-- Selected day tasks -->
       <div style="padding:14px 14px 4px;font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px" id="cal-day-label">Tasks this month</div>
@@ -977,17 +1013,29 @@ function renderCalendar(){
   let html = '';
   // Empty cells before first day
   for(let i=0;i<firstDay;i++) html += '<div style="padding:6px 2px"></div>';
+  // Frequency colours
+  const freqDotColor = {daily:'#185FA5',weekly:'#6d28d9',monthly:'#16a34a',quarterly:'#d97706'};
   // Day cells
   for(let d=1;d<=daysInMonth;d++){
     const isToday = d===today.getDate()&&calMonth===today.getMonth()&&calYear===today.getFullYear();
     const isSelected = d===calSelectedDay;
-    const hasTasks = taskDays[d]&&taskDays[d].length>0;
+    const dayTasks = taskDays[d]||[];
     const bg = isSelected?'#185FA5':isToday?'#dbeafe':'transparent';
     const color = isSelected?'#fff':isToday?'#185FA5':'#111827';
-    html += '<div onclick="calSelectDay('+d+')" style="padding:5px 2px;text-align:center;cursor:pointer;border-radius:8px;margin:1px;background:'+bg+'">';
+    html += '<div onclick="calSelectDay('+d+')" style="padding:4px 1px;text-align:center;cursor:pointer;border-radius:8px;margin:1px;background:'+bg+'">';
     html += '<div style="font-size:13px;font-weight:'+(isToday||isSelected?'800':'500')+';color:'+color+'">'+d+'</div>';
-    if(hasTasks) html += '<div style="width:5px;height:5px;border-radius:50%;background:'+(isSelected?'#fff':'#F5820A')+';margin:1px auto 0"></div>';
-    else html += '<div style="width:5px;height:5px;margin:1px auto 0"></div>';
+    // Show coloured dots for each unique frequency on this day
+    if(dayTasks.length>0){
+      const freqs = [...new Set(dayTasks.map(t=>t.frequency))];
+      html += '<div style="display:flex;gap:2px;justify-content:center;margin-top:2px">';
+      freqs.slice(0,4).forEach(f=>{
+        const dotColor = isSelected?'rgba(255,255,255,0.9)':(freqDotColor[f]||'#F5820A');
+        html += '<div style="width:5px;height:5px;border-radius:50%;background:'+dotColor+'"></div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div style="height:7px"></div>';
+    }
     html += '</div>';
   }
   grid.innerHTML = html;
@@ -1215,7 +1263,23 @@ window.openJobDetail = function(id){
   document.getElementById('jd-asset').textContent = j.asset||'—';
   document.getElementById('jd-priority').textContent = j.priority||'—';
   document.getElementById('jd-notes').textContent = j.notes||'None';
-  // Permit section
+
+  // Pre-fill permit number if exists
+  const permitEntry = document.getElementById('jd-permit-num-entry');
+  if(permitEntry) permitEntry.value = j.permitNumber||'';
+
+  // Reset and set spares toggle to match job state
+  _sparesOn = j.awaitingSpares||false;
+  const toggle = document.getElementById('spares-toggle');
+  const dot = document.getElementById('spares-toggle-dot');
+  const detail = document.getElementById('spares-detail-section');
+  if(toggle) toggle.style.background = _sparesOn ? '#dc2626' : '#d1d5db';
+  if(dot) dot.style.left = _sparesOn ? '24px' : '2px';
+  if(detail) detail.style.display = _sparesOn ? 'block' : 'none';
+  const sparesEl = document.getElementById('jd-spares-needed');
+  if(sparesEl) sparesEl.value = j.sparesNeeded||'';
+
+  // Permit section banner
   const permitSection = document.getElementById('jd-permit-section');
   const activePermit = allPermits.find(p=>p.jobCard===j.jobNumber&&p.status==='active');
   if(activePermit){
@@ -1223,6 +1287,7 @@ window.openJobDetail = function(id){
   }else if(j.permitRequired==='yes'){
     permitSection.innerHTML=`<div style="background:#fee2e2;border-radius:14px;padding:14px;margin-bottom:12px;border:1.5px solid #dc2626"><div style="font-size:13px;font-weight:700;color:#b91c1c;margin-bottom:4px">⚠ Permit required — work blocked</div><div style="font-size:12px;color:#dc2626">You cannot start this job until the Production Manager issues a Permit to Work.</div></div>`;
   }else{permitSection.innerHTML='';}
+
   // Materials list
   renderJobMaterials(j);
   showSC('sc-job-detail');
@@ -1319,15 +1384,47 @@ window.submitJobComplete = async function(){
   if(!window._currentJobId){toastMob('No job selected','error');return;}
   const j=allJobs.find(x=>x.id===window._currentJobId)||window._currentJob;
   const notes=document.getElementById('jd-completion-notes').value;
+  const permitNum=document.getElementById('jd-permit-num-entry')?.value.trim()||'';
   const mats=j?j.materials||[]:[];
   const totalCost=mats.reduce((s,m)=>s+((parseFloat(m.qty)||0)*(parseFloat(m.unitPrice||m.unitCost||0))),0);
-  await updateDoc(doc(db,'jobCards',window._currentJobId),{
+  const updates = {
     status:'completed',
     completionNotes:notes,
     totalCost,
     completedAt:serverTimestamp()
-  });
+  };
+  if(permitNum) updates.permitNumber = permitNum;
+  await updateDoc(doc(db,'jobCards',window._currentJobId), updates);
   showSC('sc-job-success');
+};
+
+// Awaiting spares toggle
+let _sparesOn = false;
+window.toggleSpares = function(){
+  _sparesOn = !_sparesOn;
+  const toggle = document.getElementById('spares-toggle');
+  const dot = document.getElementById('spares-toggle-dot');
+  const detail = document.getElementById('spares-detail-section');
+  if(toggle) toggle.style.background = _sparesOn ? '#dc2626' : '#d1d5db';
+  if(dot) dot.style.left = _sparesOn ? '24px' : '2px';
+  if(detail) detail.style.display = _sparesOn ? 'block' : 'none';
+  // Immediately flag on Firestore so dashboard shows it
+  if(window._currentJobId){
+    updateDoc(doc(db,'jobCards',window._currentJobId),{awaitingSpares:_sparesOn});
+  }
+};
+
+window.saveSpares = async function(){
+  if(!window._currentJobId){toastMob('No job selected','error');return;}
+  const needed = document.getElementById('jd-spares-needed')?.value.trim()||'';
+  if(!needed){toastMob('Please describe the spares needed','error');return;}
+  await updateDoc(doc(db,'jobCards',window._currentJobId),{
+    awaitingSpares: true,
+    sparesNeeded: needed,
+    sparesRequestedAt: serverTimestamp(),
+    sparesRequestedBy: window._currentUserName||'Artisan'
+  });
+  toastMob('Spares request sent — manager sees it in RED on dashboard','success');
 };
 
 window.renderArtisanPermits = function(){

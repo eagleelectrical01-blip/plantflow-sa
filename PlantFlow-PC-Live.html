@@ -308,12 +308,34 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
 
   <!-- INSPECTIONS -->
   <div class="screen" id="s-inspections">
-    <div class="page-sub">Inspection results submitted by artisans from their phones — linked to OHSA and SANS standards.</div>
+    <!-- How inspections work -->
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:14px;font-size:12.5px;line-height:1.8;color:#374151">
+      <div style="font-size:13px;font-weight:700;color:#185FA5;margin-bottom:8px">📋 How inspections work in PlantFlow</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <b>When does an inspection appear here?</b><br>
+          An inspection appears when a <b>Maintenance Manager or Artisan</b> submits one from their phone. On the mobile app, tap the <b>Schedule tab → Start safety inspection</b>. They tick each checklist item as Pass or Fail, then tap "Submit inspection to PC dashboard". It appears here immediately.
+        </div>
+        <div>
+          <b>When should inspections be done?</b><br>
+          • <b>Weekly:</b> General safety walkthrough (fire exits, extinguishers, chemical stores)<br>
+          • <b>Monthly:</b> Machinery guards, electrical panels, pressure vessels<br>
+          • <b>After incidents:</b> Any fault report involving machinery or chemicals<br>
+          • <b>Before hazardous work:</b> Required before a Permit to Work is issued
+        </div>
+      </div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid #bfdbfe">
+        <b>How results link to OHSA compliance:</b> Each inspection that passes improves the relevant OHSA section score on the OHSA Compliance screen. Failed items create action items that the manager must resolve and record. The more inspections submitted, the more accurate your OHSA scores become.
+      </div>
+    </div>
     <div class="panel">
-      <div class="panel-head"><div class="panel-title">Inspection Results <span class="live-dot" style="margin-left:5px;width:6px;height:6px"></span></div></div>
+      <div class="panel-head">
+        <div class="panel-title">Inspection Results <span class="live-dot" style="margin-left:5px;width:6px;height:6px"></span></div>
+        <span style="font-size:11px;color:#6b7280">Submitted from Maintenance Manager and Artisan phones</span>
+      </div>
       <table class="tbl">
-        <thead><tr><th>Date</th><th>Inspection type</th><th>Inspector</th><th>Area</th><th>Items</th><th>Passed</th><th>Failed</th><th>Status</th></tr></thead>
-        <tbody id="inspections-tbody"><tr><td colspan="8" class="empty-state">No inspections submitted yet — artisans submit from their phones</td></tr></tbody>
+        <thead><tr><th>Date</th><th>Inspection type</th><th>Inspector</th><th>Area</th><th>Items checked</th><th>Passed</th><th>Failed</th><th>Result</th></tr></thead>
+        <tbody id="inspections-tbody"><tr><td colspan="8" class="empty-state">No inspections yet — Maintenance Manager submits inspections from their phone (Schedule tab → Start safety inspection)</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -615,20 +637,28 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
 
 <!-- JOB CARD MODAL -->
 <div class="modal-overlay" id="jobcard-modal" onclick="if(event.target===this)closeModal('jobcard-modal')">
-  <div class="modal">
+  <div class="modal" style="width:580px">
     <div class="modal-head"><div class="modal-title">Create New Job Card</div><div class="modal-close" onclick="closeModal('jobcard-modal')">×</div></div>
     <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Job number <span style="color:#9ca3af;font-weight:400">(auto if blank)</span></div><input class="form-input" id="jc-custom-num" placeholder="e.g. JC-0010 or MAINT-001"/></div>
+        <div class="form-group"><div class="form-label">Priority</div><select class="form-select" id="jc-priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
+      </div>
       <div class="form-group"><div class="form-label">Description *</div><input class="form-input" id="jc-desc" placeholder="What needs to be done?"/></div>
       <div class="form-grid-2">
-        <div class="form-group"><div class="form-label">Priority</div><select class="form-select" id="jc-priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></div>
         <div class="form-group"><div class="form-label">Location *</div><input class="form-input" id="jc-location" placeholder="e.g. Factory Floor B"/></div>
-      </div>
-      <div class="form-grid-2">
-        <div class="form-group"><div class="form-label">Assigned to</div><select class="form-select" id="jc-assigned"><option value="">-- Select artisan --</option></select></div>
         <div class="form-group"><div class="form-label">Asset / Equipment</div><input class="form-input" id="jc-asset" placeholder="e.g. Chemical Pump A"/></div>
       </div>
-      <div class="form-group"><div class="form-label">Permit required?</div><select class="form-select" id="jc-permit-req"><option value="no">No — general maintenance</option><option value="yes">Yes — hazardous work</option></select></div>
-      <div class="form-group"><div class="form-label">Notes / instructions</div><textarea class="form-textarea" id="jc-notes" rows="2" placeholder="Any special instructions for the artisan..."></textarea></div>
+      <div class="form-group">
+        <div class="form-label">Assign to <span style="color:#185FA5;font-weight:600">(tick all artisans needed — multiple allowed)</span></div>
+        <div id="jc-artisan-checkboxes" style="border:1.5px solid #e5e7eb;border-radius:10px;max-height:160px;overflow-y:auto;padding:8px">
+          <div style="font-size:12px;color:#9ca3af;padding:6px">Loading artisans...</div>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Permit required?</div><select class="form-select" id="jc-permit-req"><option value="no">No — general maintenance</option><option value="yes">Yes — hazardous work</option></select></div>
+        <div class="form-group"><div class="form-label">Notes / instructions</div><input class="form-input" id="jc-notes" placeholder="Special instructions for artisan(s)..."/></div>
+      </div>
     </div>
     <div class="modal-foot"><button class="tb-btn" onclick="closeModal('jobcard-modal')">Cancel</button><button class="tb-btn primary" onclick="createJobCard()">Create job card</button></div>
   </div>
@@ -756,13 +786,33 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
 
 <!-- SCHEDULE MODAL -->
 <div class="modal-overlay" id="schedule-modal" onclick="if(event.target===this)closeModal('schedule-modal')">
-  <div class="modal">
+  <div class="modal" style="width:560px">
     <div class="modal-head"><div class="modal-title">Add PM Schedule Task</div><div class="modal-close" onclick="closeModal('schedule-modal')">×</div></div>
     <div class="modal-body">
       <div class="form-group"><div class="form-label">Task description *</div><input class="form-input" id="sc-task" placeholder="e.g. Lubrication check — Conveyor Belt 1"/></div>
       <div class="form-grid-2">
-        <div class="form-group"><div class="form-label">Frequency *</div><select class="form-select" id="sc-freq"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option></select></div>
+        <div class="form-group">
+          <div class="form-label">Frequency *</div>
+          <select class="form-select" id="sc-freq" onchange="updateScheduleDateHint()">
+            <option value="daily">🔵 Daily</option>
+            <option value="weekly">🟣 Weekly</option>
+            <option value="monthly">🟢 Monthly</option>
+            <option value="quarterly">🟠 Quarterly</option>
+          </select>
+        </div>
         <div class="form-group"><div class="form-label">Asset / Area *</div><input class="form-input" id="sc-asset" placeholder="e.g. Conveyor Belt 1"/></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <div class="form-label">First due date *</div>
+          <input class="form-input" type="date" id="sc-start-date"/>
+          <div style="font-size:11px;color:#185FA5;margin-top:3px" id="sc-date-hint">Select when this task should first be done</div>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Additional specific dates</div>
+          <input class="form-input" id="sc-extra-dates" placeholder="e.g. 2026-05-01, 2026-06-15"/>
+          <div style="font-size:11px;color:#9ca3af;margin-top:3px">Optional: comma-separated YYYY-MM-DD</div>
+        </div>
       </div>
       <div class="form-grid-2">
         <div class="form-group"><div class="form-label">Assigned to</div><select class="form-select" id="sc-assigned"><option value="">-- Select artisan --</option></select></div>
@@ -778,20 +828,38 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
 <!-- USER MODAL -->
 <div class="modal-overlay" id="user-modal" onclick="if(event.target===this)closeModal('user-modal')">
   <div class="modal">
-    <div class="modal-head"><div class="modal-title">Add User to PlantFlow</div><div class="modal-close" onclick="closeModal('user-modal')">×</div></div>
+    <div class="modal-head"><div class="modal-title" id="user-modal-title">Add User to PlantFlow</div><div class="modal-close" onclick="closeModal('user-modal')">×</div></div>
     <div class="modal-body">
-      <div style="background:#dbeafe;border-radius:10px;padding:12px;font-size:12px;color:#1e40af;margin-bottom:14px">The user will log in on their phone using their phone number. No password needed.</div>
+      <div style="background:#dbeafe;border-radius:10px;padding:12px;font-size:12px;color:#1e40af;margin-bottom:14px">Users log in on their phone using their phone number. Their role controls which screens they can access.</div>
       <div class="form-grid-2">
         <div class="form-group"><div class="form-label">Full name *</div><input class="form-input" id="u-name" placeholder="e.g. Sipho Dlamini"/></div>
         <div class="form-group"><div class="form-label">Phone number *</div><input class="form-input" id="u-phone" placeholder="e.g. 0821234567"/></div>
       </div>
       <div class="form-grid-2">
-        <div class="form-group"><div class="form-label">Role *</div><select class="form-select" id="u-role"><option value="artisan">Artisan (internal)</option><option value="contractor">Contractor (external)</option><option value="production-manager">Production Manager</option><option value="maintenance-manager">Maintenance Manager</option><option value="employee">Employee (fault log only)</option><option value="admin">Admin</option></select></div>
-        <div class="form-group"><div class="form-label">Trade / Department</div><input class="form-input" id="u-trade" placeholder="e.g. Electrician, HR, Finance"/></div>
+        <div class="form-group"><div class="form-label">Role *</div>
+          <select class="form-select" id="u-role" onchange="toggleContractorField()">
+            <option value="artisan">Artisan (internal)</option>
+            <option value="contractor">Contractor (external)</option>
+            <option value="production-manager">Production Manager</option>
+            <option value="maintenance-manager">Maintenance Manager</option>
+            <option value="employee">Employee (fault log only)</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="form-group"><div class="form-label">Trade / Department</div><input class="form-input" id="u-trade" placeholder="e.g. Electrician, Plumber, HR"/></div>
+      </div>
+      <!-- Contractor company field — shown only when role = contractor -->
+      <div class="form-group" id="u-company-group" style="display:none">
+        <div class="form-label">Contractor company name *</div>
+        <input class="form-input" id="u-company" placeholder="e.g. ABC Welding Services (Pty) Ltd"/>
+        <div style="font-size:11px;color:#6b7280;margin-top:3px">This name will appear wherever this contractor is assigned to a job</div>
       </div>
       <div class="form-group"><div class="form-label">Employee / Contractor #</div><input class="form-input" id="u-empno" placeholder="e.g. EMP-0041 or CONT-001"/></div>
     </div>
-    <div class="modal-foot"><button class="tb-btn" onclick="closeModal('user-modal')">Cancel</button><button class="tb-btn primary" onclick="addUser()">Add user</button></div>
+    <div class="modal-foot">
+      <button class="tb-btn" onclick="closeModal('user-modal')">Cancel</button>
+      <button class="tb-btn primary" id="user-modal-save-btn" onclick="saveUser()">Add user</button>
+    </div>
   </div>
 </div>
 
@@ -996,13 +1064,14 @@ window.renderJobCards = function(){
       <td style="font-weight:600;color:#185FA5">${j.totalCost?'R '+(parseFloat(j.totalCost)).toFixed(2):'—'}</td>
       <td style="font-size:11px">${fmtDate(j.createdAt)}</td>
       <td style="font-size:11px;color:${!isOpen?'#16a34a':'#9ca3af'}">${!isOpen&&j.completedAt?fmtDate(j.completedAt):'—'}</td>
-      <td>${statusBadge(j.status||'open')}</td>
+      <td>${statusBadge(j.status||'open')}${j.awaitingSpares?'<br><span style="color:#dc2626;font-size:10px;font-weight:700">⚠ AWAITING SPARES</span>':''}</td>
       <td style="white-space:nowrap">
         ${isOpen ? `
           <button class="tb-btn" style="font-size:11px;padding:3px 8px" onclick="openAssignModal('${j.id}','${j.jobNumber}','${artisans.join(',')}')">👤 Assign</button>
           <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#fef3c7;border-color:#f59e0b;color:#92400e" onclick="openEditJobModal('${j.id}')">✏️ Edit</button>
           <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px" onclick="completeJob('${j.id}')">✓ Done</button>
           ${j.permitRequired==='yes'&&!j.permitNumber?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px;margin-left:3px" onclick="quickPermit('${j.jobNumber}','${artisans[0]||''}')">PTW</button>`:''}
+          ${j.awaitingSpares?`<button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#fee2e2;border-color:#fca5a5;color:#b91c1c" onclick="clearSpares('${j.id}')">Clear spares flag</button>`:''}
         ` : `
           <button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteJob('${j.id}')">🗑 Delete</button>
         `}
@@ -1023,8 +1092,8 @@ window.renderDashJobs = function(){
       <td style="color:#9ca3af;font-size:11px">${j.jobNumber||'—'}</td>
       <td>${priorityDot(j.priority)}<b>${j.description||'—'}</b></td>
       <td style="color:#6b7280">${j.location||'—'}</td>
-      <td>${artisans||'<span style="color:#dc2626">Unassigned</span>'}</td>
-      <td>${statusBadge(j.status||'open')}</td>
+      <td>${j.assignedTo||artisans||'<span style="color:#dc2626">Unassigned</span>'}</td>
+      <td>${statusBadge(j.status||'open')}${j.awaitingSpares?'<br><span style="color:#dc2626;font-size:10px;font-weight:700">⚠ AWAITING SPARES</span>':''}</td>
       <td style="font-size:11px;color:#6b7280">${fmtDate(j.createdAt)||'—'}</td>
       <td style="font-size:11px;color:${isCompleted?'#16a34a':'#9ca3af'}">${isCompleted?fmtDate(j.completedAt)||'—':'—'}</td>
       <td style="white-space:nowrap">
@@ -1033,6 +1102,9 @@ window.renderDashJobs = function(){
           : `<button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="openAssignModal('${j.id}','${j.jobNumber}','${(artisans).replace(/'/g,"\\'")}')">Assign →</button>`
         }
       </td>
+      ${j.awaitingSpares?`<tr><td colspan="8" style="background:#fff5f5;padding:6px 14px;font-size:11px;color:#dc2626;font-weight:600;border-bottom:2px solid #fca5a5">
+        🔧 Spares needed: ${j.sparesNeeded||'See job card for details'}
+      </td></tr>`:''}
     </tr>`;
   }).join('');
 };
@@ -1113,8 +1185,12 @@ window.renderPermits = function(){
       </div>
       ${p.scope?`<div style="font-size:11px;color:#374151;background:#f9fafb;padding:8px;border-radius:6px;margin-bottom:8px">${p.scope}</div>`:''}
       ${p.status==='pending'?`
+        <div style="margin-bottom:8px">
+          <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px">Enter permit number before approving:</div>
+          <input class="form-input" id="ptw-num-input-${p.id}" placeholder="e.g. PTW-0005" style="font-size:12px;padding:7px 10px;font-weight:700;color:#185FA5" value="${p.permitNumber||''}"/>
+        </div>
         <div style="display:flex;gap:6px">
-          <button class="tb-btn primary" style="flex:1;justify-content:center;font-size:11px" onclick="approvePermit('${p.id}')">✓ Approve</button>
+          <button class="tb-btn primary" style="flex:1;justify-content:center;font-size:11px" onclick="approvePermit('${p.id}')">✓ Approve &amp; Issue</button>
           <button class="tb-btn danger" style="font-size:11px" onclick="rejectPermit('${p.id}')">✕ Reject</button>
         </div>`:
         p.status==='active'?`<div style="display:flex;gap:6px"><button class="tb-btn" style="font-size:11px" onclick="closePermit('${p.id}')">Close permit</button><button class="tb-btn danger" style="font-size:11px;margin-left:4px" onclick="deletePermit('${p.id}')">🗑 Delete</button></div>`:
@@ -1217,15 +1293,19 @@ window.renderUsers = function(){
   const contractors = allUsers.filter(u=>u.role==='contractor');
 
   if(tbody){
-    if(!allUsers.length){tbody.innerHTML='<tr><td colspan="7" class="empty-state">No users added yet</td></tr>';}
+    if(!allUsers.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">No users added yet</td></tr>';}
     else tbody.innerHTML = allUsers.map(u=>`<tr>
-      <td><b>${u.name||'—'}</b></td>
+      <td><b>${u.name||'—'}</b>${u.company?`<br><span style="font-size:10px;color:#6d28d9">${u.company}</span>`:''}</td>
       <td>${u.phone||'—'}</td>
       <td><span class="badge b-blue">${u.role||'—'}</span></td>
       <td>${u.trade||'—'}</td>
+      <td>${u.empNo||'—'}</td>
       <td style="font-size:11px">${fmtDate(u.createdAt)}</td>
       <td><span class="badge b-green">Active</span></td>
-      <td><button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteUser('${u.id}')">Remove</button></td>
+      <td style="white-space:nowrap">
+        <button class="tb-btn" style="font-size:11px;padding:3px 8px" onclick="openEditUser('${u.id}')">✏️ Edit</button>
+        <button class="tb-btn danger" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="deleteUser('${u.id}')">🗑 Remove</button>
+      </td>
     </tr>`).join('');
   }
 
@@ -1237,7 +1317,10 @@ window.renderUsers = function(){
           <div style="font-size:12.5px;font-weight:700">${u.name}</div>
           <div style="font-size:11px;color:#6b7280">${u.trade||u.role} · ${u.phone||'—'}</div>
         </div>
-        <span class="badge b-blue">${u.role}</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <span class="badge b-blue">${u.role}</span>
+          <button class="tb-btn" style="font-size:10px;padding:2px 7px" onclick="openEditUser('${u.id}')">Edit</button>
+        </div>
       </div>`).join(''):'<div class="empty-state">No artisans added yet</div>';
   }
   if(contDiv){
@@ -1246,9 +1329,13 @@ window.renderUsers = function(){
         <div class="av" style="width:36px;height:36px;font-size:13px;background:#6d28d9">${initials(u.name)}</div>
         <div style="flex:1">
           <div style="font-size:12.5px;font-weight:700">${u.name}</div>
+          ${u.company?`<div style="font-size:11px;font-weight:600;color:#6d28d9">${u.company}</div>`:''}
           <div style="font-size:11px;color:#6b7280">${u.trade||'Contractor'} · ${u.phone||'—'}</div>
         </div>
-        <span class="badge b-purple">Contractor</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <span class="badge b-purple">Contractor</span>
+          <button class="tb-btn" style="font-size:10px;padding:2px 7px" onclick="openEditUser('${u.id}')">Edit</button>
+        </div>
       </div>`).join(''):'<div class="empty-state">No contractors added yet</div>';
   }
 };
@@ -1491,13 +1578,33 @@ function updateMaterialStats(){
 // ── POPULATE DROPDOWNS ──
 function populateArtisanDropdowns(){
   const artisans = allUsers.filter(u=>u.role==='artisan'||u.role==='contractor');
-  ['ptw-artisan','pm-artisan','jc-assigned','sc-assigned'].forEach(id=>{
+  ['ptw-artisan','pm-artisan','sc-assigned'].forEach(id=>{
     const el = document.getElementById(id);
     if(!el)return;
     const cur = el.value;
-    el.innerHTML = '<option value="">-- Select --</option>'+artisans.map(u=>`<option value="${u.name}">${u.name} (${u.role})</option>`).join('');
+    el.innerHTML = '<option value="">-- Select --</option>'+artisans.map(u=>{
+      const displayName = u.role==='contractor'&&u.company ? u.name+' ('+u.company+')' : u.name+' ('+u.role+')';
+      return `<option value="${u.name}">${displayName}</option>`;
+    }).join('');
     if(cur) el.value = cur;
   });
+  // Populate job card multi-select checkboxes
+  const jcBox = document.getElementById('jc-artisan-checkboxes');
+  if(jcBox){
+    if(!artisans.length){
+      jcBox.innerHTML='<div style="font-size:12px;color:#9ca3af;padding:6px">No artisans added yet — add in Manage Users</div>';
+    } else {
+      jcBox.innerHTML = artisans.map(u=>{
+        const displayName = u.role==='contractor'&&u.company ? u.name+' — '+u.company : u.name;
+        const badge = u.role==='contractor'?'<span style="font-size:10px;color:#6d28d9;background:#ede9fe;padding:1px 6px;border-radius:8px;margin-left:5px">Contractor</span>':'';
+        return `<label style="display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:8px;cursor:pointer;margin-bottom:2px" onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background='transparent'">
+          <input type="checkbox" value="${u.name}" style="width:16px;height:16px;accent-color:#185FA5;cursor:pointer"/>
+          <span style="font-size:13px;font-weight:600;color:#111827">${displayName}</span>${badge}
+          <span style="font-size:11px;color:#9ca3af;margin-left:auto">${u.trade||u.role}</span>
+        </label>`;
+      }).join('');
+    }
+  }
 }
 
 // ── HELPERS ──
@@ -1537,26 +1644,49 @@ window.createJobCard = async function(){
   const desc=document.getElementById('jc-desc').value.trim();
   const loc=document.getElementById('jc-location').value.trim();
   if(!desc||!loc){toast('Please fill in description and location','error');return;}
+
+  // Custom job number or auto-generate
+  const customNum = document.getElementById('jc-custom-num').value.trim();
+  const jobNum = customNum || nextJobNum();
+
+  // Get checked artisans from checkbox list
+  const checked = [...document.querySelectorAll('#jc-artisan-checkboxes input[type=checkbox]:checked')].map(c=>c.value);
+  const firstArtisan = checked[0]||'';
+
   try{
     await addDoc(collection(db,'jobCards'),{
-      jobNumber:nextJobNum(),
-      description:desc,
-      priority:document.getElementById('jc-priority').value,
-      location:loc,
-      assignedTo:document.getElementById('jc-assigned').value,
-      asset:document.getElementById('jc-asset').value,
-      permitRequired:document.getElementById('jc-permit-req').value,
-      notes:document.getElementById('jc-notes').value,
-      loggedBy:'Admin',
-      status:document.getElementById('jc-assigned').value?'assigned':'open',
-      materials:[],
-      totalCost:0,
-      source:'pc-admin',
-      createdAt:serverTimestamp()
+      jobNumber: jobNum,
+      description: desc,
+      priority: document.getElementById('jc-priority').value,
+      location: loc,
+      assignedTo: firstArtisan,
+      assignedArtisans: checked,
+      asset: document.getElementById('jc-asset').value,
+      permitRequired: document.getElementById('jc-permit-req').value,
+      notes: document.getElementById('jc-notes').value,
+      loggedBy: 'Admin',
+      status: checked.length>0?'assigned':'open',
+      materials: [],
+      totalCost: 0,
+      awaitingSpares: false,
+      sparesNeeded: '',
+      source: 'pc-admin',
+      createdAt: serverTimestamp()
     });
+    // Notify all assigned artisans
+    for(const name of checked){
+      await addDoc(collection(db,'notifications'),{
+        for: name, type:'job-assigned',
+        title:'New job card assigned to you',
+        body: desc+' — '+loc,
+        read: false, createdAt: serverTimestamp()
+      });
+    }
     closeModal('jobcard-modal');
-    ['jc-desc','jc-location','jc-asset','jc-notes'].forEach(id=>document.getElementById(id).value='');
-    toast('Job card created — assigned artisan sees it on their phone now','success');
+    document.getElementById('jc-custom-num').value='';
+    ['jc-desc','jc-location','jc-asset','jc-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    document.querySelectorAll('#jc-artisan-checkboxes input[type=checkbox]').forEach(c=>c.checked=false);
+    toast(jobNum+' created'+(checked.length?' — '+checked.length+' artisan(s) notified':''),'success');
   }catch(e){toast('Error: '+e.message,'error');}
 };
 
@@ -1622,13 +1752,23 @@ window.issuePermitModal = async function(){
 };
 
 window.approvePermit = async function(id){
-  await updateDoc(doc(db,'permits',id),{status:'active',approvedAt:serverTimestamp(),approvedBy:'Admin'});
+  // Read permit number from the input field if provided
+  const numInput = document.getElementById('ptw-num-input-'+id);
+  const enteredNum = numInput ? numInput.value.trim() : '';
   const p = allPermits.find(x=>x.id===id);
+  const permitNum = enteredNum || p?.permitNumber || ('PTW-'+String(allPermits.length).padStart(4,'0'));
+
+  await updateDoc(doc(db,'permits',id),{
+    status:'active',
+    permitNumber: permitNum,
+    approvedAt: serverTimestamp(),
+    approvedBy: 'Admin'
+  });
   if(p){
     const jobSnap = await getDocs(query(collection(db,'jobCards'),where('jobNumber','==',p.jobCard)));
-    jobSnap.forEach(async d=>await updateDoc(doc(db,'jobCards',d.id),{permitNumber:p.permitNumber,status:'in-progress'}));
+    jobSnap.forEach(async d=>await updateDoc(doc(db,'jobCards',d.id),{permitNumber:permitNum,status:'in-progress'}));
   }
-  toast('Permit approved — artisan can now start work','success');
+  toast(permitNum+' approved — artisan can now start work','success');
 };
 
 window.rejectPermit = async function(id){
@@ -1654,6 +1794,11 @@ window.completeJob = async function(id){
     completedAt:serverTimestamp()
   });
   toast('Job marked as complete','success');
+};
+
+window.clearSpares = async function(id){
+  await updateDoc(doc(db,'jobCards',id),{awaitingSpares:false,sparesNeeded:''});
+  toast('Spares flag cleared — artisan has been notified','success');
 };
 
 window.deleteJob = async function(id){
@@ -1837,35 +1982,44 @@ window.addSchedule = async function(){
   const task = document.getElementById('sc-task').value.trim();
   const assignedTo = document.getElementById('sc-assigned').value;
   const frequency = document.getElementById('sc-freq').value;
+  const startDateVal = document.getElementById('sc-start-date')?.value;
+  const extraDatesVal = document.getElementById('sc-extra-dates')?.value||'';
   if(!task){toast('Please enter a task description','error');return;}
 
-  // Calculate next due date based on frequency
-  const now = new Date();
-  const nextDueMap = {daily:1, weekly:7, monthly:30, quarterly:90};
-  const daysAhead = nextDueMap[frequency]||7;
-  const nextDue = new Date(now.getTime()+(daysAhead*24*60*60*1000));
-  const nextDueStr = nextDue.toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'});
+  // Use selected start date or calculate from frequency
+  let firstDue;
+  if(startDateVal){
+    firstDue = new Date(startDateVal);
+  } else {
+    const daysAhead = {daily:1,weekly:7,monthly:30,quarterly:90}[frequency]||7;
+    firstDue = new Date(Date.now()+daysAhead*24*60*60*1000);
+  }
+  const nextDueStr = firstDue.toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'});
+
+  // Parse extra dates
+  const extraDates = extraDatesVal.split(',').map(s=>s.trim()).filter(s=>s.match(/^\d{4}-\d{2}-\d{2}$/));
 
   try{
     const schedRef = await addDoc(collection(db,'schedules'),{
-      task:task,
-      frequency:frequency,
-      asset:document.getElementById('sc-asset').value,
-      assignedTo:assignedTo,
-      estTime:document.getElementById('sc-time').value,
-      materialsRequired:document.getElementById('sc-mats').value,
-      permitRequired:document.getElementById('sc-permit').value,
-      status:'scheduled',
-      nextDue:nextDueStr,
-      createdAt:serverTimestamp()
+      task,
+      frequency,
+      asset: document.getElementById('sc-asset').value,
+      assignedTo,
+      estTime: document.getElementById('sc-time').value,
+      materialsRequired: document.getElementById('sc-mats').value,
+      permitRequired: document.getElementById('sc-permit').value,
+      status: 'scheduled',
+      startDate: startDateVal||firstDue.toISOString().split('T')[0],
+      extraDates,
+      nextDue: nextDueStr,
+      createdAt: serverTimestamp()
     });
-    // Send notification to assigned artisan
     if(assignedTo){
       await addDoc(collection(db,'notifications'),{
         for: assignedTo,
         type: 'schedule-assigned',
-        title: 'New PM schedule task assigned',
-        body: task+' — Due: '+nextDueStr+' ('+frequency+')',
+        title: 'New PM schedule task assigned to you',
+        body: task+' — First due: '+nextDueStr+' ('+frequency+')',
         scheduleId: schedRef.id,
         read: false,
         createdAt: serverTimestamp()
@@ -1873,28 +2027,69 @@ window.addSchedule = async function(){
     }
     closeModal('schedule-modal');
     document.getElementById('sc-task').value='';
-    toast('PM task added — '+( assignedTo ? assignedTo+' notified on their phone' : 'no artisan assigned'),'success');
+    if(document.getElementById('sc-start-date')) document.getElementById('sc-start-date').value='';
+    if(document.getElementById('sc-extra-dates')) document.getElementById('sc-extra-dates').value='';
+    toast('PM task added'+(assignedTo?' — '+assignedTo+' notified':''),'success');
   }catch(e){toast('Error: '+e.message,'error');}
 };
 
 window.addUser = async function(){
+  // Redirect to saveUser which handles both add and edit
+  await window.saveUser();
+};
+
+window.saveUser = async function(){
   const name=document.getElementById('u-name').value.trim();
   const phone=document.getElementById('u-phone').value.trim();
+  const role=document.getElementById('u-role').value;
+  const company=document.getElementById('u-company')?.value.trim()||'';
   if(!name||!phone){toast('Name and phone number are required','error');return;}
+  if(role==='contractor'&&!company){toast('Contractor company name is required','error');return;}
+  const userData = {
+    name, phone, role,
+    trade:document.getElementById('u-trade').value,
+    empNo:document.getElementById('u-empno').value,
+    company: company||'',
+    status:'active'
+  };
   try{
-    await addDoc(collection(db,'users'),{
-      name:name,
-      phone:phone,
-      role:document.getElementById('u-role').value,
-      trade:document.getElementById('u-trade').value,
-      empNo:document.getElementById('u-empno').value,
-      status:'active',
-      createdAt:serverTimestamp()
-    });
-    closeModal('user-modal');
-    ['u-name','u-phone','u-trade','u-empno'].forEach(id=>document.getElementById(id).value='');
-    toast(name+' added — they can now log in on their phone','success');
+    const editId = window._editingUserId;
+    if(editId){
+      // Edit existing user
+      await updateDoc(doc(db,'users',editId),{...userData, updatedAt:serverTimestamp()});
+      window._editingUserId = null;
+      closeModal('user-modal');
+      toast(name+' updated','success');
+    } else {
+      // Add new user
+      userData.createdAt = serverTimestamp();
+      await addDoc(collection(db,'users'),userData);
+      closeModal('user-modal');
+      toast(name+' added — they can now log in on their phone','success');
+    }
+    ['u-name','u-phone','u-trade','u-empno','u-company'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    document.getElementById('user-modal-title').textContent='Add User to PlantFlow';
+    document.getElementById('user-modal-save-btn').textContent='Add user';
+    window._editingUserId = null;
   }catch(e){toast('Error: '+e.message,'error');}
+};
+
+window.openEditUser = function(id){
+  const u = allUsers.find(x=>x.id===id);
+  if(!u)return;
+  window._editingUserId = id;
+  document.getElementById('user-modal-title').textContent='Edit User — '+u.name;
+  document.getElementById('user-modal-save-btn').textContent='Save changes';
+  document.getElementById('u-name').value=u.name||'';
+  document.getElementById('u-phone').value=u.phone||'';
+  document.getElementById('u-role').value=u.role||'artisan';
+  document.getElementById('u-trade').value=u.trade||'';
+  document.getElementById('u-empno').value=u.empNo||'';
+  const companyEl=document.getElementById('u-company');
+  if(companyEl)companyEl.value=u.company||'';
+  // Show/hide contractor field
+  if(typeof toggleContractorField==='function') toggleContractorField();
+  openModal('user-modal');
 };
 
 window.deleteUser = async function(id){
@@ -2403,7 +2598,43 @@ window.updateTrialCountdown = updateTrialCountdown;
 // Run after a short delay to let Firebase module init first
 setTimeout(updateTrialCountdown, 2000);
 function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+  // Reset user modal when closing
+  if(id==='user-modal'){
+    window._editingUserId=null;
+    const title=document.getElementById('user-modal-title');
+    const btn=document.getElementById('user-modal-save-btn');
+    if(title)title.textContent='Add User to PlantFlow';
+    if(btn)btn.textContent='Add user';
+    document.getElementById('u-company-group').style.display='none';
+  }
+}
+function toggleContractorField(){
+  const role=document.getElementById('u-role')?.value;
+  const group=document.getElementById('u-company-group');
+  if(group)group.style.display=(role==='contractor')?'block':'none';
+}
+window.toggleContractorField=toggleContractorField;
+
+function updateScheduleDateHint(){
+  const freq=document.getElementById('sc-freq')?.value;
+  const hint=document.getElementById('sc-date-hint');
+  if(!hint)return;
+  const msgs={
+    daily:'🔵 Daily — artisan will be notified every day from this start date',
+    weekly:'🟣 Weekly — artisan notified every week starting from this date',
+    monthly:'🟢 Monthly — artisan notified on this date each month',
+    quarterly:'🟠 Quarterly — artisan notified every 3 months from this date'
+  };
+  hint.textContent=msgs[freq]||'Select a start date for this task';
+  // Set default date to today if empty
+  const dateEl=document.getElementById('sc-start-date');
+  if(dateEl&&!dateEl.value){
+    dateEl.value=new Date().toISOString().split('T')[0];
+  }
+}
+window.updateScheduleDateHint=updateScheduleDateHint;
 function toast(msg,type=''){
   const t=document.getElementById('toast');
   t.textContent=msg;t.className='toast '+(type||'');
