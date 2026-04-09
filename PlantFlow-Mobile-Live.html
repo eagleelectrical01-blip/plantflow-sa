@@ -486,14 +486,6 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
       </div>
     </div>
     <div class="scroll-content" style="padding-top:0">
-      <!-- START INSPECTION BUTTON — at top, always visible without scrolling -->
-      <div style="padding:10px 14px 8px;background:#f0fdf4;border-bottom:2px solid #86efac">
-        <button class="btn btn-primary" onclick="showSC('sc-inspection-artisan')" style="background:#16a34a;border:none;padding:12px">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="2"><path d="M3 9l4 4 8-8"/></svg>
-          Start safety inspection
-        </button>
-      </div>
-
       <!-- Month header -->
       <div style="background:#185FA5;padding:10px 16px 18px;display:flex;align-items:center;justify-content:space-between">
         <button onclick="calPrevMonth()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:18px;width:36px;height:36px;border-radius:50%;cursor:pointer">‹</button>
@@ -529,39 +521,37 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
     </div>
   </div>
 
-  <!-- ARTISAN SAFETY INSPECTION SCREEN -->
+  <!-- ARTISAN SAFETY INSPECTION SCREEN — driven by PM schedule task -->
   <div class="screen" id="sc-inspection-artisan">
     <div class="top-header" style="background:#16a34a">
       <div class="th-row">
         <div class="back-btn" onclick="showSC('sc-artisan-calendar')" style="background:rgba(255,255,255,0.2)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.2"><path d="M10 13L5 8l5-5"/></svg></div>
-        <div><div class="th-title">Safety Inspection</div><div style="font-size:12px;color:rgba(255,255,255,0.8)">Tick each item — tap circle to mark Pass or Fail</div></div>
+        <div>
+          <div class="th-title" id="artisan-insp-screen-title">Safety Inspection</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.8)" id="artisan-insp-screen-sub">Tap circle once = ✓ Pass · twice = ✕ Fail</div>
+        </div>
       </div>
     </div>
     <div class="scroll-content" style="padding-top:14px">
+      <!-- Task context banner -->
+      <div id="artisan-insp-task-banner" style="display:none;margin:0 14px 12px;background:#eff6ff;border-radius:12px;padding:12px 14px;border-left:4px solid #185FA5">
+        <div style="font-size:11px;font-weight:700;color:#185FA5;text-transform:uppercase;margin-bottom:3px">PM Task</div>
+        <div style="font-size:14px;font-weight:700;color:#111827" id="artisan-insp-task-name">—</div>
+        <div style="font-size:12px;color:#6b7280;margin-top:2px" id="artisan-insp-task-asset">—</div>
+      </div>
+
       <div style="padding:0 14px 10px">
         <div style="background:#fff;border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
-          <div class="form-group" style="margin-bottom:10px">
-            <div class="form-label">Area being inspected *</div>
-            <input class="form-input" id="artisan-insp-area" placeholder="e.g. Factory Floor A, Chemical Store, Boiler Room"/>
-          </div>
           <div class="form-group" style="margin-bottom:0">
-            <div class="form-label">Inspection type</div>
-            <select class="form-select" id="artisan-insp-type">
-              <option value="Weekly safety walkthrough">Weekly safety walkthrough</option>
-              <option value="Fire safety check">Fire safety check</option>
-              <option value="Chemical storage inspection">Chemical storage inspection</option>
-              <option value="Electrical inspection">Electrical inspection</option>
-              <option value="Machinery guard check">Machinery guard check</option>
-              <option value="Pressure vessel inspection">Pressure vessel inspection</option>
-              <option value="Pre-work hazard inspection">Pre-work hazard inspection (before PTW)</option>
-            </select>
+            <div class="form-label">Area / location being inspected *</div>
+            <input class="form-input" id="artisan-insp-area" placeholder="e.g. Factory Floor A, Sub Station, Boiler Room"/>
           </div>
         </div>
         <!-- Progress bar -->
         <div style="background:#fff;border-radius:10px;padding:10px 14px;margin-top:10px;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
           <div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7280;margin-bottom:6px">
-            <span><b id="artisan-insp-done">0</b> of <b id="artisan-insp-total">9</b> items checked</span>
-            <span style="color:#dc2626;font-weight:600" id="artisan-insp-fails-label">0 fails</span>
+            <span><b id="artisan-insp-done">0</b> of <b id="artisan-insp-total">0</b> items checked</span>
+            <span style="font-weight:600" id="artisan-insp-fails-label">0 fails</span>
           </div>
           <div style="height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden">
             <div id="artisan-insp-progress" style="height:100%;background:#16a34a;border-radius:3px;width:0%;transition:width 0.3s"></div>
@@ -569,26 +559,12 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
         </div>
       </div>
 
-      <!-- CHECKLIST -->
-      <div style="padding:4px 14px 6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px">🔴 Fire Safety</div>
-      <div class="insp-item"><div class="check-circle" onclick="artisanInspTick(this,0)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">Fire extinguishers accessible and in date</div></div></div>
-      <div class="insp-item"><div class="check-circle" onclick="artisanInspTick(this,1)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">Emergency exits clear and signage visible</div></div></div>
-      <div class="insp-item"><div class="check-circle" onclick="artisanInspTick(this,2)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">Fire hose reel accessible and pressure adequate</div></div></div>
+      <!-- Dynamic checklist rendered here -->
+      <div id="artisan-insp-checklist"></div>
 
-      <div style="padding:8px 14px 6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px">🧪 Chemical Handling</div>
-      <div class="insp-item"><div class="check-circle" onclick="artisanInspTick(this,3)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">SDS sheets accessible at chemical storage</div></div></div>
-      <div class="insp-item"><div class="check-circle" onclick="artisanInspTick(this,4)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">All chemical containers correctly labelled</div></div></div>
-      <div class="insp-item"><div class="check-circle" onclick="artisanInspTick(this,5)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">PPE station stocked — gloves, goggles, aprons</div></div></div>
-
-      <div style="padding:8px 14px 6px;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px">⚡ Electrical</div>
-      <div class="insp-item"><div class="check-circle" onclick="artisanInspTick(this,6)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">All DB boards closed and labelled</div></div></div>
-      <div class="insp-item"><div class="check-circle" onclick="artisanInspTick(this,7)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">No exposed wiring or damaged cables visible</div></div></div>
-      <div class="insp-item"><div class="check-circle" onclick="artisanInspTick(this,8)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">All machinery properly guarded</div></div></div>
-
-      <!-- Fails notes -->
       <div style="padding:8px 14px 4px">
-        <div class="form-label">Notes on failed items (required if any fails)</div>
-        <textarea class="form-textarea" id="artisan-insp-notes" rows="3" placeholder="Describe any failed items — what was found and what needs to be fixed..."></textarea>
+        <div class="form-label">Notes on failed items</div>
+        <textarea class="form-textarea" id="artisan-insp-notes" rows="3" placeholder="Describe any failed items — what was found, what needs to be fixed..."></textarea>
       </div>
 
       <div style="padding:8px 14px 24px;display:flex;flex-direction:column;gap:10px">
@@ -1140,13 +1116,13 @@ function renderCalTasks(mySchedules, taskDays){
   }
 
   if(!tasks.length){
-    list.innerHTML='<div class="empty-state-mob"><div class="empty-icon">📅</div><div class="empty-title">No tasks</div><div class="empty-sub">No PM tasks assigned to you yet. The manager assigns tasks in the Admin Panel.</div></div>';
+    list.innerHTML='<div class="empty-state-mob"><div class="empty-icon">📅</div><div class="empty-title">No tasks assigned</div><div class="empty-sub">The manager assigns PM tasks to you in the Admin Panel. They appear here with colour-coded dots on the calendar.</div></div>';
     return;
   }
 
   const freqColor = {daily:'#185FA5',weekly:'#6d28d9',monthly:'#16a34a',quarterly:'#d97706'};
   list.innerHTML = [...new Map(tasks.map(t=>[t.id,t])).values()].map(s=>`
-    <div style="background:#fff;border-radius:12px;margin:0 14px 8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+    <div style="background:#fff;border-radius:12px;margin:0 14px 10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
       <div style="background:${freqColor[s.frequency]||'#185FA5'};padding:4px 12px;display:flex;align-items:center;justify-content:space-between">
         <span style="font-size:10px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.5px">${s.frequency||'scheduled'}</span>
         <span style="font-size:10px;color:rgba(255,255,255,0.8)">${s.nextDue||''}</span>
@@ -1154,8 +1130,12 @@ function renderCalTasks(mySchedules, taskDays){
       <div style="padding:12px 14px">
         <div style="font-size:14px;font-weight:700;color:#111827;margin-bottom:4px">${s.task||'—'}</div>
         <div style="font-size:12px;color:#6b7280;margin-bottom:6px">📍 ${s.asset||'—'} · ⏱ ${s.estTime||'—'}</div>
-        ${s.materialsRequired?`<div style="font-size:11px;color:#374151;background:#f9fafb;padding:6px 10px;border-radius:8px">🔧 Materials: ${s.materialsRequired}</div>`:''}
-        ${s.permitRequired==='yes'?'<div style="font-size:11px;color:#dc2626;font-weight:600;margin-top:5px">⚠ Permit to Work required</div>':''}
+        ${s.materialsRequired?`<div style="font-size:11px;color:#374151;background:#f9fafb;padding:6px 10px;border-radius:8px;margin-bottom:6px">🔧 Materials: ${s.materialsRequired}</div>`:''}
+        ${s.permitRequired==='yes'?'<div style="font-size:11px;color:#dc2626;font-weight:600;margin-bottom:6px">⚠ Permit to Work required before starting</div>':''}
+        <button onclick="startTaskInspection('${s.id}')" style="width:100%;background:#16a34a;color:#fff;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Segoe UI',Arial,sans-serif">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2"><path d="M3 8l3.5 3.5 6.5-7"/></svg>
+          Start inspection for this task
+        </button>
       </div>
     </div>`).join('');
 }
@@ -1791,38 +1771,217 @@ window.submitInspection = async function(){
   }catch(e){toastMob('Error: '+e.message,'error');}
 };
 
-// ── ARTISAN INSPECTION (separate state from manager inspection) ──
-let artisanInspItems = new Array(9).fill(null);
+// ── TASK-SPECIFIC INSPECTION CHECKLISTS ──
+const INSPECTION_TYPES = {
+  electrical: {
+    label: 'Electrical Inspection',
+    color: '#185FA5',
+    keywords: ['electrical','electric','loto','isolat','db board','panel','cable','wiring','switchgear','transformer','motor','generator','earthing','earth','volt'],
+    sections: [
+      {heading:'⚡ Electrical Safety', items:[
+        'All DB boards closed, locked and labelled',
+        'No exposed or damaged wiring visible',
+        'All cable trays and conduits sealed',
+        'Earthing conductors intact and connected',
+        'Isolation LOTO points labelled and accessible',
+        'No overloaded extension leads or adaptors',
+        'Panel area clear of combustibles (500mm)',
+        'Emergency stop buttons functional and accessible',
+        'All equipment properly bonded and earthed'
+      ]}
+    ]
+  },
+  mechanical: {
+    label: 'Mechanical / Fitter Inspection',
+    color: '#d97706',
+    keywords: ['pump','valve','pipe','fitting','coupling','bearing','seal','gearbox','conveyor','belt','chain','compressor','pressure','vessel','boiler','machinery','machine','fan','motor','mechanical','fitter'],
+    sections: [
+      {heading:'⚙️ Rotating Equipment', items:[
+        'All guards and covers in place and secured',
+        'No unusual vibration or noise from equipment',
+        'Coupling guards fitted and undamaged',
+        'Belt tension within specification',
+        'Bearing temperatures normal (no overheating)'
+      ]},
+      {heading:'🔧 Pipework & Fittings', items:[
+        'No visible leaks on pipe joints or valves',
+        'All pipe supports and hangers intact',
+        'Pressure gauges reading within normal range',
+        'Safety relief valves unobstructed and in date'
+      ]}
+    ]
+  },
+  fire: {
+    label: 'Fire Safety Inspection',
+    color: '#dc2626',
+    keywords: ['fire','extinguish','sprinkler','hose','reel','smoke','alarm','evacuation','emergency','exit','escape'],
+    sections: [
+      {heading:'🔴 Fire Equipment', items:[
+        'All fire extinguishers in correct locations',
+        'Extinguisher inspection tags current (within 1 year)',
+        'Hose reels unobstructed and pressure adequate',
+        'Sprinkler heads clear and unobstructed',
+        'Fire alarm panel showing no faults'
+      ]},
+      {heading:'🚪 Evacuation', items:[
+        'All emergency exits unlocked and unobstructed',
+        'Exit signage illuminated and visible',
+        'Evacuation route free of obstructions',
+        'Assembly point signage in place'
+      ]}
+    ]
+  },
+  chemical: {
+    label: 'Chemical / Hazmat Inspection',
+    color: '#7c3aed',
+    keywords: ['chemical','hazmat','sds','msds','hazard','storage','chemical store','drum','container','spill','bund','ppe','chemical handling'],
+    sections: [
+      {heading:'🧪 Chemical Storage', items:[
+        'SDS sheets accessible at each chemical storage point',
+        'All containers correctly labelled and sealed',
+        'Bunding intact with no residue or leaks',
+        'Incompatible chemicals correctly segregated',
+        'Chemical store ventilation functional'
+      ]},
+      {heading:'🥽 PPE & Emergency', items:[
+        'PPE station stocked — gloves, goggles, aprons',
+        'Eyewash station accessible and functional',
+        'Emergency shower accessible and functional',
+        'Spill kit available and fully stocked'
+      ]}
+    ]
+  },
+  general: {
+    label: 'General Safety Inspection',
+    color: '#374151',
+    keywords: [],
+    sections: [
+      {heading:'🏭 General Housekeeping', items:[
+        'Work area clean, tidy, and free of slip hazards',
+        'All tools and equipment stored correctly',
+        'Waste bins not overflowing, waste correctly sorted',
+        'No blocked aisles or emergency access routes',
+        'Adequate lighting in all work areas'
+      ]},
+      {heading:'⚠️ General Safety', items:[
+        'Safety notices and signage visible and legible',
+        'First aid kit accessible and stocked',
+        'No obvious hazards or unsafe conditions observed',
+        'Personal PPE worn correctly by all personnel'
+      ]}
+    ]
+  }
+};
+
+function detectInspectionType(task){
+  const text = (task.task||''+task.asset||''+task.materialsRequired||'').toLowerCase();
+  for(const [type, config] of Object.entries(INSPECTION_TYPES)){
+    if(type==='general') continue;
+    if(config.keywords.some(kw=>text.includes(kw))) return type;
+  }
+  return 'general';
+}
+
+window.startTaskInspection = function(scheduleId){
+  const schedule = allSchedules.find(s=>s.id===scheduleId);
+  if(!schedule){toastMob('Task not found','error');return;}
+
+  // Use explicit type saved by manager, fall back to keyword detection
+  const typeKey = schedule.inspectionType || detectInspectionType(schedule);
+  const typeConfig = INSPECTION_TYPES[typeKey] || INSPECTION_TYPES.general;
+
+  // Store for submission
+  window._inspectionScheduleId = scheduleId;
+  window._inspectionSchedule = schedule;
+  window._inspectionTypeKey = typeKey;
+
+  // Build flat item list for state tracking
+  const allItems = [];
+  typeConfig.sections.forEach(sec=>sec.items.forEach(item=>allItems.push(item)));
+  artisanInspItems = new Array(allItems.length).fill(null);
+  window._inspectionAllItems = allItems;
+
+  // Update header colour and title
+  const headerBar = document.querySelector('#sc-inspection-artisan .top-header');
+  if(headerBar) headerBar.style.background = typeConfig.color;
+  const titleEl = document.getElementById('artisan-insp-screen-title');
+  if(titleEl) titleEl.textContent = typeConfig.label;
+
+  // Show task banner
+  const banner = document.getElementById('artisan-insp-task-banner');
+  const bannerName = document.getElementById('artisan-insp-task-name');
+  const bannerAsset = document.getElementById('artisan-insp-task-asset');
+  if(banner) banner.style.display='block';
+  if(bannerName) bannerName.textContent = schedule.task||'—';
+  if(bannerAsset) bannerAsset.textContent = (schedule.asset||'—')+' · Due: '+(schedule.nextDue||'—')+' ('+schedule.frequency+')';
+  if(banner) banner.style.borderLeftColor = typeConfig.color;
+
+  // Pre-fill area
+  const areaEl = document.getElementById('artisan-insp-area');
+  if(areaEl) areaEl.value = schedule.asset||'';
+
+  // Reset progress
+  const totalEl = document.getElementById('artisan-insp-total');
+  if(totalEl) totalEl.textContent = allItems.length;
+  const doneEl = document.getElementById('artisan-insp-done');
+  if(doneEl) doneEl.textContent = '0';
+  const progEl = document.getElementById('artisan-insp-progress');
+  if(progEl){progEl.style.width='0%';progEl.style.background=typeConfig.color;}
+  const failEl = document.getElementById('artisan-insp-fails-label');
+  if(failEl){failEl.textContent='0 fails';failEl.style.color='#16a34a';}
+  const notesEl = document.getElementById('artisan-insp-notes');
+  if(notesEl) notesEl.value='';
+
+  // Build checklist dynamically
+  const checklistEl = document.getElementById('artisan-insp-checklist');
+  if(checklistEl){
+    let html = '';
+    let idx = 0;
+    typeConfig.sections.forEach(sec=>{
+      html += `<div style="padding:8px 14px 6px;font-size:11px;font-weight:700;color:${typeConfig.color};text-transform:uppercase;letter-spacing:0.5px">${sec.heading}</div>`;
+      sec.items.forEach(item=>{
+        html += `<div class="insp-item"><div class="check-circle" onclick="artisanInspTick(this,${idx})"></div><div style="flex:1"><div style="font-size:13px;color:#374151">${item}</div></div></div>`;
+        idx++;
+      });
+    });
+    checklistEl.innerHTML = html;
+  }
+
+  showSC('sc-inspection-artisan');
+};
 
 window.artisanInspTick = function(el,idx){
   if(el.classList.contains('pass')){el.classList.remove('pass');el.classList.add('fail');el.textContent='✕';artisanInspItems[idx]='fail';}
   else if(el.classList.contains('fail')){el.classList.remove('fail');el.textContent='';artisanInspItems[idx]=null;}
   else{el.classList.add('pass');el.textContent='✓';artisanInspItems[idx]='pass';}
+  const total = artisanInspItems.length;
   const done=artisanInspItems.filter(x=>x!==null).length;
   const fails=artisanInspItems.filter(x=>x==='fail').length;
-  const total=artisanInspItems.length;
   const doneEl=document.getElementById('artisan-insp-done');
   const failEl=document.getElementById('artisan-insp-fails-label');
   const progEl=document.getElementById('artisan-insp-progress');
   if(doneEl) doneEl.textContent=done;
   if(failEl){failEl.textContent=fails+' fails';failEl.style.color=fails>0?'#dc2626':'#16a34a';}
-  if(progEl) progEl.style.width=Math.round(done/total*100)+'%';
+  if(progEl&&total>0) progEl.style.width=Math.round(done/total*100)+'%';
 };
 
 window.submitArtisanInspection = async function(){
   const area = document.getElementById('artisan-insp-area')?.value.trim();
-  const type = document.getElementById('artisan-insp-type')?.value||'Safety inspection';
   const notes = document.getElementById('artisan-insp-notes')?.value||'';
-  if(!area){toastMob('Please enter the area being inspected','error');return;}
-  const done=artisanInspItems.filter(x=>x!==null).length;
+  const schedule = window._inspectionSchedule;
+  const typeKey = window._inspectionTypeKey||'general';
+  const typeConfig = INSPECTION_TYPES[typeKey]||INSPECTION_TYPES.general;
+
+  if(!area){toastMob('Please confirm the area being inspected','error');return;}
+  const done = artisanInspItems.filter(x=>x!==null).length;
   if(done===0){toastMob('Please tick at least one checklist item','error');return;}
-  const passed=artisanInspItems.filter(x=>x==='pass').length;
-  const failed=artisanInspItems.filter(x=>x==='fail').length;
-  const fails=artisanInspItems.filter(x=>x==='fail').length;
-  if(fails>0&&!notes.trim()){toastMob('Please add notes describing the failed items','error');return;}
+  const passed = artisanInspItems.filter(x=>x==='pass').length;
+  const failed = artisanInspItems.filter(x=>x==='fail').length;
+  if(failed>0&&!notes.trim()){toastMob('Please add notes describing the failed items','error');return;}
+
   try{
     await addDoc(collection(db,'inspections'),{
-      type,
+      type: typeConfig.label,
       inspector: window._currentUserName||'Artisan',
       area,
       totalItems: artisanInspItems.length,
@@ -1830,24 +1989,30 @@ window.submitArtisanInspection = async function(){
       failed,
       notes,
       status: failed>0?'fails':'passed',
+      scheduleId: window._inspectionScheduleId||'',
+      scheduleTask: schedule?.task||'',
+      scheduleAsset: schedule?.asset||'',
       submittedBy: window._currentUserName||'Artisan',
       createdAt: serverTimestamp()
     });
-    // Reset checklist
-    artisanInspItems = new Array(9).fill(null);
-    document.querySelectorAll('#sc-inspection-artisan .check-circle').forEach(el=>{
-      el.classList.remove('pass','fail');
-      el.textContent='';
-    });
+
+    // Reset state
+    artisanInspItems = [];
+    window._inspectionScheduleId = null;
+    window._inspectionSchedule = null;
+    window._inspectionTypeKey = null;
+    const checklistEl = document.getElementById('artisan-insp-checklist');
+    if(checklistEl) checklistEl.innerHTML='';
+    const notesEl = document.getElementById('artisan-insp-notes');
+    if(notesEl) notesEl.value='';
     const doneEl=document.getElementById('artisan-insp-done');
     const failEl=document.getElementById('artisan-insp-fails-label');
     const progEl=document.getElementById('artisan-insp-progress');
     if(doneEl) doneEl.textContent='0';
     if(failEl){failEl.textContent='0 fails';failEl.style.color='#16a34a';}
     if(progEl) progEl.style.width='0%';
-    if(document.getElementById('artisan-insp-area')) document.getElementById('artisan-insp-area').value='';
-    if(document.getElementById('artisan-insp-notes')) document.getElementById('artisan-insp-notes').value='';
-    toastMob('Inspection submitted — manager sees it on PC dashboard now','success');
+
+    toastMob('Inspection submitted — manager sees it on the PC dashboard now','success');
     setTimeout(()=>showSC('sc-artisan-calendar'),1500);
   }catch(e){toastMob('Error: '+e.message,'error');}
 };
