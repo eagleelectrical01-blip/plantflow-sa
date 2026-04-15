@@ -407,11 +407,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
     <div class="page-sub">Internal artisans and external contractors. Add a user here — they receive their job assignments on their phone.</div>
     <div class="two-equal">
       <div class="panel">
-        <div class="panel-head"><div class="panel-title">Artisans</div><button class="tb-btn primary" style="font-size:11px;padding:5px 10px" onclick="openModal('user-modal')">+ Add artisan</button></div>
+        <div class="panel-head"><div class="panel-title">Artisans</div><button class="tb-btn primary" style="font-size:11px;padding:5px 10px" onclick="openAddUserModal('artisan')">+ Add artisan</button></div>
         <div id="artisans-list"><div class="empty-state">Loading...</div></div>
       </div>
       <div class="panel">
-        <div class="panel-head"><div class="panel-title">Contractors</div><button class="tb-btn primary" style="font-size:11px;padding:5px 10px" onclick="openModal('user-modal')">+ Add contractor</button></div>
+        <div class="panel-head"><div class="panel-title">Contractors</div><button class="tb-btn primary" style="font-size:11px;padding:5px 10px" onclick="openAddUserModal('contractor')">+ Add contractor</button></div>
         <div id="contractors-list"><div class="empty-state">Loading...</div></div>
       </div>
     </div>
@@ -2782,14 +2782,19 @@ setTimeout(updateTrialCountdown, 6000);
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){
   document.getElementById(id).classList.remove('open');
-  // Reset user modal when closing
   if(id==='user-modal'){
     window._editingUserId=null;
     const title=document.getElementById('user-modal-title');
     const btn=document.getElementById('user-modal-save-btn');
     if(title)title.textContent='Add User to PlantFlow';
     if(btn)btn.textContent='Add user';
-    document.getElementById('u-company-group').style.display='none';
+    // Reset role to artisan and hide company field
+    const roleEl=document.getElementById('u-role');
+    if(roleEl) roleEl.value='artisan';
+    const group=document.getElementById('u-company-group');
+    if(group) group.style.display='none';
+    // Clear all fields
+    ['u-name','u-phone','u-trade','u-empno','u-company'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   }
 }
 function toggleContractorField(){
@@ -2798,6 +2803,22 @@ function toggleContractorField(){
   if(group)group.style.display=(role==='contractor')?'block':'none';
 }
 window.toggleContractorField=toggleContractorField;
+
+window.openAddUserModal = function(role){
+  // Reset modal to clean state
+  window._editingUserId = null;
+  const title=document.getElementById('user-modal-title');
+  const btn=document.getElementById('user-modal-save-btn');
+  if(title)title.textContent='Add User to PlantFlow';
+  if(btn)btn.textContent='Add user';
+  ['u-name','u-phone','u-trade','u-empno','u-company'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  // Pre-set the role
+  const roleEl=document.getElementById('u-role');
+  if(roleEl&&role) roleEl.value=role;
+  // Show/hide contractor field based on role
+  toggleContractorField();
+  openModal('user-modal');
+};
 
 function updateScheduleDateHint(){
   const freq=document.getElementById('sc-freq')?.value;
