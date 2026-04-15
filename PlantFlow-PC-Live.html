@@ -117,9 +117,35 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
 </style>
 </head>
 <body>
-<div class="app">
 
-<!-- SIDEBAR -->
+<!-- COMPANY LOGIN OVERLAY -->
+<div id="company-login-overlay" style="display:flex;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0D1B2A 0%,#185FA5 100%);align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:20px;padding:40px 36px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.4);text-align:center">
+    <div style="width:64px;height:64px;border-radius:18px;background:#0D1B2A;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+      <svg width="32" height="32" viewBox="0 0 18 18" fill="white"><path d="M2 14V7l7-5 7 5v7l-7 4.5L2 14z" opacity="0.3"/><path d="M9 2L2 7v7l7 4.5L16 14V7L9 2zm0 2L14 8v5.5L9 16.3 4 13.5V8z"/><rect x="7" y="8" width="4" height="6" rx="1"/></svg>
+    </div>
+    <div style="font-size:24px;font-weight:800;color:#0D1B2A;margin-bottom:4px">PlantFlow</div>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:28px">Maintenance OS — Sign in to your company</div>
+    <div id="login-error" style="display:none;background:#fee2e2;border-radius:8px;padding:10px;font-size:12.5px;color:#dc2626;margin-bottom:14px;text-align:left"></div>
+    <div style="text-align:left;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">Company email</div>
+      <input id="company-login-email" type="email" placeholder="admin@yourcompany.co.za" style="width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box" onkeydown="if(event.key==='Enter')document.getElementById('company-login-pass').focus()"/>
+    </div>
+    <div style="text-align:left;margin-bottom:20px">
+      <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">Access code</div>
+      <input id="company-login-pass" type="password" placeholder="Your access code" style="width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box" onkeydown="if(event.key==='Enter')doCompanyLogin()"/>
+    </div>
+    <button onclick="doCompanyLogin()" style="width:100%;background:#185FA5;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif;margin-bottom:12px">Sign in</button>
+    <div style="font-size:11px;color:#9ca3af">New customer? Contact Eagle Electrical Ventures to register your company.<br>
+    <span style="color:#185FA5;cursor:pointer;font-size:11px" onclick="document.getElementById('sa-bypass-row').style.display='block'">Super Admin access →</span></div>
+    <div id="sa-bypass-row" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #f3f4f6">
+      <input id="sa-bypass-pass" type="password" placeholder="Super Admin password" style="width:100%;padding:9px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:13px;font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box;margin-bottom:8px" onkeydown="if(event.key==='Enter')doSABypass()"/>
+      <button onclick="doSABypass()" style="width:100%;background:#0D1B2A;color:#fff;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif">Super Admin login</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="main-app" style="display:none">
 <div class="sidebar">
   <div class="sidebar-logo">
     <div class="logo-mark">
@@ -149,9 +175,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
     <div class="nav-item" onclick="nav('settings',this)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="2.5"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2"/></svg>Settings</div>
     <div class="nav-item" onclick="nav('superadmin',this)" style="border-top:1px solid #f3f4f6;margin-top:4px"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M1 6h14"/><path d="M5 10h2M9 10h2"/></svg>Super Admin</div>
   </div>
-  <div class="sidebar-user">
+  <div class="sidebar-user" id="sidebar-user-area">
     <div class="av" style="width:32px;height:32px;">JV</div>
-    <div><div style="font-size:12px;font-weight:600;color:#111827">Johan van V.</div><div style="font-size:10px;color:#9ca3af">Admin · plantflow-sa</div></div>
+    <div><div style="font-size:12px;font-weight:600;color:#111827">PlantFlow</div><div style="font-size:10px;color:#9ca3af">Admin · plantflow-sa</div></div>
   </div>
 </div>
 
@@ -544,9 +570,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
               </select>
             </div>
             <div class="form-group"><div class="form-label">PayFast subscription ref</div><input class="form-input" id="sa-det-pfref" placeholder="PayFast reference number"/></div>
+            <div class="form-group" style="grid-column:1/-1">
+              <div class="form-label" style="color:#185FA5;font-weight:700">🔑 Company login access code</div>
+              <input class="form-input" id="sa-det-accesscode" placeholder="e.g. Buck2024! — the company uses this to log in" style="font-weight:700"/>
+              <div style="font-size:11px;color:#6b7280;margin-top:3px">Company admin logs in with their email address + this code. Share this with them when you set up their account.</div>
+            </div>
           </div>
-          <div style="padding:0 16px 16px;display:flex;gap:10px;align-items:center">
+          <div style="padding:0 16px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
             <button class="tb-btn primary" style="padding:9px 20px" onclick="saveSACompanyDetail()">💾 Save changes</button>
+            <button class="tb-btn" style="background:#eff6ff;border-color:#185FA5;color:#185FA5;padding:9px 20px" onclick="openCompanyAsAdmin()">🔓 Open company app</button>
             <button class="tb-btn" style="background:#fef3c7;border-color:#f59e0b;color:#92400e;padding:9px 20px" onclick="holdCompany()">⏸ Hold account</button>
             <button class="tb-btn danger" style="padding:9px 20px;margin-left:auto" onclick="deleteCompany()">🗑 Delete company</button>
           </div>
@@ -820,6 +852,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
         <div class="form-group"><div class="form-label">Subscription price (R)</div><input class="form-input" id="ac-price" type="number" placeholder="299"/></div>
       </div>
       <div class="form-group"><div class="form-label">Notes</div><input class="form-input" id="ac-notes" placeholder="Any notes"/></div>
+      <div class="form-group">
+        <div class="form-label" style="color:#185FA5;font-weight:700">🔑 Access code (required for login)</div>
+        <input class="form-input" id="ac-accesscode" placeholder="e.g. Acme2024! — company uses this to log in" style="font-weight:700"/>
+        <div style="font-size:11px;color:#6b7280;margin-top:3px">The company admin logs in using their email + this code. Share it with them.</div>
+      </div>
     </div>
     <div class="modal-foot"><button class="tb-btn" onclick="closeModal('add-company-modal')">Cancel</button><button class="tb-btn primary" onclick="addSACompany()">Add company</button></div>
   </div>
@@ -2212,6 +2249,21 @@ window.quickPermit = function(jobNum,artisan){
 };
 
 window.saveSettings = async function(){
+  const companyName = document.getElementById('set-company')?.value.trim()||'';
+  // Update sidebar immediately
+  const sideEl = document.getElementById('sidebar-company-name');
+  if(sideEl&&companyName) sideEl.textContent = companyName;
+  // If logged in as a company, update their record
+  if(window._loggedInCompanyId){
+    try{
+      await _upd('companies', window._loggedInCompanyId, {
+        name: companyName,
+        industry: document.getElementById('set-industry')?.value||'',
+        updatedAt: window._serverTimestamp()
+      });
+      localStorage.setItem('pf_company_name', companyName);
+    }catch(e){console.log('saveSettings:',e);}
+  }
   toast('Settings saved','success');
 };
 
@@ -2525,10 +2577,11 @@ window.addSACompany = async function(){
       expires: expires.toISOString().split('T')[0],
       status: 'trial',
       notes: document.getElementById('ac-notes').value,
+      accessCode: document.getElementById('ac-accesscode')?.value.trim()||'',
       createdAt: window._serverTimestamp()
     });
     closeModal('add-company-modal');
-    ['ac-name','ac-email','ac-phone','ac-price','ac-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    ['ac-name','ac-email','ac-phone','ac-price','ac-notes','ac-accesscode'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';})
     loadSACompanies();
     updateTrialCountdown();
     // Update sidebar company name
@@ -2578,9 +2631,8 @@ window.loadSACompanies = async function(){
         trialLeft = diff>0 ? diff+' days' : 'Expired';
       }
       const sc = c.status==='active'?'b-green':c.status==='held'?'b-red':c.status==='trial'?'b-amber':'b-gray';
-      const nameEsc = (c.name||'').replace(/'/g,"\'");
       return '<tr>'+
-        '<td><b>'+(c.name||'—')+'</b></td>'+
+        '<td><b style="cursor:pointer;color:#185FA5" onclick="openSACompanyDetail(\''+d.id+'\')">'+(c.name||'—')+'</b></td>'+
         '<td style="font-size:11px">'+(c.adminEmail||'—')+'</td>'+
         '<td><span class="badge b-blue">'+(c.plan||'trial')+'</span></td>'+
         '<td>R '+(c.price||'—')+'/mo</td>'+
@@ -2588,9 +2640,9 @@ window.loadSACompanies = async function(){
         '<td><span class="badge '+sc+'">'+(c.status||'trial')+'</span></td>'+
         '<td style="font-size:11px">'+(c.expires||'—')+'</td>'+
         '<td style="white-space:nowrap">'+
-          '<button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="openSACompanyDetail(\"'+d.id+'\")">📋 Open</button> '+
-          '<button class="tb-btn" style="font-size:11px;padding:3px 8px;background:#fef3c7;border-color:#f59e0b;color:#92400e" onclick="holdCompanyById(\"'+d.id+'\",\"'+c.status+'\")">⏸</button> '+
-          '<button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteCompanyById(\"'+d.id+'\",\"'+nameEsc+'\")">🗑</button>'+
+          '<button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="openSACompanyDetail(\''+d.id+'\')">📋 Open</button> '+
+          '<button class="tb-btn" style="font-size:11px;padding:3px 8px;background:#fef3c7;border-color:#f59e0b;color:#92400e" onclick="holdCompanyById(\''+d.id+'\',\''+c.status+'\')">⏸</button> '+
+          '<button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteCompanyById(\''+d.id+'\',\''+c.name.replace(/'/g,'').replace(/"/g,'')+'\')">🗑</button>'+
         '</td>'+
       '</tr>';
     }).join('');
@@ -2617,6 +2669,8 @@ window.openSACompanyDetail = async function(id){
     document.getElementById('sa-det-status').value = c.status||'trial';
     document.getElementById('sa-det-notes').value = c.notes||'';
     document.getElementById('sa-det-pfref').value = c.pfRef||'';
+    const accEl=document.getElementById('sa-det-accesscode');
+    if(accEl) accEl.value = c.accessCode||'';
     document.getElementById('sa-company-detail').style.display='block';
     document.getElementById('sa-main-panel').style.display='none';
   }catch(e){toast('Error: '+e.message,'error');}
@@ -2647,6 +2701,7 @@ window.saveSACompanyDetail = async function(){
     status: document.getElementById('sa-det-status').value,
     notes: document.getElementById('sa-det-notes').value,
     pfRef: document.getElementById('sa-det-pfref').value,
+    accessCode: document.getElementById('sa-det-accesscode')?.value||'',
     updatedAt: window._serverTimestamp()
   });
   document.getElementById('sa-detail-name').textContent = name;
@@ -2775,10 +2830,122 @@ function showCountdown(el, trialStart, trialDays, status){
 }
 
 window.updateTrialCountdown = updateTrialCountdown;
+
+// Helper used in non-module context
+function initials(name){return (name||'??').split(' ').map(w=>w[0]).join('').toUpperCase().substring(0,2);}
+
 // Try at 1s, 3s and 6s to handle slow Firebase init
 setTimeout(updateTrialCountdown, 1000);
 setTimeout(updateTrialCountdown, 3000);
 setTimeout(updateTrialCountdown, 6000);
+
+// ── COMPANY LOGIN SYSTEM ──
+const SA_MASTER_PASSWORD = 'Eagle2024!';
+window._loggedInCompanyId = null;
+window._loggedInCompanyName = null;
+window._isSuperAdmin = false;
+
+function showLoginError(msg){
+  const el=document.getElementById('login-error');
+  if(el){el.textContent=msg;el.style.display='block';}
+}
+
+function enterApp(companyName, companyId, isSA){
+  window._loggedInCompanyId = companyId||null;
+  window._loggedInCompanyName = companyName||'Admin Panel';
+  window._isSuperAdmin = isSA||false;
+  // Update sidebar
+  const sideEl=document.getElementById('sidebar-company-name');
+  if(sideEl) sideEl.textContent = companyName||'Admin Panel';
+  // Show the app, hide login
+  const overlay=document.getElementById('company-login-overlay');
+  const app=document.getElementById('main-app');
+  if(overlay) overlay.style.display='none';
+  if(app) app.style.display='flex';
+  // Add logout button to sidebar user area
+  const userArea=document.getElementById('sidebar-user-area');
+  if(userArea) userArea.innerHTML=
+    '<div class="av" style="width:32px;height:32px">'+initials(companyName)+'</div>'+
+    '<div style="flex:1"><div style="font-size:12px;font-weight:600;color:#111827">'+(isSA?'Super Admin':companyName)+'</div><div style="font-size:10px;color:#9ca3af">'+(isSA?'Eagle Electrical Ventures':'Admin · plantflow-sa')+'</div></div>'+
+    '<button onclick="logoutCompany()" style="background:none;border:none;cursor:pointer;font-size:11px;color:#9ca3af;padding:2px 6px;border-radius:6px" title="Sign out">⬅ Out</button>';
+}
+
+window.doCompanyLogin = async function(){
+  const email = (document.getElementById('company-login-email')?.value||'').trim().toLowerCase();
+  const pass = document.getElementById('company-login-pass')?.value||'';
+  if(!email||!pass){showLoginError('Please enter your company email and access code.');return;}
+  try{
+    const snap = await getDocs(query(collection(db,'companies'),where('adminEmail','==',email)));
+    if(snap.empty){showLoginError('No company found with that email address. Contact Eagle Electrical Ventures to register.');return;}
+    const d=snap.docs[0];
+    const c=d.data();
+    if(!c.accessCode||c.accessCode!==pass){showLoginError('Incorrect access code. Contact Eagle Electrical Ventures if you have forgotten it.');return;}
+    if(c.status==='held'){showLoginError('Your account is currently on hold. Please contact Eagle Electrical Ventures to resolve your subscription.');return;}
+    // Store company info for filtering
+    localStorage.setItem('pf_company_id',d.id);
+    localStorage.setItem('pf_company_name',c.name||'');
+    localStorage.setItem('pf_company_email',email);
+    enterApp(c.name||email, d.id, false);
+    // Pre-fill Settings screen with company data
+    const setComp=document.getElementById('set-company');
+    if(setComp) setComp.value=c.name||'';
+    const setInd=document.getElementById('set-industry');
+    if(setInd&&c.industry){for(let i=0;i<setInd.options.length;i++){if(setInd.options[i].text.includes(c.industry)){setInd.selectedIndex=i;break;}}}
+    updateTrialCountdown();
+    toast('Welcome to PlantFlow, '+c.name,'success');
+  }catch(e){showLoginError('Login error: '+e.message);}
+};
+
+window.doSABypass = function(){
+  const pass = document.getElementById('sa-bypass-pass')?.value||'';
+  if(pass!==SA_MASTER_PASSWORD){showLoginError('Incorrect Super Admin password.');return;}
+  // Clear stored company — SA sees everything
+  localStorage.removeItem('pf_company_id');
+  localStorage.removeItem('pf_company_name');
+  enterApp('Eagle Electrical Ventures', null, true);
+  toast('Logged in as Super Admin','success');
+};
+
+window.logoutCompany = function(){
+  if(!confirm('Sign out of PlantFlow?'))return;
+  localStorage.removeItem('pf_company_id');
+  localStorage.removeItem('pf_company_name');
+  localStorage.removeItem('pf_company_email');
+  window._loggedInCompanyId=null;
+  window._isSuperAdmin=false;
+  const overlay=document.getElementById('company-login-overlay');
+  const app=document.getElementById('main-app');
+  if(overlay)overlay.style.display='flex';
+  if(app)app.style.display='none';
+  // Clear fields
+  const emailEl=document.getElementById('company-login-email');
+  const passEl=document.getElementById('company-login-pass');
+  const errEl=document.getElementById('login-error');
+  if(emailEl)emailEl.value='';
+  if(passEl)passEl.value='';
+  if(errEl)errEl.style.display='none';
+  document.getElementById('sa-bypass-row').style.display='none';
+};
+
+window.openCompanyAsAdmin = function(){
+  // Open the currently viewed company directly from SA detail panel
+  const name = document.getElementById('sa-det-name')?.value||'Company';
+  const id = window._editingSACompanyId||'';
+  closeSACompanyDetail();
+  enterApp(name, id, false);
+  nav('dashboard', document.querySelectorAll('.nav-item')[0]);
+  toast('Viewing '+name+' as admin','success');
+};
+
+// Auto-login from localStorage if previously logged in
+(function checkStoredLogin(){
+  const storedId = localStorage.getItem('pf_company_id');
+  const storedName = localStorage.getItem('pf_company_name');
+  if(storedId&&storedName){
+    enterApp(storedName, storedId, false);
+  }
+  // If SA was logged in before (no company ID but app was open) — show login
+})();
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){
   document.getElementById(id).classList.remove('open');
