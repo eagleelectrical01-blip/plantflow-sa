@@ -2874,19 +2874,20 @@ window.doCompanyLogin = async function(){
   const email = (document.getElementById('company-login-email')?.value||'').trim().toLowerCase();
   const pass = document.getElementById('company-login-pass')?.value||'';
   if(!email||!pass){showLoginError('Please enter your company email and access code.');return;}
+  if(!window._getDocs||!window._collection||!window._query||!window._where){
+    showLoginError('Still connecting to database — please wait a moment and try again.');return;
+  }
   try{
-    const snap = await getDocs(query(collection(db,'companies'),where('adminEmail','==',email)));
+    const snap = await window._getDocs(window._query(window._collection(window.db,'companies'),window._where('adminEmail','==',email)));
     if(snap.empty){showLoginError('No company found with that email address. Contact Eagle Electrical Ventures to register.');return;}
     const d=snap.docs[0];
     const c=d.data();
     if(!c.accessCode||c.accessCode!==pass){showLoginError('Incorrect access code. Contact Eagle Electrical Ventures if you have forgotten it.');return;}
-    if(c.status==='held'){showLoginError('Your account is currently on hold. Please contact Eagle Electrical Ventures to resolve your subscription.');return;}
-    // Store company info for filtering
+    if(c.status==='held'){showLoginError('Your account is on hold. Please contact Eagle Electrical Ventures to resolve your subscription.');return;}
     localStorage.setItem('pf_company_id',d.id);
     localStorage.setItem('pf_company_name',c.name||'');
     localStorage.setItem('pf_company_email',email);
     enterApp(c.name||email, d.id, false);
-    // Pre-fill Settings screen with company data
     const setComp=document.getElementById('set-company');
     if(setComp) setComp.value=c.name||'';
     const setInd=document.getElementById('set-industry');
@@ -2937,15 +2938,14 @@ window.openCompanyAsAdmin = function(){
   toast('Viewing '+name+' as admin','success');
 };
 
-// Auto-login from localStorage if previously logged in
-(function checkStoredLogin(){
+// Auto-login from localStorage if previously logged in — wait for Firebase to init
+setTimeout(function checkStoredLogin(){
   const storedId = localStorage.getItem('pf_company_id');
   const storedName = localStorage.getItem('pf_company_name');
-  if(storedId&&storedName){
+  if(storedId && storedName){
     enterApp(storedName, storedId, false);
   }
-  // If SA was logged in before (no company ID but app was open) — show login
-})();
+}, 500);
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){
   document.getElementById(id).classList.remove('open');
