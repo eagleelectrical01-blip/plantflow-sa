@@ -119,29 +119,66 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
 <body>
 
 <!-- COMPANY LOGIN OVERLAY -->
-<div id="company-login-overlay" style="display:flex;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0D1B2A 0%,#185FA5 100%);align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:20px;padding:40px 36px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.4);text-align:center">
-    <div style="width:64px;height:64px;border-radius:18px;background:#0D1B2A;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
-      <svg width="32" height="32" viewBox="0 0 18 18" fill="white"><path d="M2 14V7l7-5 7 5v7l-7 4.5L2 14z" opacity="0.3"/><path d="M9 2L2 7v7l7 4.5L16 14V7L9 2zm0 2L14 8v5.5L9 16.3 4 13.5V8z"/><rect x="7" y="8" width="4" height="6" rx="1"/></svg>
+<div id="company-login-overlay" style="display:flex;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0D1B2A 0%,#185FA5 100%);align-items:center;justify-content:center;padding:20px">
+  <div style="width:100%;max-width:860px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+    <!-- LEFT: COMPANY LOGIN -->
+    <div style="background:#fff;border-radius:20px;padding:36px 32px;box-shadow:0 20px 60px rgba(0,0,0,0.4)">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="width:56px;height:56px;border-radius:16px;background:#0D1B2A;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+          <svg width="28" height="28" viewBox="0 0 18 18" fill="white"><path d="M2 14V7l7-5 7 5v7l-7 4.5L2 14z" opacity="0.3"/><path d="M9 2L2 7v7l7 4.5L16 14V7L9 2zm0 2L14 8v5.5L9 16.3 4 13.5V8z"/><rect x="7" y="8" width="4" height="6" rx="1"/></svg>
+        </div>
+        <div style="font-size:22px;font-weight:800;color:#0D1B2A">PlantFlow</div>
+        <div style="font-size:12px;color:#6b7280;margin-top:3px">Company login</div>
+      </div>
+
+      <!-- Step indicator -->
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:10px 14px;margin-bottom:18px;font-size:12px;color:#15803d;line-height:1.7">
+        <b>How to log in:</b><br>
+        1. Super Admin registers your company &amp; gives you a temporary password<br>
+        2. Log in below with your email + temporary password<br>
+        3. Go to <b>Settings</b> to set your own permanent email &amp; password
+      </div>
+
+      <div id="login-error" style="display:none;background:#fee2e2;border-radius:8px;padding:10px;font-size:12.5px;color:#dc2626;margin-bottom:14px"></div>
+
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">Company email</div>
+        <input id="company-login-email" type="email" placeholder="admin@yourcompany.co.za" style="width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box" onkeydown="if(event.key==='Enter')document.getElementById('company-login-pass').focus()"/>
+      </div>
+      <div style="margin-bottom:18px">
+        <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">Password</div>
+        <input id="company-login-pass" type="password" placeholder="Temporary or permanent password" style="width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box" onkeydown="if(event.key==='Enter')doCompanyLogin()"/>
+      </div>
+      <button onclick="doCompanyLogin()" style="width:100%;background:#185FA5;color:#fff;border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif">Sign in to my company</button>
+      <div style="text-align:center;margin-top:14px;font-size:11px;color:#9ca3af">Not registered yet? Contact Eagle Electrical Ventures</div>
     </div>
-    <div style="font-size:24px;font-weight:800;color:#0D1B2A;margin-bottom:4px">PlantFlow</div>
-    <div style="font-size:13px;color:#6b7280;margin-bottom:28px">Maintenance OS — Sign in to your company</div>
-    <div id="login-error" style="display:none;background:#fee2e2;border-radius:8px;padding:10px;font-size:12.5px;color:#dc2626;margin-bottom:14px;text-align:left"></div>
-    <div style="text-align:left;margin-bottom:12px">
-      <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">Company email</div>
-      <input id="company-login-email" type="email" placeholder="admin@yourcompany.co.za" style="width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box" onkeydown="if(event.key==='Enter')document.getElementById('company-login-pass').focus()"/>
+
+    <!-- RIGHT: SUPER ADMIN LOGIN -->
+    <div style="background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.2);border-radius:20px;padding:36px 32px;backdrop-filter:blur(10px)">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:32px;margin-bottom:8px">🔐</div>
+        <div style="font-size:20px;font-weight:800;color:#fff">Super Admin</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:3px">Eagle Electrical Ventures</div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:12px 14px;margin-bottom:18px;font-size:12px;color:rgba(255,255,255,0.8);line-height:1.7">
+        <b style="color:#fff">Super Admin steps:</b><br>
+        1. Log in below with your master password<br>
+        2. Go to <b>Super Admin</b> → Add company<br>
+        3. Set company email, temporary password &amp; trial days<br>
+        4. Share the email + temp password with the customer
+      </div>
+
+      <div id="sa-login-error" style="display:none;background:rgba(220,38,38,0.3);border-radius:8px;padding:10px;font-size:12.5px;color:#fca5a5;margin-bottom:14px"></div>
+
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">Master password</div>
+        <input id="sa-master-pass" type="password" placeholder="Super Admin master password" style="width:100%;padding:11px 14px;border:1.5px solid rgba(255,255,255,0.3);border-radius:10px;font-size:14px;font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box;background:rgba(255,255,255,0.1);color:#fff" onkeydown="if(event.key==='Enter')doSABypass()"/>
+      </div>
+      <button onclick="doSABypass()" style="width:100%;background:#fff;color:#0D1B2A;border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif">Login as Super Admin</button>
     </div>
-    <div style="text-align:left;margin-bottom:20px">
-      <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">Access code</div>
-      <input id="company-login-pass" type="password" placeholder="Your access code" style="width:100%;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box" onkeydown="if(event.key==='Enter')doCompanyLogin()"/>
-    </div>
-    <button onclick="doCompanyLogin()" style="width:100%;background:#185FA5;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif;margin-bottom:12px">Sign in</button>
-    <div style="font-size:11px;color:#9ca3af">New customer? Contact Eagle Electrical Ventures to register your company.<br>
-    <span style="color:#185FA5;cursor:pointer;font-size:11px" onclick="document.getElementById('sa-bypass-row').style.display='block'">Super Admin access →</span></div>
-    <div id="sa-bypass-row" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid #f3f4f6">
-      <input id="sa-bypass-pass" type="password" placeholder="Super Admin password" style="width:100%;padding:9px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:13px;font-family:'Segoe UI',Arial,sans-serif;box-sizing:border-box;margin-bottom:8px" onkeydown="if(event.key==='Enter')doSABypass()"/>
-      <button onclick="doSABypass()" style="width:100%;background:#0D1B2A;color:#fff;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif">Super Admin login</button>
-    </div>
+
   </div>
 </div>
 
@@ -491,6 +528,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
           <div class="settings-row"><div style="flex:1;font-size:12.5px;font-weight:500">OHSA standard</div><select class="form-select" style="width:200px;font-size:12px;padding:5px 9px"><option>OHSA Act 85 of 1993</option></select></div>
           <div class="settings-row"><div style="flex:1;font-size:12.5px;font-weight:500">Currency</div><select class="form-select" style="width:200px;font-size:12px;padding:5px 9px"><option>ZAR (R)</option><option>USD ($)</option></select></div>
           <div style="padding:12px 16px"><button class="tb-btn primary" style="width:100%;justify-content:center" onclick="saveSettings()">Save settings</button></div>
+        </div>
+        <div class="section-head" style="margin-top:16px">Change login credentials</div>
+        <div class="settings-section">
+          <div style="padding:12px 16px;font-size:12px;color:#6b7280;line-height:1.7">Update your company email and password here. You will use these to log in next time.</div>
+          <div class="settings-row"><div style="flex:1;font-size:12.5px;font-weight:500">New login email</div><input class="form-input" id="set-new-email" type="email" placeholder="New email address" style="width:220px;font-size:12px;padding:5px 9px"/></div>
+          <div class="settings-row"><div style="flex:1;font-size:12.5px;font-weight:500">New password</div><input class="form-input" id="set-new-pass" type="password" placeholder="New password" style="width:220px;font-size:12px;padding:5px 9px"/></div>
+          <div class="settings-row"><div style="flex:1;font-size:12.5px;font-weight:500">Confirm password</div><input class="form-input" id="set-confirm-pass" type="password" placeholder="Confirm new password" style="width:220px;font-size:12px;padding:5px 9px"/></div>
+          <div style="padding:12px 16px"><button class="tb-btn primary" style="width:100%;justify-content:center" onclick="saveLoginCredentials()">Update login credentials</button></div>
         </div>
         <div class="section-head" style="margin-top:16px">Notification rules</div>
         <div class="settings-section">
@@ -853,9 +898,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
       </div>
       <div class="form-group"><div class="form-label">Notes</div><input class="form-input" id="ac-notes" placeholder="Any notes"/></div>
       <div class="form-group">
-        <div class="form-label" style="color:#185FA5;font-weight:700">🔑 Access code (required for login)</div>
-        <input class="form-input" id="ac-accesscode" placeholder="e.g. Acme2024! — company uses this to log in" style="font-weight:700"/>
-        <div style="font-size:11px;color:#6b7280;margin-top:3px">The company admin logs in using their email + this code. Share it with them.</div>
+        <div class="form-label" style="color:#185FA5;font-weight:700">🔑 Temporary password (required)</div>
+        <input class="form-input" id="ac-accesscode" placeholder="e.g. Welcome2024! — share this with the customer" style="font-weight:700"/>
+        <div style="font-size:11px;color:#6b7280;margin-top:3px">The company logs in with their email + this temporary password. They can change it in Settings after first login.</div>
       </div>
     </div>
     <div class="modal-foot"><button class="tb-btn" onclick="closeModal('add-company-modal')">Cancel</button><button class="tb-btn primary" onclick="addSACompany()">Add company</button></div>
@@ -2267,6 +2312,28 @@ window.saveSettings = async function(){
   toast('Settings saved','success');
 };
 
+window.saveLoginCredentials = async function(){
+  if(!window._loggedInCompanyId){toast('Not logged in as a company','error');return;}
+  const newEmail = document.getElementById('set-new-email')?.value.trim().toLowerCase()||'';
+  const newPass = document.getElementById('set-new-pass')?.value||'';
+  const confPass = document.getElementById('set-confirm-pass')?.value||'';
+  if(!newEmail&&!newPass){toast('Enter a new email or password to update','error');return;}
+  if(newPass&&newPass!==confPass){toast('Passwords do not match','error');return;}
+  if(newPass&&newPass.length<6){toast('Password must be at least 6 characters','error');return;}
+  const updates = {};
+  if(newEmail) updates.adminEmail = newEmail;
+  if(newPass) updates.accessCode = newPass;
+  updates.updatedAt = window._serverTimestamp();
+  try{
+    await _upd('companies', window._loggedInCompanyId, updates);
+    if(newEmail){ localStorage.setItem('pf_company_email',newEmail); }
+    document.getElementById('set-new-email').value='';
+    document.getElementById('set-new-pass').value='';
+    document.getElementById('set-confirm-pass').value='';
+    toast('Login credentials updated — use your new details next time you log in','success');
+  }catch(e){toast('Error: '+e.message,'error');}
+};
+
 window.exportMaterials = function(){
   // Calculate live usage from job cards
   const usageMap = {};
@@ -2898,9 +2965,12 @@ window.doCompanyLogin = async function(){
 };
 
 window.doSABypass = function(){
-  const pass = document.getElementById('sa-bypass-pass')?.value||'';
-  if(pass!==SA_MASTER_PASSWORD){showLoginError('Incorrect Super Admin password.');return;}
-  // Clear stored company — SA sees everything
+  const pass = document.getElementById('sa-master-pass')?.value||'';
+  if(pass!==SA_MASTER_PASSWORD){
+    const errEl=document.getElementById('sa-login-error');
+    if(errEl){errEl.textContent='Incorrect master password. Try again.';errEl.style.display='block';}
+    return;
+  }
   localStorage.removeItem('pf_company_id');
   localStorage.removeItem('pf_company_name');
   enterApp('Eagle Electrical Ventures', null, true);
@@ -2918,14 +2988,8 @@ window.logoutCompany = function(){
   const app=document.getElementById('main-app');
   if(overlay)overlay.style.display='flex';
   if(app)app.style.display='none';
-  // Clear fields
-  const emailEl=document.getElementById('company-login-email');
-  const passEl=document.getElementById('company-login-pass');
-  const errEl=document.getElementById('login-error');
-  if(emailEl)emailEl.value='';
-  if(passEl)passEl.value='';
-  if(errEl)errEl.style.display='none';
-  document.getElementById('sa-bypass-row').style.display='none';
+  ['company-login-email','company-login-pass','sa-master-pass'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['login-error','sa-login-error'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
 };
 
 window.openCompanyAsAdmin = function(){
