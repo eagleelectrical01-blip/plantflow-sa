@@ -250,9 +250,22 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
     </div>
   </div>
 
-  <!-- ════════════════════════════════ -->
-  <!-- ARTISAN HOME -->
-  <!-- ════════════════════════════════ -->
+<!-- INSTALL BANNER — shown inside app after login, floating at top -->
+<div id="install-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9998;background:linear-gradient(135deg,#0D1B2A,#185FA5);padding:10px 14px;box-shadow:0 2px 12px rgba(0,0,0,0.3)">
+  <div style="display:flex;align-items:center;gap:10px;max-width:500px;margin:0 auto">
+    <div style="width:36px;height:36px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <svg width="22" height="22" viewBox="0 0 18 18" fill="#0D1B2A"><path d="M2 14V7l7-5 7 5v7l-7 4.5L2 14z" opacity="0.3"/><path d="M9 2L2 7v7l7 4.5L16 14V7L9 2zm0 2L14 8v5.5L9 16.3 4 13.5V8z"/><rect x="7" y="8" width="4" height="6" rx="1"/></svg>
+    </div>
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:700;color:#fff">Add PlantFlow to your home screen</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.75)" id="install-banner-sub">Works like a real app — no Play Store needed</div>
+    </div>
+    <button id="install-banner-btn" onclick="installApp()" style="background:#F5820A;border:none;color:#fff;font-size:13px;font-weight:700;padding:9px 16px;border-radius:10px;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif;white-space:nowrap;flex-shrink:0">
+      📲 Install
+    </button>
+    <button onclick="dismissInstallBanner()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:16px;width:28px;height:28px;border-radius:50%;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center">×</button>
+  </div>
+</div>
   <div class="screen" id="sc-artisan">
     <div class="scroll-content">
       <div class="home-header">
@@ -2183,41 +2196,93 @@ if('serviceWorker' in navigator){
   });
 }
 
-// ── PWA INSTALL PROMPT ──
+// ── PWA INSTALL SYSTEM ──
 let _deferredInstallPrompt = null;
+const _isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+const _isAndroid = /android/.test(navigator.userAgent.toLowerCase());
+const _isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+const _installDismissed = localStorage.getItem('pf_install_dismissed');
 
+function showInstallBanner(){
+  if(_isStandalone) return; // Already installed
+  if(_installDismissed) return; // User dismissed
+  const banner = document.getElementById('install-banner');
+  if(!banner) return;
+  const sub = document.getElementById('install-banner-sub');
+  const btn = document.getElementById('install-banner-btn');
+  if(_isIOS){
+    if(sub) sub.textContent = 'Tap Share ↑ then "Add to Home Screen"';
+    if(btn){ btn.textContent = '📲 How to install'; btn.onclick = showIOSInstructions; }
+  } else if(_deferredInstallPrompt){
+    if(btn){ btn.textContent = '📲 Install now'; btn.onclick = installApp; }
+  } else {
+    // Android Chrome — prompt not ready yet, show manual instruction
+    if(sub) sub.textContent = 'Tap the browser menu (⋮) → "Add to Home Screen"';
+    if(btn){ btn.textContent = '📲 Got it'; btn.onclick = dismissInstallBanner; }
+  }
+  banner.style.display = 'block';
+  // Push screen content down so banner doesn't overlap
+  document.querySelectorAll('.screen.active .top-header').forEach(h=>{
+    h.style.marginTop = '56px';
+  });
+}
+
+window.dismissInstallBanner = function(){
+  const banner = document.getElementById('install-banner');
+  if(banner) banner.style.display = 'none';
+  localStorage.setItem('pf_install_dismissed','1');
+  document.querySelectorAll('.top-header').forEach(h=>{ h.style.marginTop=''; });
+};
+
+window.installApp = async function(){
+  if(_deferredInstallPrompt){
+    _deferredInstallPrompt.prompt();
+    const result = await _deferredInstallPrompt.userChoice;
+    if(result.outcome === 'accepted'){
+      dismissInstallBanner();
+      toastMob('PlantFlow installed! Open it from your home screen anytime.','success');
+    }
+    _deferredInstallPrompt = null;
+  }
+};
+
+window.showIOSInstructions = function(){
+  toastMob('Tap the Share button (box with arrow) at the bottom of Safari, then tap "Add to Home Screen"','success');
+};
+
+// Listen for Android/Chrome install prompt
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   _deferredInstallPrompt = e;
-  // Show install button
-  const prompt = document.getElementById('install-prompt');
-  if(prompt) prompt.style.display = 'block';
+  // Update button if banner is already showing
+  const btn = document.getElementById('install-banner-btn');
+  if(btn){ btn.textContent = '📲 Install now'; btn.onclick = installApp; }
 });
-
-window.installApp = async function(){
-  if(!_deferredInstallPrompt) return;
-  _deferredInstallPrompt.prompt();
-  const result = await _deferredInstallPrompt.userChoice;
-  if(result.outcome === 'accepted'){
-    const prompt = document.getElementById('install-prompt');
-    if(prompt) prompt.style.display = 'none';
-    toastMob('PlantFlow installed! Find it on your home screen','success');
-  }
-  _deferredInstallPrompt = null;
-};
 
 window.addEventListener('appinstalled', () => {
-  const prompt = document.getElementById('install-prompt');
-  if(prompt) prompt.style.display = 'none';
+  dismissInstallBanner();
 });
 
-// iOS Safari detect — show manual instructions
-const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
-const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-if(isIOS && !isInStandaloneMode){
+// Show login screen install hint (keep for users who see login)
+if(_isIOS && !_isStandalone){
   const hint = document.getElementById('ios-install-hint');
   if(hint) hint.style.display = 'block';
 }
+if(!_isStandalone && !_installDismissed){
+  const loginPrompt = document.getElementById('install-prompt');
+  if(loginPrompt) loginPrompt.style.display = 'block';
+}
+
+// Show install banner after user logs in
+// Called from doLogin (existing function already calls this via role routing)
+const _origShowSC = window.showSC;
+window.showSC = function(id){
+  if(_origShowSC) _origShowSC(id);
+  // Show install banner on any artisan/manager screen (not login)
+  if(id !== 'sc-role' && !_isStandalone && !_installDismissed){
+    setTimeout(showInstallBanner, 800);
+  }
+};
 </script>
 </body>
 </html>
