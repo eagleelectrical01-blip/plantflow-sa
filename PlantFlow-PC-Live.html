@@ -1896,6 +1896,25 @@ window.createJobCard = async function(){
     ['jc-desc','jc-location','jc-asset','jc-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     document.querySelectorAll('#jc-artisan-checkboxes input[type=checkbox]').forEach(c=>c.checked=false);
     toast(jobNum+' created'+(checked.length?' — '+checked.length+' artisan(s) notified':''),'success');
+
+    // WhatsApp notifications — open one tab per artisan if they have a phone number
+    if(checked.length>0){
+      const waMessage = encodeURIComponent(
+        '🔧 *PlantFlow — New Job Assigned*\n\n'+
+        '*Job:* '+jobNum+'\n'+
+        '*Task:* '+desc+'\n'+
+        '*Location:* '+loc+'\n\n'+
+        'Open the PlantFlow app to view full details and start the job.\n'+
+        '👉 https://eagleelectrical01-blip.github.io/plantflow-sa/PlantFlow-Mobile-Live.html'
+      );
+      for(const name of checked){
+        const artisan = allUsers.find(u=>u.name===name);
+        if(artisan&&artisan.phone){
+          const phone = artisan.phone.replace(/\D/g,'').replace(/^0/,'27');
+          setTimeout(()=>window.open('https://wa.me/'+phone+'?text='+waMessage,'_blank'), 500);
+        }
+      }
+    }
   }catch(e){toast('Error: '+e.message,'error');}
 };
 

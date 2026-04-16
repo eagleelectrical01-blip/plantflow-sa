@@ -968,6 +968,15 @@ function processLogin(userDoc){
   showSC(target);
   toastMob('Welcome, '+window._currentUserName+' ('+role+')','success');
 
+  // Request notification permission so browser can show alerts even when screen is off
+  if('Notification' in window && Notification.permission === 'default'){
+    setTimeout(()=>{
+      Notification.requestPermission().then(perm=>{
+        if(perm==='granted') toastMob('Notifications enabled — you will be alerted for new jobs','success');
+      });
+    }, 2000);
+  }
+
   // Immediately render all data for this user — don't wait for next Firestore event
   // This ensures old open jobs appear right away without needing a new job to trigger it
   setTimeout(()=>{
@@ -996,8 +1005,61 @@ window._allPermits = allPermits;
 window._allMaterials = allMaterials;
 window._allUsers = allUsers;
 
+// ── NOTIFICATION SOUND ──
+function playJobNotification(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    // Play two-tone chime: C5 then E5
+    [[523,0],[659,0.15],[784,0.3]].forEach(([freq,delay])=>{
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, ctx.currentTime+delay);
+      gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime+delay+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+delay+0.4);
+      osc.start(ctx.currentTime+delay);
+      osc.stop(ctx.currentTime+delay+0.5);
+    });
+  }catch(e){}
+}
+
 // ── LISTENERS ──
+let _prevJobIds = new Set();
+let _listenersStarted = false;
+
 onSnapshot(query(collection(db,'jobCards'),orderBy('createdAt','desc')), snap=>{
+  const newIds = new Set(snap.docs.map(d=>d.id));
+
+  // Detect genuinely new jobs (not first load)
+  if(_listenersStarted && window._currentUserName){
+    snap.docs.forEach(d=>{
+      if(!_prevJobIds.has(d.id)){
+        const j = d.data();
+        const name = window._currentUserName||'';
+        const isForMe = j.assignedTo===name||(j.assignedArtisans||[]).includes(name);
+        if(isForMe){
+          playJobNotification();
+          toastMob('🔧 New job assigned: '+j.jobNumber+' — '+j.description,'success');
+          // Native browser notification (works when app is in background on Android)
+          if('Notification' in window && Notification.permission==='granted'){
+            new Notification('PlantFlow — New Job Assigned', {
+              body: j.jobNumber+': '+j.description+'\n📍 '+j.location,
+              icon: './plantflow-icon-192.png',
+              badge: './plantflow-icon-192.png',
+              tag: j.id,
+              renotify: true
+            });
+          }
+        }
+      }
+    });
+  }
+
+  _prevJobIds = newIds;
+  _listenersStarted = true;
   allJobs.length=0;
   snap.docs.forEach(d=>allJobs.push({id:d.id,...d.data()}));
   renderArtisanJobs();
