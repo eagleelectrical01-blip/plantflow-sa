@@ -983,6 +983,69 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
   </div>
 </div>
 
+<!-- EDIT SCHEDULE MODAL -->
+<div class="modal-overlay" id="edit-schedule-modal" onclick="if(event.target===this)closeModal('edit-schedule-modal')">
+  <div class="modal" style="width:560px">
+    <div class="modal-head"><div class="modal-title">Edit PM Schedule Task</div><div class="modal-close" onclick="closeModal('edit-schedule-modal')">×</div></div>
+    <div class="modal-body">
+      <div class="form-group"><div class="form-label">Task description *</div><input class="form-input" id="esc-task"/></div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Frequency</div>
+          <select class="form-select" id="esc-freq">
+            <option value="daily">🔵 Daily</option>
+            <option value="weekly">🟣 Weekly</option>
+            <option value="monthly">🟢 Monthly</option>
+            <option value="quarterly">🟠 Quarterly</option>
+          </select>
+        </div>
+        <div class="form-group"><div class="form-label">Asset / Area</div><input class="form-input" id="esc-asset"/></div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Days of week</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <label id="esc-dow-mon-label" style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-weight:600"><input type="checkbox" id="esc-dow-mon" value="Monday" style="accent-color:#185FA5"/> Mon</label>
+          <label id="esc-dow-tue-label" style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-weight:600"><input type="checkbox" id="esc-dow-tue" value="Tuesday" style="accent-color:#185FA5"/> Tue</label>
+          <label id="esc-dow-wed-label" style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-weight:600"><input type="checkbox" id="esc-dow-wed" value="Wednesday" style="accent-color:#185FA5"/> Wed</label>
+          <label id="esc-dow-thu-label" style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-weight:600"><input type="checkbox" id="esc-dow-thu" value="Thursday" style="accent-color:#185FA5"/> Thu</label>
+          <label id="esc-dow-fri-label" style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-weight:600"><input type="checkbox" id="esc-dow-fri" value="Friday" style="accent-color:#185FA5"/> Fri</label>
+          <label id="esc-dow-sat-label" style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-weight:600"><input type="checkbox" id="esc-dow-sat" value="Saturday" style="accent-color:#185FA5"/> Sat</label>
+          <label id="esc-dow-eom-label" style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-weight:600"><input type="checkbox" id="esc-dow-eom" value="End of month" style="accent-color:#185FA5"/> End of month</label>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">First due date</div><input class="form-input" type="date" id="esc-start-date"/></div>
+        <div class="form-group"><div class="form-label">Est. time</div><input class="form-input" id="esc-time" placeholder="e.g. 30 min"/></div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Assigned artisans</div>
+        <div id="esc-artisan-checkboxes" style="border:1.5px solid #e5e7eb;border-radius:10px;max-height:120px;overflow-y:auto;padding:8px"></div>
+      </div>
+      <div class="form-group"><div class="form-label">Materials required</div><input class="form-input" id="esc-mats" placeholder="e.g. Grease 500g"/></div>
+      <div class="form-grid-2">
+        <div class="form-group"><div class="form-label">Permit required?</div>
+          <select class="form-select" id="esc-permit">
+            <option value="no">No</option>
+            <option value="yes">Yes — PTW required</option>
+          </select>
+        </div>
+        <div class="form-group"><div class="form-label">Inspection type</div>
+          <select class="form-select" id="esc-insp-type">
+            <option value="electrical">⚡ Electrical</option>
+            <option value="mechanical">🔧 Mechanical</option>
+            <option value="fire">🔴 Fire safety</option>
+            <option value="chemical">🧪 Chemical</option>
+            <option value="general">📋 General safety</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="tb-btn" onclick="closeModal('edit-schedule-modal')">Cancel</button>
+      <button class="tb-btn primary" onclick="saveEditSchedule()">Save changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- USER MODAL -->
 <div class="modal-overlay" id="user-modal" onclick="if(event.target===this)closeModal('user-modal')">
   <div class="modal">
@@ -1679,7 +1742,8 @@ window.renderSchedules = function(){
     <td>${s.nextDue||'—'}</td>
     <td>${s.permitRequired==='yes'?'<span class="badge b-red">PTW</span>':'<span class="badge b-green">No</span>'}</td>
     <td><span class="badge b-blue">Scheduled</span></td>
-    <td><button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteDoc_('schedules','${s.id}')">Delete</button></td>
+    <td><button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteDoc_('schedules','${s.id}')">Delete</button>
+    <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="openEditSchedule('${s.id}')">✏️ Edit</button></td>
   </tr>`;
   }).join('');
 };
@@ -1897,7 +1961,7 @@ window.createJobCard = async function(){
     document.querySelectorAll('#jc-artisan-checkboxes input[type=checkbox]').forEach(c=>c.checked=false);
     toast(jobNum+' created'+(checked.length?' — '+checked.length+' artisan(s) notified':''),'success');
 
-    // WhatsApp notifications — open one tab per artisan if they have a phone number
+    // WhatsApp notifications — send to ALL assigned artisans with a phone number
     if(checked.length>0){
       const waMessage = encodeURIComponent(
         '🔧 *PlantFlow — New Job Assigned*\n\n'+
@@ -1907,13 +1971,17 @@ window.createJobCard = async function(){
         'Open the PlantFlow app to view full details and start the job.\n'+
         '👉 https://eagleelectrical01-blip.github.io/plantflow-sa/PlantFlow-Mobile-Live.html'
       );
+      let delay = 600;
       for(const name of checked){
         const artisan = allUsers.find(u=>u.name===name);
         if(artisan&&artisan.phone){
           const phone = artisan.phone.replace(/\D/g,'').replace(/^0/,'27');
-          setTimeout(()=>window.open('https://wa.me/'+phone+'?text='+waMessage,'_blank'), 500);
+          const url = 'https://wa.me/'+phone+'?text='+waMessage;
+          setTimeout((u=>()=>window.open(u,'_blank'))(url), delay);
+          delay += 800; // stagger each message 800ms apart so browser allows popups
         }
       }
+      if(delay>600) toast('WhatsApp messages opening for '+checked.length+' artisan(s)...','success');
     }
   }catch(e){toast('Error: '+e.message,'error');}
 };
@@ -2274,6 +2342,74 @@ window.addSchedule = async function(){
     document.querySelectorAll('[id^="dow-"][id$="-label"]').forEach(l=>{l.style.borderColor='#e5e7eb';l.style.background='';});
     toast('PM task added'+(checkedArtisans.length?' — '+checkedArtisans.length+' artisan(s) notified':'')+(dayLabel),'success');
   }catch(e){toast('Error: '+e.message,'error');}
+};
+
+window.openEditSchedule = function(id){
+  const s = allSchedules.find(x=>x.id===id);
+  if(!s)return;
+  window._editingScheduleId = id;
+  document.getElementById('esc-task').value = s.task||'';
+  document.getElementById('esc-freq').value = s.frequency||'weekly';
+  document.getElementById('esc-asset').value = s.asset||'';
+  document.getElementById('esc-time').value = s.estTime||'';
+  document.getElementById('esc-mats').value = s.materialsRequired||'';
+  document.getElementById('esc-permit').value = s.permitRequired||'no';
+  const inspEl = document.getElementById('esc-insp-type');
+  if(inspEl) inspEl.value = s.inspectionType||'general';
+  if(document.getElementById('esc-start-date')) document.getElementById('esc-start-date').value = s.startDate||'';
+
+  // Pre-tick days of week
+  const dowIds = ['esc-dow-mon','esc-dow-tue','esc-dow-wed','esc-dow-thu','esc-dow-fri','esc-dow-sat','esc-dow-eom'];
+  const savedDays = s.daysOfWeek||[];
+  dowIds.forEach(id=>{
+    const el = document.getElementById(id);
+    if(el){ el.checked = savedDays.includes(el.value); }
+  });
+
+  // Populate artisan checkboxes
+  const artisans = allUsers.filter(u=>u.role==='artisan'||u.role==='contractor');
+  const assigned = s.assignedArtisans||[s.assignedTo].filter(Boolean);
+  const box = document.getElementById('esc-artisan-checkboxes');
+  if(box){
+    box.innerHTML = artisans.length ? artisans.map(u=>{
+      const checked = assigned.includes(u.name);
+      const display = u.role==='contractor'&&u.company ? u.name+' — '+u.company : u.name;
+      return `<label style="display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;cursor:pointer;margin-bottom:2px">
+        <input type="checkbox" value="${u.name}" ${checked?'checked':''} style="width:16px;height:16px;accent-color:#185FA5;cursor:pointer"/>
+        <span style="font-size:13px;font-weight:600;color:#111827">${display}</span>
+        <span style="font-size:11px;color:#9ca3af;margin-left:auto">${u.trade||u.role}</span>
+      </label>`;
+    }).join('') : '<div style="font-size:12px;color:#9ca3af;padding:6px">No artisans yet</div>';
+  }
+  openModal('edit-schedule-modal');
+};
+
+window.saveEditSchedule = async function(){
+  if(!window._editingScheduleId)return;
+  const task = document.getElementById('esc-task').value.trim();
+  if(!task){toast('Task description required','error');return;}
+
+  const dowIds = ['esc-dow-mon','esc-dow-tue','esc-dow-wed','esc-dow-thu','esc-dow-fri','esc-dow-sat','esc-dow-eom'];
+  const selectedDays = dowIds.map(id=>document.getElementById(id)).filter(el=>el&&el.checked).map(el=>el.value);
+  const checkedArtisans = [...document.querySelectorAll('#esc-artisan-checkboxes input[type=checkbox]:checked')].map(c=>c.value);
+
+  await updateDoc(doc(db,'schedules',window._editingScheduleId),{
+    task,
+    frequency: document.getElementById('esc-freq').value,
+    asset: document.getElementById('esc-asset').value,
+    daysOfWeek: selectedDays,
+    daysOfWeekLabel: selectedDays.join(', ')||'Any day',
+    estTime: document.getElementById('esc-time').value,
+    materialsRequired: document.getElementById('esc-mats').value,
+    permitRequired: document.getElementById('esc-permit').value,
+    inspectionType: document.getElementById('esc-insp-type')?.value||'general',
+    assignedTo: checkedArtisans[0]||'',
+    assignedArtisans: checkedArtisans,
+    startDate: document.getElementById('esc-start-date')?.value||'',
+    updatedAt: serverTimestamp()
+  });
+  closeModal('edit-schedule-modal');
+  toast('PM task updated','success');
 };
 
 window.addUser = async function(){
