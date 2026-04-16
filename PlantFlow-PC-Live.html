@@ -725,6 +725,22 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
           </div>
         </div>
       </div>
+
+      <!-- DATA MIGRATION TOOL -->
+      <div class="panel" style="border:2px solid #fbbf24;background:#fffbeb">
+        <div class="panel-head" style="background:#fef3c7"><div class="panel-title">🔧 Fix existing data — assign to a company</div></div>
+        <div style="padding:14px 16px;font-size:12.5px;color:#374151;line-height:1.7">
+          <b>Why:</b> Records created before the company login system was added have no company tag — so no company can see them. Use this tool to assign all existing untagged records to the correct company.<br>
+          <b>How:</b> Select a company, click "Assign all untagged records", and all jobs, faults, permits, materials, users, schedules and inspections that don't belong to any company will be tagged as that company's data.
+        </div>
+        <div style="padding:0 16px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select class="form-select" id="migrate-company-select" style="flex:1;font-size:12.5px">
+            <option value="">-- Select company to assign untagged records to --</option>
+          </select>
+          <button class="tb-btn primary" style="padding:8px 16px;white-space:nowrap;background:#d97706;border-color:#d97706" onclick="migrateUntaggedData()">🔧 Assign all untagged records</button>
+        </div>
+        <div id="migrate-status" style="padding:0 16px 14px;font-size:12px;color:#6b7280;display:none"></div>
+      </div>
     </div>
   </div>
   </div>
@@ -1095,15 +1111,11 @@ window.startListeners = function(companyId){
   _activeListeners.forEach(u=>{ try{u();}catch(e){} });
   _activeListeners = [];
 
-  // Filter function — applied after snapshot to avoid composite index requirement
+  // Strict filter — company sees ONLY their own records
+  // SA (no companyId) sees everything
   function filterByCompany(docs){
-    if(!companyId) return docs; // SA sees all
-    const filtered = docs.filter(d => d.companyId===companyId || d.companyId===null || d.companyId===undefined);
-    // If nothing matches with companyId filter and it's a fresh company, show all untagged records
-    if(filtered.filter(d=>d.companyId===companyId).length===0 && docs.length>0){
-      return docs.filter(d=>!d.companyId); // show legacy untagged records
-    }
-    return filtered.filter(d=>d.companyId===companyId);
+    if(!companyId) return docs;
+    return docs.filter(d => d.companyId === companyId);
   }
 
   _activeListeners.push(onSnapshot(query(collection(db,'jobCards'),orderBy('createdAt','desc')), snap => {
@@ -2699,16 +2711,17 @@ window.loadSACompanies = async function(){
     const countEl = document.getElementById('sa-company-count');
     if(countEl) countEl.textContent = snap.size;
 
-    // Populate billing dropdown
+    // Populate billing and migration dropdowns
     const billingSelect = document.getElementById('billing-company-select');
-    if(billingSelect){
-      billingSelect.innerHTML = '<option value="">-- Select company to send payment request --</option>'+
-        snap.docs.map(d=>{
-          const c=d.data();
-          return '<option value="'+[c.name||'',c.adminEmail||'',c.price||'299',c.trialDays||'30'].join('||')+'">'+
-            (c.name||'—')+' · '+(c.adminEmail||'no email')+' · R'+(c.price||'299')+'/mo</option>';
-        }).join('');
-    }
+    const migrateSelect = document.getElementById('migrate-company-select');
+    const opts = '<option value="">-- Select company --</option>'+
+      snap.docs.map(d=>{
+        const c=d.data();
+        return '<option value="'+d.id+'" data-name="'+(c.name||'')+'" data-email="'+(c.adminEmail||'')+'" data-price="'+(c.price||299)+'" data-days="'+(c.trialDays||30)+'">'+
+          (c.name||'—')+' · '+(c.adminEmail||'no email')+' · R'+(c.price||'299')+'/mo</option>';
+      }).join('');
+    if(billingSelect) billingSelect.innerHTML = opts;
+    if(migrateSelect) migrateSelect.innerHTML = opts;
 
     // Update sidebar with first company name
     if(!snap.empty){
@@ -2851,11 +2864,10 @@ window.deleteCompanyById = async function(id,name){
 window.sendPaymentRequest = function(){
   const sel = document.getElementById('billing-company-select');
   if(!sel||!sel.value){toast('Please select a company first','error');return;}
-  const parts = sel.value.split('||');
-  const name = parts[0]||'';
-  const email = parts[1]||'';
-  const price = parts[2]||'299';
-  const days = parts[3]||'30';
+  const opt = sel.options[sel.selectedIndex];
+  const name = opt.dataset.name||opt.text.split(' · ')[0]||'';
+  const email = opt.dataset.email||opt.text.split(' · ')[1]||'';
+  const price = opt.dataset.price||'299';
   const pfMerchant = document.getElementById('sa-pf-merchant')?.value||'';
   const subject = encodeURIComponent('PlantFlow Subscription — Payment Required');
   const body = encodeURIComponent(
@@ -2877,6 +2889,34 @@ window.sendPaymentRequest = function(){
   if(!email){toast('This company has no email address — open their detail page to add one','error');return;}
   window.open('mailto:'+email+'?subject='+subject+'&body='+body);
   toast('Payment email opened for '+name,'success');
+};
+
+window.migrateUntaggedData = async function(){
+  const sel = document.getElementById('migrate-company-select');
+  if(!sel||!sel.value){toast('Please select a company first','error');return;}
+  const companyId = sel.value;
+  const companyName = sel.options[sel.selectedIndex].dataset.name||companyId;
+  if(!confirm('Tag ALL unassigned records to "'+companyName+'"? This cannot be undone.'))return;
+  const statusEl = document.getElementById('migrate-status');
+  if(statusEl){statusEl.style.display='block';statusEl.textContent='Starting migration...';}
+  const cols = ['jobCards','faults','permits','materials','users','schedules','inspections','notifications','reorders'];
+  let total = 0;
+  try{
+    for(const col of cols){
+      const snap = await window._getDocs(window._collection(window.db,col));
+      const untagged = snap.docs.filter(d=>!d.data().companyId);
+      for(const d of untagged){
+        await window._updateDoc(window._doc(window.db,col,d.id),{companyId});
+        total++;
+      }
+      if(statusEl) statusEl.textContent='Migrated '+total+' records ('+col+' done)...';
+    }
+    if(statusEl) statusEl.textContent='✓ Done — '+total+' records tagged to '+companyName+'. Reload to see changes.';
+    toast(total+' records assigned to '+companyName,'success');
+  }catch(e){
+    if(statusEl) statusEl.textContent='Error: '+e.message;
+    toast('Error: '+e.message,'error');
+  }
 };
 
 function updateTrialCountdown(){
