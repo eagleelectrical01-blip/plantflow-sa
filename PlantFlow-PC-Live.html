@@ -318,7 +318,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
       </div>
       <table class="tbl">
         <thead><tr><th>Job #</th><th>Priority</th><th>Description</th><th>Location</th><th>Logged by</th><th>Assigned to</th><th>Permit #</th><th>Materials used</th><th>Total cost</th><th>Created</th><th>Completed</th><th>Status</th><th>Actions</th></tr></thead>
-        <tbody id="jobcards-tbody"><tr><td colspan="12" class="empty-state">Loading...</td></tr></tbody>
+        <tbody id="jobcards-tbody"><tr><td colspan="13" class="empty-state">Loading...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1195,7 +1195,7 @@ window.renderJobCards = function(){
   if(filter) jobs = jobs.filter(j=>j.status===filter);
   const tbody = document.getElementById('jobcards-tbody');
   if(!tbody)return;
-  if(!jobs.length){tbody.innerHTML='<tr><td colspan="14" class="empty-state">No job cards yet</td></tr>';return;}
+  if(!jobs.length){tbody.innerHTML='<tr><td colspan="13" class="empty-state">No job cards yet</td></tr>';return;}
   tbody.innerHTML = jobs.map(j=>{
     const artisans = Array.isArray(j.assignedArtisans)&&j.assignedArtisans.length ? j.assignedArtisans : (j.assignedTo?[j.assignedTo]:[]);
     const artisanDisplay = artisans.length ? artisans.map(a=>`<span class="badge b-blue" style="margin:1px">${a}</span>`).join(' ') : '<span style="color:#9ca3af">Unassigned</span>';
@@ -2287,7 +2287,7 @@ window.saveUser = async function(){
     } else {
       // Add new user
       userData.createdAt = serverTimestamp();
-      await addDoc(collection(db,'users'),userData);
+      await addDoc(collection(db,'users'),cid(userData));
       closeModal('user-modal');
       toast(name+' added — they can now log in on their phone','success');
     }
