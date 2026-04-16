@@ -1034,7 +1034,7 @@ let calSelectedDay = null;
 
 function renderCalendar(){
   const name = window._currentUserName||'';
-  const mySchedules = name ? allSchedules.filter(s=>s.assignedTo===name) : [];
+  const mySchedules = name ? allSchedules.filter(s=>s.assignedTo===name||(s.assignedArtisans||[]).includes(name)) : [];
 
   // Update month label
   const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -1049,22 +1049,40 @@ function renderCalendar(){
   const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
   const today = new Date();
 
-  // Collect days that have tasks (based on nextDue date parse)
+  // Collect days that have tasks — use daysOfWeek if set, otherwise fall back to frequency
   const taskDays = {};
+  const dowNameToNum = {Monday:1,Tuesday:2,Wednesday:3,Thursday:4,Friday:5,Saturday:6,Sunday:0};
+
   mySchedules.forEach(s=>{
-    if(!s.nextDue) return;
-    // Try parse nextDue (format: "08 Apr 2026")
-    const d = new Date(s.nextDue);
-    if(!isNaN(d) && d.getMonth()===calMonth && d.getFullYear()===calYear){
-      const day = d.getDate();
-      if(!taskDays[day]) taskDays[day]=[];
-      taskDays[day].push(s);
-    }
-    // Also show weekly/daily tasks every week/day
-    if(s.frequency==='daily'){
-      for(let i=1;i<=daysInMonth;i++) { if(!taskDays[i]) taskDays[i]=[]; taskDays[i].push(s); }
-    } else if(s.frequency==='weekly'){
-      for(let i=1;i<=daysInMonth;i+=7) { if(!taskDays[i]) taskDays[i]=[]; taskDays[i].push(s); }
+    const hasDOW = s.daysOfWeek && s.daysOfWeek.length>0;
+
+    if(hasDOW){
+      // Mark each day in the month that matches a selected day-of-week
+      for(let i=1;i<=daysInMonth;i++){
+        const date = new Date(calYear,calMonth,i);
+        const dowName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][date.getDay()];
+        // End of month
+        const isEOM = i===daysInMonth;
+        if(s.daysOfWeek.includes(dowName)||(s.daysOfWeek.includes('End of month')&&isEOM)){
+          if(!taskDays[i]) taskDays[i]=[];
+          taskDays[i].push(s);
+        }
+      }
+    } else {
+      // Legacy: use nextDue date + frequency pattern
+      if(s.nextDue){
+        const d = new Date(s.nextDue);
+        if(!isNaN(d) && d.getMonth()===calMonth && d.getFullYear()===calYear){
+          const day = d.getDate();
+          if(!taskDays[day]) taskDays[day]=[];
+          taskDays[day].push(s);
+        }
+      }
+      if(s.frequency==='daily'){
+        for(let i=1;i<=daysInMonth;i++){if(!taskDays[i])taskDays[i]=[];taskDays[i].push(s);}
+      } else if(s.frequency==='weekly'){
+        for(let i=1;i<=daysInMonth;i+=7){if(!taskDays[i])taskDays[i]=[];taskDays[i].push(s);}
+      }
     }
   });
 

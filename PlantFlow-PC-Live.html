@@ -301,8 +301,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
     <div class="panel">
       <div class="panel-head"><div class="panel-title">PM Schedule</div><button class="tb-btn primary" style="font-size:11px;padding:5px 10px" onclick="openModal('schedule-modal')">+ Add task</button></div>
       <table class="tbl">
-        <thead><tr><th>Freq.</th><th>Task</th><th>Asset/Area</th><th>Assigned to</th><th>Est. time</th><th>Next due</th><th>Materials req.</th><th>Permit req.</th><th>Status</th><th>Action</th></tr></thead>
-        <tbody id="schedules-tbody"><tr><td colspan="10" class="empty-state">Loading...</td></tr></tbody>
+        <thead><tr><th>Freq.</th><th>Task</th><th>Asset/Area</th><th>Days</th><th>Assigned to</th><th>Next due</th><th>Permit</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="schedules-tbody"><tr><td colspan="9" class="empty-state">Loading...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -909,7 +909,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
 
 <!-- SCHEDULE MODAL -->
 <div class="modal-overlay" id="schedule-modal" onclick="if(event.target===this)closeModal('schedule-modal')">
-  <div class="modal" style="width:560px">
+  <div class="modal" style="width:600px">
     <div class="modal-head"><div class="modal-title">Add PM Schedule Task</div><div class="modal-close" onclick="closeModal('schedule-modal')">×</div></div>
     <div class="modal-body">
       <div class="form-group"><div class="form-label">Task description *</div><input class="form-input" id="sc-task" placeholder="e.g. Lubrication check — Conveyor Belt 1"/></div>
@@ -925,34 +925,40 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
         </div>
         <div class="form-group"><div class="form-label">Asset / Area *</div><input class="form-input" id="sc-asset" placeholder="e.g. Conveyor Belt 1"/></div>
       </div>
-      <div class="form-grid-2">
-        <div class="form-group">
-          <div class="form-label">First due date *</div>
-          <input class="form-input" type="date" id="sc-start-date"/>
-          <div style="font-size:11px;color:#185FA5;margin-top:3px" id="sc-date-hint">Select when this task should first be done</div>
+      <div class="form-group">
+        <div class="form-label">Day(s) of the week <span style="color:#9ca3af;font-weight:400">(tick which days this task must run)</span></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <label id="dow-mon-label" style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-weight:600"><input type="checkbox" id="dow-mon" value="Monday" onchange="dowToggle(this)" style="accent-color:#185FA5"/> Mon</label>
+          <label id="dow-tue-label" style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-weight:600"><input type="checkbox" id="dow-tue" value="Tuesday" onchange="dowToggle(this)" style="accent-color:#185FA5"/> Tue</label>
+          <label id="dow-wed-label" style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-weight:600"><input type="checkbox" id="dow-wed" value="Wednesday" onchange="dowToggle(this)" style="accent-color:#185FA5"/> Wed</label>
+          <label id="dow-thu-label" style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-weight:600"><input type="checkbox" id="dow-thu" value="Thursday" onchange="dowToggle(this)" style="accent-color:#185FA5"/> Thu</label>
+          <label id="dow-fri-label" style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-weight:600"><input type="checkbox" id="dow-fri" value="Friday" onchange="dowToggle(this)" style="accent-color:#185FA5"/> Fri</label>
+          <label id="dow-sat-label" style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-weight:600"><input type="checkbox" id="dow-sat" value="Saturday" onchange="dowToggle(this)" style="accent-color:#185FA5"/> Sat</label>
+          <label id="dow-eom-label" style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-weight:600"><input type="checkbox" id="dow-eom" value="End of month" onchange="dowToggle(this)" style="accent-color:#185FA5"/> End of month</label>
         </div>
-        <div class="form-group">
-          <div class="form-label">Additional specific dates</div>
-          <input class="form-input" id="sc-extra-dates" placeholder="e.g. 2026-05-01, 2026-06-15"/>
-          <div style="font-size:11px;color:#9ca3af;margin-top:3px">Optional: comma-separated YYYY-MM-DD</div>
-        </div>
+        <div style="font-size:11px;color:#6b7280;margin-top:4px" id="sc-date-hint">e.g. tick Wed &amp; Thu to run every Wednesday and Thursday regardless of date</div>
       </div>
       <div class="form-grid-2">
-        <div class="form-group"><div class="form-label">Assigned to</div><select class="form-select" id="sc-assigned"><option value="">-- Select artisan --</option></select></div>
+        <div class="form-group"><div class="form-label">First due date</div><input class="form-input" type="date" id="sc-start-date"/></div>
         <div class="form-group"><div class="form-label">Est. time</div><input class="form-input" id="sc-time" placeholder="e.g. 30 min"/></div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Assign to <span style="color:#185FA5;font-weight:600">(tick one or more artisans)</span></div>
+        <div id="sc-artisan-checkboxes" style="border:1.5px solid #e5e7eb;border-radius:10px;max-height:130px;overflow-y:auto;padding:8px">
+          <div style="font-size:12px;color:#9ca3af;padding:4px">Loading artisans...</div>
+        </div>
       </div>
       <div class="form-group"><div class="form-label">Materials required</div><input class="form-input" id="sc-mats" placeholder="e.g. Grease 500g, Filter element"/></div>
       <div class="form-grid-2">
         <div class="form-group"><div class="form-label">Permit required?</div><select class="form-select" id="sc-permit"><option value="no">No</option><option value="yes">Yes — PTW required</option></select></div>
         <div class="form-group">
-          <div class="form-label">Inspection type (for artisan checklist)</div>
+          <div class="form-label">Inspection type</div>
           <select class="form-select" id="sc-insp-type">
-            <option value="electrical">⚡ Electrical — panels, wiring, LOTO, guards</option>
-            <option value="mechanical">🔧 Mechanical — machinery, bearings, belts, guards</option>
-            <option value="fire">🔴 Fire safety — extinguishers, exits, hose reels</option>
-            <option value="chemical">🧪 Chemical — SDS, labelling, PPE, storage</option>
-            <option value="pressure">🔵 Pressure vessels — boilers, compressors, relief valves</option>
-            <option value="general">📋 General safety — walkthrough, housekeeping</option>
+            <option value="electrical">⚡ Electrical</option>
+            <option value="mechanical">🔧 Mechanical / Fitter</option>
+            <option value="fire">🔴 Fire safety</option>
+            <option value="chemical">🧪 Chemical / Hazmat</option>
+            <option value="general">📋 General safety</option>
           </select>
         </div>
       </div>
@@ -1081,73 +1087,63 @@ function setSync(){
 
 // ── COUNTERS ──
 let allJobs=[], allFaults=[], allPermits=[], allMaterials=[], allUsers=[], allSchedules=[], allInspections=[];
+let _activeListeners = [];
 
-// ── LIVE LISTENERS ──
+// ── LIVE LISTENERS — called after login with companyId ──
+window.startListeners = function(companyId){
+  // Unsubscribe any previous listeners
+  _activeListeners.forEach(u=>{ try{u();}catch(e){} });
+  _activeListeners = [];
 
-// Jobs
-onSnapshot(query(collection(db,'jobCards'),orderBy('createdAt','desc')), snap => {
-  allJobs = snap.docs.map(d=>({id:d.id,...d.data()}));
-  renderJobCards();
-  renderDashJobs();
-  updateJobStats();
-  updateMaterialStats();
-  renderReports();
-  setSync();
-}, err => { console.error('jobCards:',err.code); showConnError(err.code); });
+  // Build query — if companyId provided, filter; SA sees all
+  function cq(col, ...constraints){
+    if(companyId){
+      return query(collection(db,col), where('companyId','==',companyId), ...constraints);
+    }
+    return query(collection(db,col), ...constraints);
+  }
 
-// Faults
-onSnapshot(query(collection(db,'faults'),orderBy('createdAt','desc')), snap => {
-  allFaults = snap.docs.map(d=>({id:d.id,...d.data()}));
-  renderFaults();
-  renderDashFaults();
-  updateFaultStats();
-  setSync();
-}, err => { console.error('faults:',err.code); });
+  _activeListeners.push(onSnapshot(cq('jobCards',orderBy('createdAt','desc')), snap => {
+    allJobs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderJobCards(); renderDashJobs(); updateJobStats(); updateMaterialStats(); renderReports(); setSync();
+  }, err => { console.error('jobCards:',err.code); showConnError(err.code); }));
 
-// Permits
-onSnapshot(query(collection(db,'permits'),orderBy('createdAt','desc')), snap => {
-  allPermits = snap.docs.map(d=>({id:d.id,...d.data()}));
-  renderPermits();
-  renderDashPermits();
-  updatePermitStats();
-  renderPermitAudit();
-  setSync();
-}, err => { console.error('permits:',err.code); });
+  _activeListeners.push(onSnapshot(cq('faults',orderBy('createdAt','desc')), snap => {
+    allFaults = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderFaults(); renderDashFaults(); updateFaultStats(); setSync();
+  }, err => { console.error('faults:',err.code); }));
 
-// Materials
-onSnapshot(query(collection(db,'materials'),orderBy('description','asc')), snap => {
-  allMaterials = snap.docs.map(d=>({id:d.id,...d.data()}));
-  renderMaterials();
-  renderDashMaterials();
-  updateMaterialStats();
-  setSync();
-}, err => { console.error('materials:',err.code); });
+  _activeListeners.push(onSnapshot(cq('permits',orderBy('createdAt','desc')), snap => {
+    allPermits = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderPermits(); renderDashPermits(); updatePermitStats(); renderPermitAudit(); setSync();
+  }, err => { console.error('permits:',err.code); }));
 
-// Users
-onSnapshot(query(collection(db,'users'),orderBy('name','asc')), snap => {
-  allUsers = snap.docs.map(d=>({id:d.id,...d.data()}));
-  renderUsers();
-  populateArtisanDropdowns();
-  setSync();
-}, err => { console.error('users:',err.code); });
+  _activeListeners.push(onSnapshot(cq('materials',orderBy('description','asc')), snap => {
+    allMaterials = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderMaterials(); renderDashMaterials(); updateMaterialStats(); setSync();
+  }, err => { console.error('materials:',err.code); }));
 
-// Schedules
-onSnapshot(query(collection(db,'schedules'),orderBy('createdAt','desc')), snap => {
-  allSchedules = snap.docs.map(d=>({id:d.id,...d.data()}));
-  renderSchedules();
-  setSync();
-}, err => { console.error('schedules:',err.code); });
+  _activeListeners.push(onSnapshot(cq('users',orderBy('name','asc')), snap => {
+    allUsers = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderUsers(); populateArtisanDropdowns(); setSync();
+  }, err => { console.error('users:',err.code); }));
 
-// Inspections
-onSnapshot(query(collection(db,'inspections'),orderBy('createdAt','desc')), snap => {
-  allInspections = snap.docs.map(d=>({id:d.id,...d.data()}));
-  renderInspections();
-  renderOHSA();
-  setSync();
-}, err => { console.error('inspections:',err.code); });
+  _activeListeners.push(onSnapshot(cq('schedules',orderBy('createdAt','desc')), snap => {
+    allSchedules = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderSchedules(); setSync();
+  }, err => { console.error('schedules:',err.code); }));
+
+  _activeListeners.push(onSnapshot(cq('inspections',orderBy('createdAt','desc')), snap => {
+    allInspections = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderInspections(); renderOHSA(); setSync();
+  }, err => { console.error('inspections:',err.code); }));
+};
+
+// Helper: stamp companyId on all new documents
+function cid(data){ return {...data, companyId: window._loggedInCompanyId||null}; }
+window.cid = cid;
 
 function showConnError(code){
-  const bar = document.getElementById('conn-text');
   if(bar) bar.textContent = '⚠ Firebase error: '+code+' — Are you opening from file://? Use the GitHub Pages URL instead.';
   const dot = document.getElementById('conn-dot');
   if(dot) dot.style.background = '#f87171';
@@ -1654,20 +1650,23 @@ setTimeout(loadSavedCompanyName, 2000);
 window.renderSchedules = function(){
   const tbody = document.getElementById('schedules-tbody');
   if(!tbody)return;
-  if(!allSchedules.length){tbody.innerHTML='<tr><td colspan="10" class="empty-state">No PM tasks yet — add tasks above</td></tr>';return;}
+  if(!allSchedules.length){tbody.innerHTML='<tr><td colspan="9" class="empty-state">No PM tasks yet — add tasks above</td></tr>';return;}
   const freqClass={daily:'ft-day',weekly:'ft-week',monthly:'ft-month',quarterly:'ft-month'};
-  tbody.innerHTML = allSchedules.map(s=>`<tr>
+  tbody.innerHTML = allSchedules.map(s=>{
+    const artisans = (s.assignedArtisans||[s.assignedTo]).filter(Boolean);
+    const daysLabel = (s.daysOfWeek||[]).join(', ')||'Any day';
+    return `<tr>
     <td><span class="freq-tag ${freqClass[s.frequency]||'ft-week'}">${s.frequency||'weekly'}</span></td>
-    <td><b>${s.task||'—'}</b></td>
+    <td><b>${s.task||'—'}</b>${s.materialsRequired?`<br><span style="font-size:10px;color:#6b7280">🔧 ${s.materialsRequired}</span>`:''}</td>
     <td>${s.asset||'—'}</td>
-    <td>${s.assignedTo||'Unassigned'}</td>
-    <td>${s.estTime||'—'}</td>
+    <td style="font-size:11px;color:#185FA5;font-weight:600">${daysLabel}</td>
+    <td style="font-size:11px">${artisans.join('<br>')||'Unassigned'}</td>
     <td>${s.nextDue||'—'}</td>
-    <td style="font-size:11px">${s.materialsRequired||'None'}</td>
-    <td>${s.permitRequired==='yes'?'<span class="badge b-red">Yes — PTW</span>':'<span class="badge b-green">No</span>'}</td>
+    <td>${s.permitRequired==='yes'?'<span class="badge b-red">PTW</span>':'<span class="badge b-green">No</span>'}</td>
     <td><span class="badge b-blue">Scheduled</span></td>
     <td><button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteDoc_('schedules','${s.id}')">Delete</button></td>
-  </tr>`).join('');
+  </tr>`;
+  }).join('');
 };
 
 window.renderInspections = function(){
@@ -1768,7 +1767,22 @@ function populateArtisanDropdowns(){
     }).join('');
     if(cur) el.value = cur;
   });
-  // Populate job card multi-select checkboxes
+  // Populate schedule modal multi-select checkboxes
+  const scBox = document.getElementById('sc-artisan-checkboxes');
+  if(scBox){
+    if(!artisans.length){
+      scBox.innerHTML='<div style="font-size:12px;color:#9ca3af;padding:6px">No artisans added yet — add in Manage Users first</div>';
+    } else {
+      scBox.innerHTML = artisans.map(u=>{
+        const displayName = u.role==='contractor'&&u.company ? u.name+' — '+u.company : u.name;
+        return `<label style="display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;cursor:pointer;margin-bottom:2px" onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background='transparent'">
+          <input type="checkbox" value="${u.name}" style="width:16px;height:16px;accent-color:#185FA5;cursor:pointer"/>
+          <span style="font-size:13px;font-weight:600;color:#111827">${displayName}</span>
+          <span style="font-size:11px;color:#9ca3af;margin-left:auto">${u.trade||u.role}</span>
+        </label>`;
+      }).join('');
+    }
+  }
   const jcBox = document.getElementById('jc-artisan-checkboxes');
   if(jcBox){
     if(!artisans.length){
@@ -1802,7 +1816,7 @@ window.submitFault = async function(){
   const loc=document.getElementById('f-loc').value.trim();
   if(!desc||!loc){toast('Please fill in description and location','error');return;}
   try{
-    await addDoc(collection(db,'faults'),{
+    await addDoc(collection(db,'faults'),cid({
       faultNumber:nextFaultNum(),
       type:document.getElementById('f-type').value,
       description:desc,
@@ -1813,7 +1827,7 @@ window.submitFault = async function(){
       status:'new',
       source:'pc-admin',
       createdAt:serverTimestamp()
-    });
+    }));
     closeModal('fault-modal');
     ['f-desc','f-loc','f-name','f-dept'].forEach(id=>document.getElementById(id).value='');
     toast('Fault report submitted — visible on mobile app immediately','success');
@@ -1834,7 +1848,7 @@ window.createJobCard = async function(){
   const firstArtisan = checked[0]||'';
 
   try{
-    await addDoc(collection(db,'jobCards'),{
+    await addDoc(collection(db,'jobCards'),cid({
       jobNumber: jobNum,
       description: desc,
       priority: document.getElementById('jc-priority').value,
@@ -1852,15 +1866,15 @@ window.createJobCard = async function(){
       sparesNeeded: '',
       source: 'pc-admin',
       createdAt: serverTimestamp()
-    });
+    }));
     // Notify all assigned artisans
     for(const name of checked){
-      await addDoc(collection(db,'notifications'),{
+      await addDoc(collection(db,'notifications'),cid({
         for: name, type:'job-assigned',
         title:'New job card assigned to you',
         body: desc+' — '+loc,
         read: false, createdAt: serverTimestamp()
-      });
+      }));
     }
     closeModal('jobcard-modal');
     document.getElementById('jc-custom-num').value='';
@@ -1880,7 +1894,7 @@ window.issuePermit = async function(){
   if(!document.getElementById('ptw-confirm').checked){toast('Please confirm the safety checklist','error');return;}
   try{
     const pNum = nextPermitNum();
-    await addDoc(collection(db,'permits'),{
+    await addDoc(collection(db,'permits'),cid({
       permitNumber:pNum,
       type:type,
       jobCard:jc,
@@ -1893,7 +1907,7 @@ window.issuePermit = async function(){
       status:'active',
       source:'pc-admin',
       createdAt:serverTimestamp()
-    });
+    }));
     // Update job card with permit number
     const jobSnap = await getDocs(query(collection(db,'jobCards'),where('jobNumber','==',jc)));
     jobSnap.forEach(async d=>await updateDoc(doc(db,'jobCards',d.id),{permitNumber:pNum,status:'in-progress'}));
@@ -1912,7 +1926,7 @@ window.issuePermitModal = async function(){
   if(!document.getElementById('pm-confirm').checked){toast('Please confirm the safety checklist','error');return;}
   try{
     const pNum = nextPermitNum();
-    await addDoc(collection(db,'permits'),{
+    await addDoc(collection(db,'permits'),cid({
       permitNumber:pNum,
       type:type,
       jobCard:jc,
@@ -1925,7 +1939,7 @@ window.issuePermitModal = async function(){
       status:'active',
       source:'pc-admin',
       createdAt:serverTimestamp()
-    });
+    }));
     closeModal('permit-modal');
     toast(pNum+' issued successfully','success');
   }catch(e){toast('Error: '+e.message,'error');}
@@ -2005,7 +2019,7 @@ window.deleteJob = async function(id){
 
 window.convertFault = async function(id,desc,loc,priority){
   const jNum = nextJobNum();
-  await addDoc(collection(db,'jobCards'),{
+  await addDoc(collection(db,'jobCards'),cid({
     jobNumber:jNum,
     description:desc,
     location:loc,
@@ -2017,7 +2031,7 @@ window.convertFault = async function(id,desc,loc,priority){
     totalCost:0,
     source:'converted-fault',
     createdAt:serverTimestamp()
-  });
+  }));
   await updateDoc(doc(db,'faults',id),{status:'converted',jobNumber:jNum});
   toast('Fault converted to '+jNum+' — visible on mobile now','success');
 };
@@ -2034,7 +2048,7 @@ window.addMaterial = async function(){
   const cost=parseFloat(document.getElementById('mat-cost').value)||0;
   if(!desc){toast('Please enter a description','error');return;}
   try{
-    await addDoc(collection(db,'materials'),{
+    await addDoc(collection(db,'materials'),cid({
       code:document.getElementById('mat-code').value||nextMatCode(),
       description:desc,
       category:document.getElementById('mat-cat').value,
@@ -2044,7 +2058,7 @@ window.addMaterial = async function(){
       usedMTD:0,
       usedOnJobs:[],
       createdAt:serverTimestamp()
-    });
+    }));
     closeModal('material-modal');
     ['mat-desc','mat-cost','mat-stock','mat-min','mat-code'].forEach(id=>document.getElementById(id).value='');
     toast('Material added to register','success');
@@ -2125,13 +2139,13 @@ window.logReorder = async function(sendEmail){
   const m = allMaterials.find(x=>x.id===window._reorderMatId);
   const matName = m?.description||'—';
 
-  await addDoc(collection(db,'reorders'),{
+  await addDoc(collection(db,'reorders'),cid({
     materialId: window._reorderMatId,
     description: matName,
     qty, supplier, email, notes,
     status: 'pending',
     createdAt: serverTimestamp()
-  });
+  }));
   await updateDoc(doc(db,'materials',window._reorderMatId),{
     pendingOrder: qty,
     pendingOrderSupplier: supplier,
@@ -2160,57 +2174,71 @@ window.logReorder = async function(sendEmail){
 
 window.addSchedule = async function(){
   const task = document.getElementById('sc-task').value.trim();
-  const assignedTo = document.getElementById('sc-assigned').value;
   const frequency = document.getElementById('sc-freq').value;
   const startDateVal = document.getElementById('sc-start-date')?.value;
-  const extraDatesVal = document.getElementById('sc-extra-dates')?.value||'';
   if(!task){toast('Please enter a task description','error');return;}
 
-  // Use selected start date or calculate from frequency
+  // Get selected days of week
+  const dowIds = ['dow-mon','dow-tue','dow-wed','dow-thu','dow-fri','dow-sat','dow-eom'];
+  const selectedDays = dowIds.map(id=>document.getElementById(id)).filter(el=>el&&el.checked).map(el=>el.value);
+
+  // Get checked artisans
+  const checkedArtisans = [...document.querySelectorAll('#sc-artisan-checkboxes input[type=checkbox]:checked')].map(c=>c.value);
+  const firstArtisan = checkedArtisans[0]||'';
+
+  // Calculate first due date
   let firstDue;
   if(startDateVal){
     firstDue = new Date(startDateVal);
+  } else if(selectedDays.length>0 && selectedDays[0]!=='End of month'){
+    const dayMap={Monday:1,Tuesday:2,Wednesday:3,Thursday:4,Friday:5,Saturday:6};
+    const targetDay = dayMap[selectedDays[0]]||1;
+    firstDue = new Date();
+    const diff = (targetDay - firstDue.getDay() + 7) % 7 || 7;
+    firstDue.setDate(firstDue.getDate()+diff);
   } else {
     const daysAhead = {daily:1,weekly:7,monthly:30,quarterly:90}[frequency]||7;
     firstDue = new Date(Date.now()+daysAhead*24*60*60*1000);
   }
   const nextDueStr = firstDue.toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'numeric'});
-
-  // Parse extra dates
-  const extraDates = extraDatesVal.split(',').map(s=>s.trim()).filter(s=>s.match(/^\d{4}-\d{2}-\d{2}$/));
+  const dayLabel = selectedDays.length>0 ? ' — every '+selectedDays.join(' & ') : '';
 
   try{
-    const schedRef = await addDoc(collection(db,'schedules'),{
+    const schedRef = await addDoc(collection(db,'schedules'),cid({
       task,
       frequency,
+      daysOfWeek: selectedDays,
+      daysOfWeekLabel: selectedDays.join(', ')||'Any day',
       asset: document.getElementById('sc-asset').value,
-      assignedTo,
+      assignedTo: firstArtisan,
+      assignedArtisans: checkedArtisans,
       estTime: document.getElementById('sc-time').value,
       materialsRequired: document.getElementById('sc-mats').value,
       permitRequired: document.getElementById('sc-permit').value,
       inspectionType: document.getElementById('sc-insp-type')?.value||'general',
       status: 'scheduled',
       startDate: startDateVal||firstDue.toISOString().split('T')[0],
-      extraDates,
       nextDue: nextDueStr,
       createdAt: serverTimestamp()
-    });
-    if(assignedTo){
-      await addDoc(collection(db,'notifications'),{
-        for: assignedTo,
-        type: 'schedule-assigned',
-        title: 'New PM schedule task assigned to you',
-        body: task+' — First due: '+nextDueStr+' ('+frequency+')',
+    }));
+
+    for(const name of checkedArtisans){
+      await addDoc(collection(db,'notifications'),cid({
+        for: name, type:'schedule-assigned',
+        title:'New PM schedule task assigned to you',
+        body: task+dayLabel+' — First due: '+nextDueStr+' ('+frequency+')',
         scheduleId: schedRef.id,
-        read: false,
-        createdAt: serverTimestamp()
-      });
+        read: false, createdAt: serverTimestamp()
+      }));
     }
+
     closeModal('schedule-modal');
     document.getElementById('sc-task').value='';
     if(document.getElementById('sc-start-date')) document.getElementById('sc-start-date').value='';
-    if(document.getElementById('sc-extra-dates')) document.getElementById('sc-extra-dates').value='';
-    toast('PM task added'+(assignedTo?' — '+assignedTo+' notified':''),'success');
+    document.querySelectorAll('#sc-artisan-checkboxes input[type=checkbox]').forEach(c=>c.checked=false);
+    dowIds.forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
+    document.querySelectorAll('[id^="dow-"][id$="-label"]').forEach(l=>{l.style.borderColor='#e5e7eb';l.style.background='';});
+    toast('PM task added'+(checkedArtisans.length?' — '+checkedArtisans.length+' artisan(s) notified':'')+(dayLabel),'success');
   }catch(e){toast('Error: '+e.message,'error');}
 };
 
@@ -2537,7 +2565,7 @@ window.saveAssignments = async function(){
   // Notify each assigned artisan
   for(const name of checked){
     const job = allJobs.find(j=>j.id===window._assigningJobId);
-    await addDoc(collection(db,'notifications'),{
+    await addDoc(collection(db,'notifications'),cid({
       for: name,
       type: 'job-assigned',
       title: 'New job assigned to you',
@@ -2545,7 +2573,7 @@ window.saveAssignments = async function(){
       jobId: window._assigningJobId,
       read: false,
       createdAt: serverTimestamp()
-    });
+    }));
   }
   closeModal('assign-modal');
   toast(checked.length+' artisan'+(checked.length>1?'s':'')+' assigned — they will see this job on their phones now','success');
@@ -2628,7 +2656,10 @@ window.saveSASettings = async function(){
 window.addSACompany = async function(){
   const name = document.getElementById('ac-name').value.trim();
   const email = document.getElementById('ac-email').value.trim();
+  const accessCode = document.getElementById('ac-accesscode')?.value.trim()||'';
   if(!name){toast('Company name is required','error');return;}
+  if(!email){toast('Admin email is required — the company uses this to log in','error');return;}
+  if(!accessCode){toast('Access code is required — the company cannot log in without it','error');return;}
   const trialDays = parseInt(document.getElementById('ac-trial').value)||30;
   const trialStart = new Date();
   const expires = new Date(trialStart.getTime()+trialDays*24*60*60*1000);
@@ -2644,7 +2675,7 @@ window.addSACompany = async function(){
       expires: expires.toISOString().split('T')[0],
       status: 'trial',
       notes: document.getElementById('ac-notes').value,
-      accessCode: document.getElementById('ac-accesscode')?.value.trim()||'',
+      accessCode: accessCode,
       createdAt: window._serverTimestamp()
     });
     closeModal('add-company-modal');
@@ -2929,6 +2960,8 @@ function enterApp(companyName, companyId, isSA){
   const app=document.getElementById('main-app');
   if(overlay) overlay.style.display='none';
   if(app) app.style.display='flex';
+  // Start data listeners filtered to this company (or all for SA)
+  if(typeof window.startListeners==='function') window.startListeners(companyId||null);
   // Add logout button to sidebar user area
   const userArea=document.getElementById('sidebar-user-area');
   if(userArea) userArea.innerHTML=
@@ -2938,30 +2971,57 @@ function enterApp(companyName, companyId, isSA){
 }
 
 window.doCompanyLogin = async function(){
-  const email = (document.getElementById('company-login-email')?.value||'').trim().toLowerCase();
+  const emailInput = (document.getElementById('company-login-email')?.value||'').trim();
+  const emailLower = emailInput.toLowerCase();
   const pass = document.getElementById('company-login-pass')?.value||'';
-  if(!email||!pass){showLoginError('Please enter your company email and access code.');return;}
+  if(!emailInput||!pass){showLoginError('Please enter your company email and access code.');return;}
   if(!window._getDocs||!window._collection||!window._query||!window._where){
     showLoginError('Still connecting to database — please wait a moment and try again.');return;
   }
   try{
-    const snap = await window._getDocs(window._query(window._collection(window.db,'companies'),window._where('adminEmail','==',email)));
-    if(snap.empty){showLoginError('No company found with that email address. Contact Eagle Electrical Ventures to register.');return;}
-    const d=snap.docs[0];
-    const c=d.data();
-    if(!c.accessCode||c.accessCode!==pass){showLoginError('Incorrect access code. Contact Eagle Electrical Ventures if you have forgotten it.');return;}
-    if(c.status==='held'){showLoginError('Your account is on hold. Please contact Eagle Electrical Ventures to resolve your subscription.');return;}
-    localStorage.setItem('pf_company_id',d.id);
-    localStorage.setItem('pf_company_name',c.name||'');
-    localStorage.setItem('pf_company_email',email);
-    enterApp(c.name||email, d.id, false);
+    // Try exact match first, then lowercase match via full scan
+    let matchDoc = null;
+    const snap1 = await window._getDocs(window._query(window._collection(window.db,'companies'),window._where('adminEmail','==',emailInput)));
+    if(!snap1.empty){ matchDoc = snap1.docs[0]; }
+    else {
+      // Try lowercase version
+      const snap2 = await window._getDocs(window._query(window._collection(window.db,'companies'),window._where('adminEmail','==',emailLower)));
+      if(!snap2.empty){ matchDoc = snap2.docs[0]; }
+      else {
+        // Scan all companies for case-insensitive match
+        const snapAll = await window._getDocs(window._collection(window.db,'companies'));
+        snapAll.docs.forEach(d=>{ if((d.data().adminEmail||'').toLowerCase()===emailLower) matchDoc=d; });
+      }
+    }
+    if(!matchDoc){
+      showLoginError('No company found with that email address. Contact Eagle Electrical Ventures to register your company.');
+      return;
+    }
+    const c = matchDoc.data();
+    // Check access code
+    if(!c.accessCode){
+      showLoginError('Your company account has no access code set yet. Contact Eagle Electrical Ventures — they need to set your access code in Super Admin first.');
+      return;
+    }
+    if(c.accessCode !== pass){
+      showLoginError('Incorrect access code. Check the temporary password Eagle Electrical Ventures gave you, or contact them to reset it.');
+      return;
+    }
+    if(c.status==='held'){
+      showLoginError('Your account is on hold due to a payment issue. Please contact Eagle Electrical Ventures to resolve it.');
+      return;
+    }
+    localStorage.setItem('pf_company_id', matchDoc.id);
+    localStorage.setItem('pf_company_name', c.name||'');
+    localStorage.setItem('pf_company_email', emailLower);
+    enterApp(c.name||emailInput, matchDoc.id, false);
     const setComp=document.getElementById('set-company');
     if(setComp) setComp.value=c.name||'';
     const setInd=document.getElementById('set-industry');
     if(setInd&&c.industry){for(let i=0;i<setInd.options.length;i++){if(setInd.options[i].text.includes(c.industry)){setInd.selectedIndex=i;break;}}}
     updateTrialCountdown();
-    toast('Welcome to PlantFlow, '+c.name,'success');
-  }catch(e){showLoginError('Login error: '+e.message);}
+    toast('Welcome to PlantFlow, '+(c.name||emailInput)+'!','success');
+  }catch(e){showLoginError('Login error: '+e.message+'. Please try again.');}
 };
 
 window.doSABypass = function(){
@@ -3056,19 +3116,24 @@ function updateScheduleDateHint(){
   const hint=document.getElementById('sc-date-hint');
   if(!hint)return;
   const msgs={
-    daily:'🔵 Daily — artisan will be notified every day from this start date',
-    weekly:'🟣 Weekly — artisan notified every week starting from this date',
-    monthly:'🟢 Monthly — artisan notified on this date each month',
-    quarterly:'🟠 Quarterly — artisan notified every 3 months from this date'
+    daily:'🔵 Daily — runs every day. Tick specific days to limit to those days only.',
+    weekly:'🟣 Weekly — tick which day(s) e.g. Wed & Thu to run every week on those days.',
+    monthly:'🟢 Monthly — tick "End of month" for last working day, or leave blank for start date.',
+    quarterly:'🟠 Quarterly — tick a specific day e.g. Thu for the Thursday of each quarter.'
   };
-  hint.textContent=msgs[freq]||'Select a start date for this task';
-  // Set default date to today if empty
+  hint.textContent=msgs[freq]||'Tick which days of the week this task must run.';
   const dateEl=document.getElementById('sc-start-date');
-  if(dateEl&&!dateEl.value){
-    dateEl.value=new Date().toISOString().split('T')[0];
-  }
+  if(dateEl&&!dateEl.value) dateEl.value=new Date().toISOString().split('T')[0];
 }
 window.updateScheduleDateHint=updateScheduleDateHint;
+
+function dowToggle(el){
+  const label=el?.closest?.(el.closest?'label':null)||el?.parentElement;
+  if(!label)return;
+  if(el.checked){label.style.borderColor='#185FA5';label.style.background='#eff6ff';label.style.color='#185FA5';}
+  else{label.style.borderColor='#e5e7eb';label.style.background='';label.style.color='';}
+}
+window.dowToggle=dowToggle;
 function toast(msg,type=''){
   const t=document.getElementById('toast');
   t.textContent=msg;t.className='toast '+(type||'');
