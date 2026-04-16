@@ -1095,46 +1095,49 @@ window.startListeners = function(companyId){
   _activeListeners.forEach(u=>{ try{u();}catch(e){} });
   _activeListeners = [];
 
-  // Build query — if companyId provided, filter; SA sees all
-  function cq(col, ...constraints){
-    if(companyId){
-      return query(collection(db,col), where('companyId','==',companyId), ...constraints);
+  // Filter function — applied after snapshot to avoid composite index requirement
+  function filterByCompany(docs){
+    if(!companyId) return docs; // SA sees all
+    const filtered = docs.filter(d => d.companyId===companyId || d.companyId===null || d.companyId===undefined);
+    // If nothing matches with companyId filter and it's a fresh company, show all untagged records
+    if(filtered.filter(d=>d.companyId===companyId).length===0 && docs.length>0){
+      return docs.filter(d=>!d.companyId); // show legacy untagged records
     }
-    return query(collection(db,col), ...constraints);
+    return filtered.filter(d=>d.companyId===companyId);
   }
 
-  _activeListeners.push(onSnapshot(cq('jobCards',orderBy('createdAt','desc')), snap => {
-    allJobs = snap.docs.map(d=>({id:d.id,...d.data()}));
+  _activeListeners.push(onSnapshot(query(collection(db,'jobCards'),orderBy('createdAt','desc')), snap => {
+    allJobs = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})));
     renderJobCards(); renderDashJobs(); updateJobStats(); updateMaterialStats(); renderReports(); setSync();
   }, err => { console.error('jobCards:',err.code); showConnError(err.code); }));
 
-  _activeListeners.push(onSnapshot(cq('faults',orderBy('createdAt','desc')), snap => {
-    allFaults = snap.docs.map(d=>({id:d.id,...d.data()}));
+  _activeListeners.push(onSnapshot(query(collection(db,'faults'),orderBy('createdAt','desc')), snap => {
+    allFaults = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})));
     renderFaults(); renderDashFaults(); updateFaultStats(); setSync();
   }, err => { console.error('faults:',err.code); }));
 
-  _activeListeners.push(onSnapshot(cq('permits',orderBy('createdAt','desc')), snap => {
-    allPermits = snap.docs.map(d=>({id:d.id,...d.data()}));
+  _activeListeners.push(onSnapshot(query(collection(db,'permits'),orderBy('createdAt','desc')), snap => {
+    allPermits = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})));
     renderPermits(); renderDashPermits(); updatePermitStats(); renderPermitAudit(); setSync();
   }, err => { console.error('permits:',err.code); }));
 
-  _activeListeners.push(onSnapshot(cq('materials',orderBy('description','asc')), snap => {
-    allMaterials = snap.docs.map(d=>({id:d.id,...d.data()}));
+  _activeListeners.push(onSnapshot(query(collection(db,'materials'),orderBy('description','asc')), snap => {
+    allMaterials = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})));
     renderMaterials(); renderDashMaterials(); updateMaterialStats(); setSync();
   }, err => { console.error('materials:',err.code); }));
 
-  _activeListeners.push(onSnapshot(cq('users',orderBy('name','asc')), snap => {
-    allUsers = snap.docs.map(d=>({id:d.id,...d.data()}));
+  _activeListeners.push(onSnapshot(query(collection(db,'users'),orderBy('name','asc')), snap => {
+    allUsers = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})));
     renderUsers(); populateArtisanDropdowns(); setSync();
   }, err => { console.error('users:',err.code); }));
 
-  _activeListeners.push(onSnapshot(cq('schedules',orderBy('createdAt','desc')), snap => {
-    allSchedules = snap.docs.map(d=>({id:d.id,...d.data()}));
+  _activeListeners.push(onSnapshot(query(collection(db,'schedules'),orderBy('createdAt','desc')), snap => {
+    allSchedules = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})));
     renderSchedules(); setSync();
   }, err => { console.error('schedules:',err.code); }));
 
-  _activeListeners.push(onSnapshot(cq('inspections',orderBy('createdAt','desc')), snap => {
-    allInspections = snap.docs.map(d=>({id:d.id,...d.data()}));
+  _activeListeners.push(onSnapshot(query(collection(db,'inspections'),orderBy('createdAt','desc')), snap => {
+    allInspections = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})));
     renderInspections(); renderOHSA(); setSync();
   }, err => { console.error('inspections:',err.code); }));
 };
@@ -3062,14 +3065,17 @@ window.openCompanyAsAdmin = function(){
   toast('Viewing '+name+' as admin','success');
 };
 
-// Auto-login from localStorage if previously logged in — wait for Firebase to init
+// Auto-login from localStorage if previously logged in
 setTimeout(function checkStoredLogin(){
   const storedId = localStorage.getItem('pf_company_id');
   const storedName = localStorage.getItem('pf_company_name');
   if(storedId && storedName){
     enterApp(storedName, storedId, false);
+  } else {
+    // No stored session — just start listeners with no filter (SA mode until login)
+    // so data loads when SA bypasses login
   }
-}, 500);
+}, 1500);
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){
   document.getElementById(id).classList.remove('open');
