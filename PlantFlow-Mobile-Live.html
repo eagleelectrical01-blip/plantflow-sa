@@ -217,14 +217,23 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
         <svg width="26" height="26" viewBox="0 0 26 26" fill="white"><path d="M3 20V10l10-7 10 7v10l-10 6.5L3 20z" opacity="0.3"/><path d="M13 3L3 10v10l10 6.5L23 20V10L13 3zm0 2.5L21 11v8L13 22.5 5 19V11z"/><rect x="10" y="12" width="6" height="9" rx="1.5"/></svg>
       </div>
       <div style="font-size:26px;font-weight:900;color:#fff;margin-top:8px">PlantFlow</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:32px">Maintenance OS · plantflow-sa</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:28px">Maintenance OS</div>
 
       <div style="background:rgba(255,255,255,0.12);border-radius:16px;padding:22px">
-        <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:6px">Sign in with your phone number</div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:20px;line-height:1.5">Your role and access are set by your manager in the Admin Panel.</div>
+        <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px">Sign in</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.7);margin-bottom:18px;line-height:1.5">Select your company, then enter your phone number.</div>
 
+        <!-- STEP 1: Company selector -->
         <div style="margin-bottom:14px">
-          <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px">Phone number</div>
+          <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px">1. Your company</div>
+          <select id="login-company" class="form-input" style="font-size:15px;padding:13px;border-radius:12px;background:rgba(255,255,255,0.95);width:100%;color:#111827">
+            <option value="">Loading companies...</option>
+          </select>
+        </div>
+
+        <!-- STEP 2: Phone number -->
+        <div style="margin-bottom:16px">
+          <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px">2. Your phone number</div>
           <input id="login-phone" type="tel" class="form-input" placeholder="e.g. 0821234567" style="font-size:16px;padding:14px;border-radius:12px;background:rgba(255,255,255,0.95)" onkeydown="if(event.key==='Enter')doLogin()"/>
         </div>
 
@@ -233,10 +242,10 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
         </button>
 
         <div id="login-error" style="display:none;background:rgba(220,38,38,0.2);border:1px solid rgba(220,38,38,0.4);border-radius:10px;padding:10px 12px;font-size:13px;color:#fca5a5;margin-top:10px;line-height:1.5"></div>
-        <div id="login-loading" style="display:none;text-align:center;color:rgba(255,255,255,0.7);font-size:13px;padding:10px">Checking your number...</div>
+        <div id="login-loading" style="display:none;text-align:center;color:rgba(255,255,255,0.7);font-size:13px;padding:10px">Signing in...</div>
       </div>
 
-      <div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin-top:24px">PlantFlow v1.0 · Eagle Electrical Ventures<br>Not registered? Ask your manager to add you in the Admin Panel.</div>
+      <div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.3);margin-top:20px">PlantFlow v1.0 · Eagle Electrical Ventures<br>Not registered? Ask your manager to add you in the Admin Panel.</div>
 
       <!-- Install to home screen prompt -->
       <div id="install-prompt" style="display:none;margin-top:20px;background:rgba(245,130,10,0.2);border:1px solid rgba(245,130,10,0.4);border-radius:14px;padding:14px;text-align:center">
@@ -904,43 +913,57 @@ showSC('sc-role');
 // ── MAIN LOGIN — phone number looked up in Firestore users collection ──
 window.doLogin = async function(){
   const phoneInput = document.getElementById('login-phone');
+  const companySelect = document.getElementById('login-company');
   const errEl = document.getElementById('login-error');
   const loadEl = document.getElementById('login-loading');
   const phone = (phoneInput?.value||'').trim().replace(/\s/g,'');
+  const companyId = companySelect?.value||'';
+  const companyName = companySelect?.options[companySelect.selectedIndex]?.text||'';
 
   errEl.style.display='none';
+  if(!companyId){errEl.style.display='block';errEl.textContent='Please select your company first.';return;}
   if(!phone){errEl.style.display='block';errEl.textContent='Please enter your phone number.';return;}
 
   loadEl.style.display='block';
 
   try{
-    // Look up user by phone number in the users collection
-    const snap = await getDocs(query(collection(db,'users'), where('phone','==',phone)));
-    loadEl.style.display='none';
-
-    if(snap.empty){
-      // Try with 0 prefix variations
+    // Look up user by phone AND company
+    let userDoc = null;
+    const snap = await getDocs(query(collection(db,'users'), where('phone','==',phone), where('companyId','==',companyId)));
+    if(!snap.empty){ userDoc = snap.docs[0]; }
+    else {
+      // Try alt phone format
       const altPhone = phone.startsWith('0') ? '27'+phone.slice(1) : (phone.startsWith('27') ? '0'+phone.slice(2) : null);
-      let found = false;
       if(altPhone){
-        const snap2 = await getDocs(query(collection(db,'users'), where('phone','==',altPhone)));
-        if(!snap2.empty){
-          processLogin(snap2.docs[0]);
-          found = true;
+        const snap2 = await getDocs(query(collection(db,'users'), where('phone','==',altPhone), where('companyId','==',companyId)));
+        if(!snap2.empty) userDoc = snap2.docs[0];
+      }
+      // Fallback: find by phone only (for legacy users without companyId)
+      if(!userDoc){
+        const snap3 = await getDocs(query(collection(db,'users'), where('phone','==',phone)));
+        if(!snap3.empty) userDoc = snap3.docs[0];
+        else if(altPhone){
+          const snap4 = await getDocs(query(collection(db,'users'), where('phone','==',altPhone)));
+          if(!snap4.empty) userDoc = snap4.docs[0];
         }
       }
-      if(!found){
-        errEl.style.display='block';
-        errEl.textContent='Phone number not registered. Ask your manager to add you in the Admin Panel → Manage Users.';
-        return;
-      }
-    } else {
-      processLogin(snap.docs[0]);
     }
+    loadEl.style.display='none';
+    if(!userDoc){
+      errEl.style.display='block';
+      errEl.textContent='Phone number not registered at '+companyName+'. Ask your manager to add you in the Admin Panel → Manage Users.';
+      return;
+    }
+    // Store selected company for data tagging
+    window._currentCompanyId = companyId;
+    window._currentCompanyName = companyName;
+    // Restart listeners filtered to this company
+    startMobileListeners(companyId);
+    processLogin(userDoc);
   } catch(e){
     loadEl.style.display='none';
     errEl.style.display='block';
-    errEl.textContent='Connection error: '+e.message+'. Make sure you are using the GitHub Pages URL, not a local file.';
+    errEl.textContent='Connection error: '+e.message;
   }
 };
 
@@ -1005,6 +1028,10 @@ window._allPermits = allPermits;
 window._allMaterials = allMaterials;
 window._allUsers = allUsers;
 
+// Helper: stamp companyId on all mobile submissions
+function mcid(data){ return {...data, companyId: window._currentCompanyId||null}; }
+
+
 // ── NOTIFICATION SOUND ──
 function playJobNotification(){
   try{
@@ -1026,81 +1053,104 @@ function playJobNotification(){
   }catch(e){}
 }
 
-// ── LISTENERS ──
+// ── COMPANY-FILTERED LISTENERS ──
 let _prevJobIds = new Set();
 let _listenersStarted = false;
+let _mobileListenerUnsubs = [];
 
-onSnapshot(query(collection(db,'jobCards'),orderBy('createdAt','desc')), snap=>{
-  const newIds = new Set(snap.docs.map(d=>d.id));
+function filterByCompany(docs, companyId){
+  if(!companyId) return docs;
+  return docs.filter(d => d.companyId === companyId);
+}
 
-  // Detect genuinely new jobs (not first load)
-  if(_listenersStarted && window._currentUserName){
-    snap.docs.forEach(d=>{
-      if(!_prevJobIds.has(d.id)){
-        const j = d.data();
-        const name = window._currentUserName||'';
-        const isForMe = j.assignedTo===name||(j.assignedArtisans||[]).includes(name);
-        if(isForMe){
-          playJobNotification();
-          toastMob('🔧 New job assigned: '+j.jobNumber+' — '+j.description,'success');
-          // Native browser notification (works when app is in background on Android)
-          if('Notification' in window && Notification.permission==='granted'){
-            new Notification('PlantFlow — New Job Assigned', {
-              body: j.jobNumber+': '+j.description+'\n📍 '+j.location,
-              icon: './plantflow-icon-192.png',
-              badge: './plantflow-icon-192.png',
-              tag: j.id,
-              renotify: true
-            });
+function startMobileListeners(companyId){
+  // Unsubscribe existing listeners
+  _mobileListenerUnsubs.forEach(u=>{try{u();}catch(e){}});
+  _mobileListenerUnsubs = [];
+  _listenersStarted = false;
+  _prevJobIds = new Set();
+
+  _mobileListenerUnsubs.push(onSnapshot(query(collection(db,'jobCards'),orderBy('createdAt','desc')), snap=>{
+    const allDocs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const filtered = filterByCompany(allDocs, companyId);
+    const newIds = new Set(filtered.map(d=>d.id));
+
+    if(_listenersStarted && window._currentUserName){
+      filtered.forEach(j=>{
+        if(!_prevJobIds.has(j.id)){
+          const name = window._currentUserName||'';
+          const isForMe = j.assignedTo===name||(j.assignedArtisans||[]).includes(name);
+          if(isForMe){
+            playJobNotification();
+            toastMob('🔧 New job: '+j.jobNumber+' — '+j.description,'success');
+            if('Notification' in window && Notification.permission==='granted'){
+              new Notification('PlantFlow — New Job Assigned',{
+                body:j.jobNumber+': '+j.description+'\n📍 '+j.location,
+                icon:'./plantflow-icon-192.png',tag:j.id,renotify:true
+              });
+            }
           }
         }
-      }
-    });
+      });
+    }
+    _prevJobIds = newIds;
+    _listenersStarted = true;
+    allJobs.length=0; filtered.forEach(d=>allJobs.push(d));
+    renderArtisanJobs(); renderMMJobs(); updateMMStats(); populateJobDropdowns();
+  }, err=>{console.error('jobCards:',err.message);}));
+
+  _mobileListenerUnsubs.push(onSnapshot(query(collection(db,'faults'),orderBy('createdAt','desc')), snap=>{
+    const filtered = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})), companyId);
+    allFaults.length=0; filtered.forEach(d=>allFaults.push(d));
+    renderMMFaults(); updateMMStats();
+  }, err=>{console.error('faults:',err.message);}));
+
+  _mobileListenerUnsubs.push(onSnapshot(query(collection(db,'permits'),orderBy('createdAt','desc')), snap=>{
+    const filtered = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})), companyId);
+    allPermits.length=0; filtered.forEach(d=>allPermits.push(d));
+    renderMgrPermits(); renderArtisanPermits(); updateMgrStats();
+  }, err=>{console.error('permits:',err.message);}));
+
+  _mobileListenerUnsubs.push(onSnapshot(query(collection(db,'materials'),orderBy('description','asc')), snap=>{
+    const filtered = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})), companyId);
+    allMaterials.length=0; filtered.forEach(d=>allMaterials.push(d));
+    populateMaterialDropdown();
+  }, err=>{console.error('materials:',err.message);}));
+
+  _mobileListenerUnsubs.push(onSnapshot(query(collection(db,'users'),orderBy('name','asc')), snap=>{
+    const filtered = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})), companyId);
+    allUsers.length=0; filtered.forEach(d=>allUsers.push(d));
+    populateArtisanDropdowns();
+  }, err=>{console.error('users:',err.message);}));
+
+  _mobileListenerUnsubs.push(onSnapshot(query(collection(db,'schedules'),orderBy('createdAt','desc')), snap=>{
+    const filtered = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})), companyId);
+    allSchedules.length=0; filtered.forEach(d=>allSchedules.push(d));
+    renderCalendar();
+  }, err=>{console.error('schedules:',err.message);}));
+}
+
+// Load companies into login dropdown on startup
+(async function loadCompanies(){
+  try{
+    const snap = await getDocs(query(collection(db,'companies'),orderBy('name','asc')));
+    const sel = document.getElementById('login-company');
+    if(!sel) return;
+    if(snap.empty){
+      sel.innerHTML='<option value="">No companies registered yet</option>';
+    } else {
+      sel.innerHTML='<option value="">-- Select your company --</option>'+
+        snap.docs.map(d=>{
+          const c=d.data();
+          return `<option value="${d.id}">${c.name||'Unknown'}</option>`;
+        }).join('');
+    }
+  }catch(e){
+    const sel=document.getElementById('login-company');
+    if(sel) sel.innerHTML='<option value="">Error loading companies</option>';
+    console.error('loadCompanies:',e);
   }
-
-  _prevJobIds = newIds;
-  _listenersStarted = true;
-  allJobs.length=0;
-  snap.docs.forEach(d=>allJobs.push({id:d.id,...d.data()}));
-  renderArtisanJobs();
-  renderMMJobs();
-  updateMMStats();
-  populateJobDropdowns();
-}, err=>{console.error('jobCards listener error:',err.message);toastMob('Firestore error — check rules: '+err.code,'error');});
-
-onSnapshot(query(collection(db,'faults'),orderBy('createdAt','desc')), snap=>{
-  allFaults.length=0;
-  snap.docs.forEach(d=>allFaults.push({id:d.id,...d.data()}));
-  renderMMFaults();
-  updateMMStats();
-}, err=>{console.error('faults listener error:',err.message);});
-
-onSnapshot(query(collection(db,'permits'),orderBy('createdAt','desc')), snap=>{
-  allPermits.length=0;
-  snap.docs.forEach(d=>allPermits.push({id:d.id,...d.data()}));
-  renderMgrPermits();
-  renderArtisanPermits();
-  updateMgrStats();
-}, err=>{console.error('permits listener error:',err.message);});
-
-onSnapshot(query(collection(db,'materials'),orderBy('description','asc')), snap=>{
-  allMaterials.length=0;
-  snap.docs.forEach(d=>allMaterials.push({id:d.id,...d.data()}));
-  populateMaterialDropdown();
-}, err=>{console.error('materials listener error:',err.message);});
-
-onSnapshot(query(collection(db,'users'),orderBy('name','asc')), snap=>{
-  allUsers.length=0;
-  snap.docs.forEach(d=>allUsers.push({id:d.id,...d.data()}));
-  populateArtisanDropdowns();
-}, err=>{console.error('users listener error:',err.message);});
-
-// Schedules listener
-onSnapshot(query(collection(db,'schedules'),orderBy('createdAt','desc')), snap=>{
-  allSchedules.length=0;
-  snap.docs.forEach(d=>allSchedules.push({id:d.id,...d.data()}));
-  renderCalendar();
-}, err=>{console.error('schedules error:',err.message);});
+})();
 
 // ── CALENDAR ──
 let calYear = new Date().getFullYear();
@@ -1621,7 +1671,7 @@ window.requestPermit = async function(){
   if(!type||!jc||!scope){toastMob('Please fill in all required fields','error');return;}
   try{
     const permitCount = allPermits.length+1;
-    await addDoc(collection(db,'permits'),{
+    await addDoc(collection(db,'permits'),mcid({
       permitNumber:'PTW-'+String(permitCount).padStart(4,'0'),
       type,jobCard:jc,location:loc,scope,
       issuedTo:window._currentUserName||'Artisan',
@@ -1631,7 +1681,7 @@ window.requestPermit = async function(){
       status:'pending',
       source:'mobile-artisan',
       createdAt:serverTimestamp()
-    });
+    }));
     ['req-jobcard','req-location','req-scope'].forEach(id=>document.getElementById(id).value='');
     toastMob('Permit request sent to Production Manager','success');
   }catch(e){toastMob('Error: '+e.message,'error');}
@@ -1716,14 +1766,14 @@ window.issuePTW = async function(){
   if(!document.getElementById('ptw-c1').checked||!document.getElementById('ptw-c2').checked||!document.getElementById('ptw-c3').checked){toastMob('Please complete the safety checklist','error');return;}
   try{
     const pNum = 'PTW-'+String(allPermits.length+1).padStart(4,'0');
-    await addDoc(collection(db,'permits'),{
+    await addDoc(collection(db,'permits'),mcid({
       permitNumber:pNum,type,jobCard:jc,location:loc,
       issuedTo:art,issuedBy:'Production Manager',
       validFrom:document.getElementById('issue-from').value,
       validUntil:document.getElementById('issue-until').value,
       scope,status:'active',source:'mobile-manager',
       createdAt:serverTimestamp()
-    });
+    }));
     if(jc){
       const snap = await getDocs(query(collection(db,'jobCards'),where('jobNumber','==',jc)));
       snap.forEach(async d=>await updateDoc(doc(db,'jobCards',d.id),{permitNumber:pNum,status:'in-progress'}));
@@ -1785,13 +1835,13 @@ window.updateMgrStats = function(){};
 
 window.convertFaultMobile = async function(id,desc,loc,priority){
   const jNum = 'JC-'+String(allJobs.length+1).padStart(4,'0');
-  await addDoc(collection(db,'jobCards'),{
+  await addDoc(collection(db,'jobCards'),mcid({
     jobNumber:jNum,description:desc,location:loc,priority,
     loggedBy:'Converted from fault',status:'open',
     permitRequired:'no',materials:[],totalCost:0,
     source:'converted-fault-mobile',
     createdAt:serverTimestamp()
-  });
+  }));
   await updateDoc(doc(db,'faults',id),{status:'converted',jobNumber:jNum});
   toastMob('Fault converted to '+jNum,'success');
 };
@@ -1803,7 +1853,7 @@ window.submitFaultMobile = async function(){
   const urgency = document.querySelector('[onclick*="selectChip"].selected')?.textContent||'medium';
   const priority = urgency.includes('Safety')?'critical':urgency.includes('today')?'medium':'low';
   try{
-    await addDoc(collection(db,'faults'),{
+    await addDoc(collection(db,'faults'),mcid({
       faultNumber:'FR-'+String(allFaults.length+1).padStart(4,'0'),
       type:window._faultType||'factory',
       description:desc,location:loc,priority,
@@ -1811,7 +1861,7 @@ window.submitFaultMobile = async function(){
       department:document.getElementById('fault-dept').value||'Unknown',
       status:'new',source:'mobile',
       createdAt:serverTimestamp()
-    });
+    }));
     ['fault-desc','fault-loc','fault-name','fault-dept'].forEach(id=>document.getElementById(id).value='');
     showSC('sc-fault-success');
   }catch(e){toastMob('Error: '+e.message,'error');}
@@ -1822,7 +1872,7 @@ window.submitEmpFault = async function(){
   const loc = document.getElementById('emp-fault-loc').value.trim();
   if(!desc||!loc){toastMob('Please fill in description and location','error');return;}
   try{
-    await addDoc(collection(db,'faults'),{
+    await addDoc(collection(db,'faults'),mcid({
       faultNumber:'FR-'+String(allFaults.length+1).padStart(4,'0'),
       type:window._faultType||'office',
       description:desc,location:loc,priority:'medium',
@@ -1830,7 +1880,7 @@ window.submitEmpFault = async function(){
       department:'General',
       status:'new',source:'mobile-employee',
       createdAt:serverTimestamp()
-    });
+    }));
     showSC('sc-fault-success');
   }catch(e){toastMob('Error: '+e.message,'error');}
 };
@@ -1856,13 +1906,13 @@ window.submitInspection = async function(){
   const failed=inspItems.filter(x=>x==='fail').length;
   const area=document.getElementById('insp-area').value||'General area';
   try{
-    await addDoc(collection(db,'inspections'),{
+    await addDoc(collection(db,'inspections'),mcid({
       type:'Weekly safety walkthrough',
       inspector: window._currentUserName||'Maintenance Manager',
       area,totalItems:9,passed,failed,
       status:failed>0?'fails':'passed',
       createdAt:serverTimestamp()
-    });
+    }));
     toastMob('Inspection submitted to PC dashboard','success');
     setTimeout(()=>showSC('sc-maint-manager'),1200);
   }catch(e){toastMob('Error: '+e.message,'error');}
@@ -2078,7 +2128,7 @@ window.submitArtisanInspection = async function(){
   if(failed>0&&!notes.trim()){toastMob('Please add notes describing the failed items','error');return;}
 
   try{
-    await addDoc(collection(db,'inspections'),{
+    await addDoc(collection(db,'inspections'),mcid({
       type: typeConfig.label,
       inspector: window._currentUserName||'Artisan',
       area,
@@ -2092,7 +2142,7 @@ window.submitArtisanInspection = async function(){
       scheduleAsset: schedule?.asset||'',
       submittedBy: window._currentUserName||'Artisan',
       createdAt: serverTimestamp()
-    });
+    }));
 
     // Reset state
     artisanInspItems.length = 0;
