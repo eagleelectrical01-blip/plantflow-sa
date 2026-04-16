@@ -653,7 +653,7 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
         <div style="font-size:12px;color:#374151;margin-bottom:4px">2. Job card created &amp; artisan assigned</div>
         <div style="font-size:12px;color:#374151">3. You get a notification when fixed</div>
       </div>
-      <button class="btn btn-primary" onclick="goBack()">Back to home</button>
+      <button class="btn btn-primary" onclick="showSC(getHomeScreen())">Back to home</button>
     </div>
   </div>
 
@@ -2242,7 +2242,25 @@ setInterval(function(){
   if(typeof renderArtisanPermits==='function') renderArtisanPermits();
 }, 10*60*1000);
 
-function goBack(){showSC(_prevScreen);}
+function getHomeScreen(){
+  const role = window._currentUserRole||'';
+  const map = {
+    'artisan':'sc-artisan','contractor':'sc-artisan',
+    'maintenance-manager':'sc-maint-manager','admin':'sc-maint-manager',
+    'production-manager':'sc-prod-manager','employee':'sc-employee'
+  };
+  return map[role]||_prevScreen||'sc-artisan';
+}
+function goBack(){
+  // From success screens always go to role home, not the form screen
+  const cur = document.querySelector('.screen.active')?.id||'';
+  const successScreens = ['sc-fault-success','sc-job-success','sc-insp-success'];
+  if(successScreens.includes(cur)){
+    showSC(getHomeScreen());
+  } else {
+    showSC(_prevScreen||getHomeScreen());
+  }
+}
 window.goBack=goBack;
 
 function login(role){
