@@ -1993,18 +1993,42 @@ window.createJobCard = async function(){
       }).filter(Boolean);
 
       if(contacts.length>0){
-        // Show WhatsApp send overlay
-        let html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px" id="wa-overlay">';
-        html += '<div style="background:#fff;border-radius:16px;padding:24px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">';
-        html += '<div style="font-size:16px;font-weight:800;color:#0D1B2A;margin-bottom:4px">📲 Send WhatsApp notifications</div>';
-        html += '<div style="font-size:12px;color:#6b7280;margin-bottom:16px">Click each button to send the job notification via WhatsApp.</div>';
-        contacts.forEach(c=>{
-          html += '<a href="'+c.url+'" target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:#dcfce7;border-radius:10px;text-decoration:none;margin-bottom:8px;font-weight:700;color:#15803d;font-size:13px">';
-          html += '<svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
-          html += 'Send to '+c.name+'</a>';
-        });
-        html += '<button onclick="document.getElementById(\'wa-overlay\').remove()" style="width:100%;padding:10px;background:#f3f4f6;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px;color:#374151">Done — close</button>';
-        html += '</div></div>';
+        // Store contacts globally so sendSelectedWhatsApps can access them
+        window._waPendingContacts = contacts;
+
+        const waIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
+
+        let rows = contacts.map((c,i)=>`
+          <label style="display:flex;align-items:center;gap:12px;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;margin-bottom:8px;user-select:none" id="wa-row-${i}" onclick="waToggleRow(${i})">
+            <input type="checkbox" id="wa-chk-${i}" checked style="width:18px;height:18px;accent-color:#25D366;cursor:pointer;flex-shrink:0" onclick="event.stopPropagation();waToggleRow(${i}, this.checked)"/>
+            ${waIcon}
+            <span style="font-size:13px;font-weight:700;color:#111827;flex:1">${c.name}</span>
+            <span style="font-size:11px;color:#9ca3af">${c.url.includes('27')?'+'+c.url.split('wa.me/')[1].split('?')[0]:''}</span>
+          </label>`).join('');
+
+        let html = `
+          <div style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px" id="wa-overlay">
+            <div style="background:#fff;border-radius:16px;padding:24px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.35)">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                <div style="font-size:16px;font-weight:800;color:#0D1B2A">Send WhatsApp Notifications</div>
+              </div>
+              <div style="font-size:12px;color:#6b7280;margin-bottom:16px">All assigned artisans are ticked. Untick anyone you don't want to notify, then click Send.</div>
+              <div style="margin-bottom:12px">
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#374151;cursor:pointer;margin-bottom:10px">
+                  <input type="checkbox" id="wa-select-all" checked onchange="waSelectAll(this.checked)" style="width:16px;height:16px;accent-color:#25D366"/>
+                  Select / deselect all
+                </label>
+                ${rows}
+              </div>
+              <button onclick="sendSelectedWhatsApps()" style="width:100%;padding:13px;background:#25D366;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif;margin-bottom:8px">
+                📲 Send to selected
+              </button>
+              <button onclick="document.getElementById('wa-overlay').remove()" style="width:100%;padding:10px;background:#f3f4f6;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;color:#374151">
+                Skip — don't send
+              </button>
+            </div>
+          </div>`;
         document.body.insertAdjacentHTML('beforeend', html);
       }
     }
@@ -2119,6 +2143,42 @@ window.onJobCardPermitChange = function(val){
     const statusEl = document.getElementById('jc-permit-status');
     if(statusEl) statusEl.style.display='none';
   }
+};
+
+window.waToggleRow = function(i, checked){
+  const chk = document.getElementById('wa-chk-'+i);
+  const row = document.getElementById('wa-row-'+i);
+  if(!chk||!row) return;
+  if(checked===undefined) checked = !chk.checked;
+  chk.checked = checked;
+  row.style.borderColor = checked ? '#25D366' : '#e5e7eb';
+  row.style.background = checked ? '#f0fdf4' : '#fff';
+  // Update select-all checkbox state
+  const all = document.querySelectorAll('[id^="wa-chk-"]');
+  const allChecked = [...all].every(c=>c.checked);
+  const anyChecked = [...all].some(c=>c.checked);
+  const sa = document.getElementById('wa-select-all');
+  if(sa){ sa.checked = allChecked; sa.indeterminate = !allChecked && anyChecked; }
+};
+
+window.waSelectAll = function(checked){
+  const contacts = window._waPendingContacts||[];
+  contacts.forEach((_,i)=>waToggleRow(i, checked));
+};
+
+window.sendSelectedWhatsApps = function(){
+  const contacts = window._waPendingContacts||[];
+  const selected = contacts.filter((_,i)=>{
+    const chk = document.getElementById('wa-chk-'+i);
+    return chk && chk.checked;
+  });
+  if(!selected.length){ toast('Please tick at least one person','error'); return; }
+  document.getElementById('wa-overlay').remove();
+  // Open each selected contact with staggered delay
+  selected.forEach((c,i)=>{
+    setTimeout(()=>window.open(c.url,'_blank'), i*900);
+  });
+  toast('Opening WhatsApp for '+selected.length+' person(s)...','success');
 };
 
 window.cancelPermitFromJobCard = function(){
