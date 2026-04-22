@@ -399,8 +399,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
         <span style="font-size:11px;color:#6b7280">Submitted from Maintenance Manager and Artisan phones</span>
       </div>
       <table class="tbl">
-        <thead><tr><th>Date</th><th>Inspection type</th><th>Inspector</th><th>Area</th><th>Items checked</th><th>Passed</th><th>Failed</th><th>Result</th><th></th></tr></thead>
-        <tbody id="inspections-tbody"><tr><td colspan="8" class="empty-state">No inspections yet — Maintenance Manager submits inspections from their phone (Schedule tab → Start safety inspection)</td></tr></tbody>
+        <thead><tr><th>Date</th><th>Inspection type</th><th>Inspector</th><th>Area</th><th>Items</th><th>Passed</th><th>Failed</th><th>Result</th><th>Notes on failed items</th><th></th></tr></thead>
+        <tbody id="inspections-tbody"><tr><td colspan="10" class="empty-state">No inspections submitted yet — artisans submit from their phones via the Schedule tab</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1758,7 +1758,7 @@ window.renderSchedules = function(){
 window.renderInspections = function(){
   const tbody = document.getElementById('inspections-tbody');
   if(!tbody)return;
-  if(!allInspections.length){tbody.innerHTML='<tr><td colspan="9" class="empty-state">No inspections submitted yet — artisans submit from their phones via the Schedule tab</td></tr>';return;}
+  if(!allInspections.length){tbody.innerHTML='<tr><td colspan="10" class="empty-state">No inspections submitted yet — artisans submit from their phones via the Schedule tab</td></tr>';return;}
   tbody.innerHTML = allInspections.map(i=>`<tr>
     <td style="font-size:11px">${fmtDate(i.createdAt)}</td>
     <td><b>${i.type||'Safety inspection'}</b>${i.scheduleTask?`<br><span style="font-size:10px;color:#6b7280">${i.scheduleTask}</span>`:''}</td>
@@ -1768,6 +1768,9 @@ window.renderInspections = function(){
     <td style="color:#16a34a;font-weight:600">${i.passed||0}</td>
     <td style="color:${i.failed>0?'#dc2626':'#16a34a'};font-weight:600">${i.failed||0}</td>
     <td>${i.failed>0?'<span class="badge b-amber">'+i.failed+' fail(s)</span>':'<span class="badge b-green">All pass</span>'}</td>
+    <td style="font-size:12px;color:${i.failed>0?'#dc2626':'#6b7280'};max-width:220px">${
+      i.notes ? `<span title="${(i.notes||'').replace(/"/g,"'")}">${i.failed>0?'⚠ ':''}${i.notes}</span>` : '<span style="color:#d1d5db">—</span>'
+    }</td>
     <td><button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteInspection('${i.id}')">🗑</button></td>
   </tr>`).join('');
 };

@@ -846,6 +846,10 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
       <div class="insp-item"><div class="check-circle" onclick="toggleInspItem(this,8)"></div><div style="flex:1"><div style="font-size:13px;color:#374151">All electrical equipment properly guarded</div></div></div>
 
       <div style="padding:14px 14px 24px;display:flex;flex-direction:column;gap:10px">
+        <div class="form-group" style="margin-bottom:0">
+          <div class="form-label">Notes on failed items <span style="color:#9ca3af;font-weight:400">(required if any items failed)</span></div>
+          <textarea class="form-textarea" id="insp-notes" rows="3" placeholder="Describe failed items — what was found, what needs to be fixed..."></textarea>
+        </div>
         <button class="btn btn-primary" onclick="submitInspection()">Submit inspection to PC dashboard</button>
         <button class="btn btn-secondary" onclick="showSC('sc-maint-manager')">Cancel</button>
       </div>
@@ -1905,14 +1909,18 @@ window.submitInspection = async function(){
   const passed=inspItems.filter(x=>x==='pass').length;
   const failed=inspItems.filter(x=>x==='fail').length;
   const area=document.getElementById('insp-area').value||'General area';
+  const notes=document.getElementById('insp-notes')?.value.trim()||'';
+  if(failed>0&&!notes){toastMob('Please add notes describing the failed items','error');return;}
   try{
     await addDoc(collection(db,'inspections'),mcid({
       type:'Weekly safety walkthrough',
       inspector: window._currentUserName||'Maintenance Manager',
-      area,totalItems:9,passed,failed,
+      area, totalItems:9, passed, failed, notes,
       status:failed>0?'fails':'passed',
       createdAt:serverTimestamp()
     }));
+    const notesEl=document.getElementById('insp-notes');
+    if(notesEl) notesEl.value='';
     toastMob('Inspection submitted to PC dashboard','success');
     setTimeout(()=>showSC('sc-maint-manager'),1200);
   }catch(e){toastMob('Error: '+e.message,'error');}
