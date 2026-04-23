@@ -313,7 +313,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
     <div class="panel">
       <div class="panel-head">
         <div class="panel-title">All Job Cards <span class="live-dot" style="margin-left:5px;width:6px;height:6px"></span></div>
-        <select class="form-select" style="width:auto;font-size:11px;padding:4px 8px" id="jobs-filter" onchange="renderJobCards()"><option value="">All status</option><option value="open">Open</option><option value="in-progress">In progress</option><option value="blocked">Blocked</option><option value="completed">Completed</option></select>
+        <select class="form-select" style="width:auto;font-size:11px;padding:4px 8px" id="jobs-filter" onchange="renderJobCards()"><option value="">All status</option><option value="open">Open &amp; Assigned</option><option value="in-progress">In progress</option><option value="blocked">Blocked</option><option value="completed">Completed</option></select>
         <button class="tb-btn primary" style="font-size:11px;padding:5px 10px;margin-left:8px" onclick="openModal('jobcard-modal')">+ New Job Card</button>
       </div>
       <table class="tbl">
@@ -1266,7 +1266,17 @@ function fmtDateTime(ts){
 window.renderJobCards = function(){
   const filter = document.getElementById('jobs-filter')?.value||'';
   let jobs = allJobs;
-  if(filter) jobs = jobs.filter(j=>j.status===filter);
+  if(filter==='open'){
+    // "Open" includes both unassigned (open) and assigned jobs waiting to start
+    jobs = jobs.filter(j=>j.status==='open'||j.status==='assigned');
+  } else if(filter==='in-progress'){
+    jobs = jobs.filter(j=>j.status==='in-progress');
+  } else if(filter==='blocked'){
+    jobs = jobs.filter(j=>j.status==='blocked');
+  } else if(filter==='completed'){
+    jobs = jobs.filter(j=>j.status==='completed');
+  }
+  // filter==='' shows all
   const tbody = document.getElementById('jobcards-tbody');
   if(!tbody)return;
   if(!jobs.length){tbody.innerHTML='<tr><td colspan="13" class="empty-state">No job cards yet</td></tr>';return;}
