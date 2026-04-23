@@ -317,7 +317,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
         <button class="tb-btn primary" style="font-size:11px;padding:5px 10px;margin-left:8px" onclick="openModal('jobcard-modal')">+ New Job Card</button>
       </div>
       <table class="tbl">
-        <thead><tr><th>Job #</th><th>Priority</th><th>Description</th><th>Location</th><th>Logged by</th><th>Assigned to</th><th>Permit #</th><th>Materials used</th><th>Total cost</th><th>Created</th><th>Completed</th><th>Status</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Job #</th><th>Priority</th><th>Description</th><th>Location</th><th>Logged by</th><th>Assigned to</th><th>Permit #</th><th>Materials used</th><th>Total cost</th><th>Created</th><th>Completed</th><th>Completion notes</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody id="jobcards-tbody"><tr><td colspan="13" class="empty-state">Loading...</td></tr></tbody>
       </table>
     </div>
@@ -1279,7 +1279,7 @@ window.renderJobCards = function(){
   // filter==='' shows all
   const tbody = document.getElementById('jobcards-tbody');
   if(!tbody)return;
-  if(!jobs.length){tbody.innerHTML='<tr><td colspan="13" class="empty-state">No job cards yet</td></tr>';return;}
+  if(!jobs.length){tbody.innerHTML='<tr><td colspan="14" class="empty-state">No job cards yet</td></tr>';return;}
   tbody.innerHTML = jobs.map(j=>{
     const artisans = Array.isArray(j.assignedArtisans)&&j.assignedArtisans.length ? j.assignedArtisans : (j.assignedTo?[j.assignedTo]:[]);
     const artisanDisplay = artisans.length ? artisans.map(a=>`<span class="badge b-blue" style="margin:1px">${a}</span>`).join(' ') : '<span style="color:#9ca3af">Unassigned</span>';
@@ -1296,6 +1296,7 @@ window.renderJobCards = function(){
       <td style="font-weight:600;color:#185FA5">${j.totalCost?'R '+(parseFloat(j.totalCost)).toFixed(2):'—'}</td>
       <td style="font-size:11px">${fmtDate(j.createdAt)}</td>
       <td style="font-size:11px;color:${!isOpen?'#16a34a':'#9ca3af'}">${!isOpen&&j.completedAt?fmtDate(j.completedAt):'—'}</td>
+      <td style="font-size:11px;max-width:200px;color:${j.completionNotes?'#374151':'#d1d5db'}">${j.completionNotes?`<span title="${(j.completionNotes||'').replace(/"/g,"'")}">${j.completionNotes}</span>`:'—'}</td>
       <td>${statusBadge(j.status||'open')}${j.awaitingSpares?'<br><span style="color:#dc2626;font-size:10px;font-weight:700">⚠ AWAITING SPARES</span>':''}</td>
       <td style="white-space:nowrap">
         ${isOpen ? `
@@ -1336,6 +1337,9 @@ window.renderDashJobs = function(){
       </td>
       ${j.awaitingSpares?`<tr><td colspan="8" style="background:#fff5f5;padding:6px 14px;font-size:11px;color:#dc2626;font-weight:600;border-bottom:2px solid #fca5a5">
         🔧 Spares needed: ${j.sparesNeeded||'See job card for details'}
+      </td></tr>`:''}
+      ${isCompleted&&j.completionNotes?`<tr><td colspan="8" style="background:#f0fdf4;padding:6px 14px;font-size:11px;color:#15803d;border-bottom:1px solid #bbf7d0">
+        ✅ Completion notes: ${j.completionNotes}
       </td></tr>`:''}
     </tr>`;
   }).join('');
