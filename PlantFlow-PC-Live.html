@@ -813,8 +813,12 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
       <div class="form-group"><div class="form-label">Permit type *</div><select class="form-select" id="pm-type"><option value="">-- Select --</option><option>General maintenance</option><option>Hot work (welding/cutting/grinding)</option><option>Electrical isolation / LOTO</option><option>Confined space entry</option><option>Working at height</option><option>Chemical handling</option></select></div>
       <div class="form-grid-2">
         <div class="form-group"><div class="form-label">Job Card # *</div><input class="form-input" id="pm-jobcard" placeholder="e.g. JC-0001"/></div>
-        <div class="form-group"><div class="form-label">Location *</div><input class="form-input" id="pm-location" placeholder="e.g. Tank Farm"/></div>
+        <div class="form-group">
+          <div class="form-label">Permit number <span style="color:#9ca3af;font-weight:400">(leave blank to auto-generate)</span></div>
+          <input class="form-input" id="pm-custom-num" placeholder="e.g. PTW-0042 or leave blank"/>
+        </div>
       </div>
+      <div class="form-group"><div class="form-label">Location *</div><input class="form-input" id="pm-location" placeholder="e.g. Tank Farm"/></div>
       <div class="form-group"><div class="form-label">Issued to *</div><select class="form-select" id="pm-artisan"><option value="">-- Select artisan --</option></select></div>
       <div class="form-grid-2">
         <div class="form-group"><div class="form-label">Valid from</div><input class="form-input" type="time" id="pm-from" value="07:30"/></div>
@@ -2079,7 +2083,9 @@ window.issuePermitModal = async function(){
   if(!type||!jc||!loc||!scope){toast('Please fill in all required fields','error');return;}
   if(!document.getElementById('pm-confirm').checked){toast('Please confirm the safety checklist','error');return;}
   try{
-    const pNum = nextPermitNum();
+    // Use custom permit number if provided, otherwise auto-generate
+    const customNum = document.getElementById('pm-custom-num')?.value.trim()||'';
+    const pNum = customNum || nextPermitNum();
     await addDoc(collection(db,'permits'),cid({
       permitNumber:pNum,
       type:type,
@@ -2095,20 +2101,26 @@ window.issuePermitModal = async function(){
       createdAt:serverTimestamp()
     }));
     closeModal('permit-modal');
+    // Clear custom number field for next time
+    const cnEl=document.getElementById('pm-custom-num');
+    if(cnEl) cnEl.value='';
 
-    // If opened from job card — attach permit number back to the job card form
+    // If opened from job card — attach permit number and reopen job card modal
     if(window._permitFromJobCard){
       window._pendingPermitNumber = pNum;
+      window._permitFromJobCard = false;
+      // Show permit status banner on job card
       const statusEl = document.getElementById('jc-permit-status');
       if(statusEl){
         statusEl.style.display='block';
         statusEl.style.background='#dcfce7';
         statusEl.style.color='#15803d';
         statusEl.style.border='1px solid #86efac';
-        statusEl.innerHTML='✅ Permit issued: <b>'+pNum+'</b> — will be attached to this job card';
+        statusEl.innerHTML='✅ Permit issued: <b>'+pNum+'</b> — attached to this job card';
       }
-      toast(pNum+' issued — now click "Create job card" to finish','success');
-      window._permitFromJobCard = false;
+      // Reopen the job card modal automatically
+      openModal('jobcard-modal');
+      toast(pNum+' issued ✓ — now fill in remaining details and click "Create job card"','success');
     } else {
       toast(pNum+' issued successfully','success');
     }
