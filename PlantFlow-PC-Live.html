@@ -1911,44 +1911,59 @@ window.openInspectionDetail = function(id){
   const fuEl = document.getElementById('insp-det-followup');
   if(fuEl) fuEl.value = i.followupStatus||'';
 
-  // Failed items section — always show if failures exist
+  // Failed items — derive from itemResults if failedItems array is missing/empty
   const failedSec = document.getElementById('insp-det-failed-section');
   const failedList = document.getElementById('insp-det-failed-list');
-  const failedItems = i.failedItems||[];
   const failedCard = document.getElementById('insp-det-failed-card');
+  let failedItems = i.failedItems||[];
+
+  // Fallback: extract from itemResults if failedItems not populated
+  const itemResults = i.itemResults||[];
+  if(failedItems.length===0 && itemResults.length>0){
+    failedItems = itemResults.filter(x=>x.result==='fail').map(x=>x.label);
+  }
+
   if(failedItems.length>0){
     failedSec.style.display='block';
     failedList.innerHTML = failedItems.map(f=>
-      `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:#fff;border-radius:8px;border-left:3px solid #dc2626;margin-bottom:6px;font-size:13px">
-        <span style="color:#dc2626;font-weight:800;flex-shrink:0">✕</span>
+      `<div style="display:flex;align-items:flex-start;gap:8px;padding:9px 12px;background:#fff;border-radius:8px;border-left:4px solid #dc2626;margin-bottom:6px;font-size:13px">
+        <span style="color:#dc2626;font-weight:800;flex-shrink:0;font-size:16px">✕</span>
         <span style="color:#991b1b;font-weight:600">${f}</span>
       </div>`
     ).join('');
     if(failedCard) failedCard.style.borderColor='#dc2626';
   } else {
     failedSec.style.display='none';
-    if(failedCard){failedCard.style.borderColor='transparent';failedCard.querySelector('div:last-child').textContent='Failed';}
+    if(failedCard){failedCard.style.borderColor='transparent';}
   }
 
-  // All items checklist
+  // Full checklist — show expanded by default
   const itemsSec = document.getElementById('insp-det-items-section');
-  const itemsList = document.getElementById('insp-det-items-list');
-  const itemResults = i.itemResults||[];
+  const itemsListEl = document.getElementById('insp-det-items-list');
   if(itemResults.length>0){
     itemsSec.style.display='block';
-    itemsList.innerHTML = itemResults.map((item,idx)=>{
+    itemsListEl.innerHTML = itemResults.map((item)=>{
       const isPassed = item.result==='pass';
       const isFailed = item.result==='fail';
       const bg = isFailed?'#fef2f2':isPassed?'#f0fdf4':'#f9fafb';
-      const icon = isFailed?'<span style="color:#dc2626;font-weight:700">✕</span>':isPassed?'<span style="color:#16a34a;font-weight:700">✓</span>':'<span style="color:#d1d5db">—</span>';
-      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:${bg};border-bottom:1px solid #e5e7eb;font-size:12.5px">
-        <div style="width:24px;text-align:center">${icon}</div>
-        <div style="flex:1">${item.label}</div>
-        <div style="font-size:11px;font-weight:600;color:${isFailed?'#dc2626':isPassed?'#16a34a':'#9ca3af'}">${item.result||'not checked'}</div>
+      const icon = isFailed
+        ? '<span style="color:#dc2626;font-size:16px;font-weight:700">✕</span>'
+        : isPassed
+          ? '<span style="color:#16a34a;font-size:16px;font-weight:700">✓</span>'
+          : '<span style="color:#d1d5db">—</span>';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:${bg};border-bottom:1px solid #e5e7eb;font-size:13px${isFailed?';font-weight:700':''}">
+        <div style="width:24px;text-align:center;flex-shrink:0">${icon}</div>
+        <div style="flex:1;color:${isFailed?'#991b1b':isPassed?'#166534':'#6b7280'}">${item.label}</div>
+        <div style="font-size:11px;font-weight:700;color:${isFailed?'#dc2626':isPassed?'#16a34a':'#9ca3af'};text-transform:uppercase">${item.result||'—'}</div>
       </div>`;
     }).join('');
+    // Update toggle label since it's now open
+    const label = failedCard?.querySelector('div:last-child');
+    if(label) label.textContent = 'Failed ▲ hide checklist';
   } else {
     itemsSec.style.display='none';
+    const label = failedCard?.querySelector('div:last-child');
+    if(label) label.textContent = i.failed>0 ? 'Failed — no detail saved' : 'Failed';
   }
 
   openModal('inspection-detail-modal');
@@ -1961,7 +1976,7 @@ window.toggleInspChecklist = function(){
   sec.style.display = isVisible ? 'none' : 'block';
   const card = document.getElementById('insp-det-failed-card');
   const label = card?.querySelector('div:last-child');
-  if(label) label.textContent = isVisible ? 'Failed ▼ tap to see' : 'Failed ▲ hide';
+  if(label) label.textContent = isVisible ? 'Failed ▼ tap to see checklist' : 'Failed ▲ hide checklist';
 };
 
 window.saveInspectionEdit = async function(){
