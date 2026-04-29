@@ -1164,45 +1164,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
   </div>
 </div>
 
-<!-- FOLLOW-UP MODAL -->
-<div class="modal-overlay" id="followup-modal" onclick="if(event.target===this)closeFollowUpModal()">
-  <div class="modal" style="width:580px;max-height:88vh;display:flex;flex-direction:column">
-    <div class="modal-head" style="flex-shrink:0">
-      <div>
-        <div class="modal-title" id="followup-modal-title">Follow-up — JC-0001</div>
-        <div style="font-size:11px;color:#9ca3af;margin-top:2px" id="followup-modal-sub">Messages are saved to the job card for future reference</div>
-      </div>
-      <div class="modal-close" onclick="closeFollowUpModal()">×</div>
-    </div>
-
-    <!-- Message thread -->
-    <div id="followup-thread" style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-height:200px;background:#f8fafc">
-      <div style="text-align:center;color:#9ca3af;font-size:12px;padding:20px">No messages yet — send the first follow-up below.</div>
-    </div>
-
-    <!-- Compose area -->
-    <div style="flex-shrink:0;padding:14px 16px;border-top:1px solid #e5e7eb;background:#fff">
-      <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Send follow-up message</div>
-      <textarea id="followup-text" rows="3" placeholder="e.g. Hi Daniel, just following up on JC-003 — what is the status? Is there a hold-up we need to address?"
-        style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:13px;font-family:'Segoe UI',Arial,sans-serif;resize:vertical;box-sizing:border-box;line-height:1.5"></textarea>
-      <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
-        <select id="followup-artisan-select" style="flex:1;padding:8px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-family:'Segoe UI',Arial,sans-serif">
-          <option value="">-- Select artisan to WhatsApp --</option>
-        </select>
-        <button onclick="sendFollowUpWhatsApp()" style="background:#25D366;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif;white-space:nowrap">
-          📲 Send WhatsApp
-        </button>
-        <button onclick="saveFollowUpNote()" style="background:#185FA5;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif;white-space:nowrap">
-          💾 Save note only
-        </button>
-      </div>
-      <div style="font-size:11px;color:#9ca3af;margin-top:8px">
-        💡 "Send WhatsApp" opens WhatsApp and saves the message. "Save note only" records without WhatsApp (e.g. artisan's reply, or a reminder to yourself).
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- USER MODAL -->
 <div class="modal-overlay" id="user-modal" onclick="if(event.target===this)closeModal('user-modal')">
   <div class="modal">
@@ -1450,7 +1411,6 @@ window.renderJobCards = function(){
           <button class="tb-btn" style="font-size:11px;padding:3px 8px" onclick="openAssignModal('${j.id}','${j.jobNumber}','${artisans.join(',')}')">👤 Assign</button>
           <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#fef3c7;border-color:#f59e0b;color:#92400e" onclick="openEditJobModal('${j.id}')">✏️ Edit</button>
           <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px" onclick="completeJob('${j.id}')">✓ Done</button>
-          <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#dcfce7;border-color:#86efac;color:#166534" onclick="openFollowUpModal('${j.id}','${j.jobNumber}')">💬 Follow-up</button>
           <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#dcfce7;border-color:#86efac;color:#15803d" onclick="openJobComments('${j.id}','${j.jobNumber}')">💬 Notes</button>
           <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#dcfce7;border-color:#25D366;color:#15803d" onclick="waFollowUp('${j.id}','${j.jobNumber}','${j.description?.replace(/'/g,'').replace(/"/g,'')||''}','${artisans.join(',')}')">📲 WA</button>
           ${j.permitRequired==='yes'&&!j.permitNumber?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px;margin-left:3px" onclick="quickPermit('${j.jobNumber}','${artisans[0]||''}')">PTW</button>`:''}
@@ -3133,8 +3093,8 @@ window.openJobComments = function(jobId, jobNum){
   const thread = document.getElementById('job-comments-thread');
   thread.innerHTML='<div style="text-align:center;color:#9ca3af;font-size:12px;padding:20px">Loading notes...</div>';
 
-  _commentsUnsub = onSnapshot(
-    query(collection(db,'jobCards',jobId,'comments'), orderBy('createdAt','asc')),
+  _commentsUnsub = window._onSnapshot(
+    window._query(window._collection(window.db,'jobCards',jobId,'comments'), window._orderBy('createdAt','asc')),
     snap=>{
       if(snap.empty){
         thread.innerHTML='<div style="text-align:center;color:#9ca3af;font-size:12.5px;padding:30px 20px">No notes yet.<br>Add a follow-up note below — artisans can also add notes from the mobile app.</div>';
@@ -3164,13 +3124,13 @@ window.addJobComment = async function(){
   const text = document.getElementById('job-comment-input').value.trim();
   if(!text){toast('Please type a note first','error');return;}
   try{
-    await addDoc(collection(db,'jobCards',jobId,'comments'),{
+    await window._addDoc(window._collection(window.db,'jobCards',jobId,'comments'),{
       text,
       author: window._loggedInCompanyName||'Admin',
       role: 'manager',
       from: 'manager',
       companyId: window._loggedInCompanyId||null,
-      createdAt: serverTimestamp()
+      createdAt: window._serverTimestamp()
     });
     document.getElementById('job-comment-input').value='';
     toast('Note added','success');
@@ -3876,131 +3836,6 @@ window.logoutCompany = function(){
   ['login-error','sa-login-error'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
 };
 
-// ── JOB CARD FOLLOW-UP / MESSAGE THREAD ──
-window._followUpJobId = null;
-window._followUpJobNum = null;
-let _followUpUnsub = null;
-
-window.closeFollowUpModal = function(){
-  if(_followUpUnsub){ try{_followUpUnsub();}catch(e){} _followUpUnsub=null; }
-  closeModal('followup-modal');
-};
-
-window.openFollowUpModal = function(jobId, jobNum){
-  window._followUpJobId = jobId;
-  window._followUpJobNum = jobNum;
-  const job = allJobs.find(j=>j.id===jobId);
-  document.getElementById('followup-modal-title').textContent = 'Follow-up — '+jobNum;
-  document.getElementById('followup-modal-sub').textContent =
-    (job?job.description:'')+(job&&job.location?' · '+job.location:'');
-
-  // Populate artisan selector
-  const artisans = job ? (job.assignedArtisans||[job.assignedTo].filter(Boolean)) : [];
-  const sel = document.getElementById('followup-artisan-select');
-  sel.innerHTML = '<option value="">-- Select artisan to WhatsApp --</option>'+
-    artisans.map(name=>{
-      const u = allUsers.find(x=>x.name===name);
-      return `<option value="${name}" data-phone="${u?.phone||''}">${name}${u?.phone?' ('+u.phone+')':' — no phone saved'}</option>`;
-    }).join('');
-  if(artisans.length===1) sel.selectedIndex=1;
-
-  // Live-listen to messages subcollection
-  if(_followUpUnsub){ try{_followUpUnsub();}catch(e){} }
-  const messagesRef = window._collection(window.db,'jobCards',jobId,'messages');
-  _followUpUnsub = window._onSnapshot(
-    window._query(messagesRef, window._orderBy('createdAt','asc')),
-    snap=>{
-      const msgs = snap.docs.map(d=>({id:d.id,...d.data()}));
-      renderFollowUpThread(msgs);
-    },
-    err=>{ console.error('messages:',err); renderFollowUpThread([]); }
-  );
-
-  document.getElementById('followup-text').value='';
-  openModal('followup-modal');
-};
-
-function renderFollowUpThread(msgs){
-  const thread = document.getElementById('followup-thread');
-  if(!thread) return;
-  if(!msgs.length){
-    thread.innerHTML='<div style="text-align:center;color:#9ca3af;font-size:12px;padding:20px">No messages yet — send the first follow-up below.</div>';
-    return;
-  }
-  thread.innerHTML = msgs.map(m=>{
-    const isManager = m.sender==='manager';
-    const isReply = m.type==='reply';
-    const bg = isReply?'#f0fdf4':isManager?'#eff6ff':'#f9fafb';
-    const border = isReply?'#86efac':isManager?'#bfdbfe':'#e5e7eb';
-    const icon = isReply?'💬':isManager?'📤':'📝';
-    const dateStr = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleString('en-ZA',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
-    return `<div style="background:${bg};border:1.5px solid ${border};border-radius:12px;padding:12px 14px">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-        <span style="font-size:14px">${icon}</span>
-        <span style="font-size:11px;font-weight:700;color:#374151">${m.senderName||'Admin'}</span>
-        <span style="font-size:10px;color:#9ca3af;margin-left:auto">${dateStr}</span>
-        ${m.viaWhatsApp?'<span style="font-size:10px;background:#dcfce7;color:#166534;padding:1px 6px;border-radius:6px;font-weight:700">WhatsApp sent</span>':''}
-        ${isReply?'<span style="font-size:10px;background:#f0fdf4;color:#166534;padding:1px 6px;border-radius:6px;font-weight:700">Artisan reply</span>':''}
-      </div>
-      <div style="font-size:13px;color:#111827;line-height:1.6;white-space:pre-wrap">${m.text}</div>
-    </div>`;
-  }).join('');
-  // Scroll to bottom
-  thread.scrollTop = thread.scrollHeight;
-}
-
-window.saveFollowUpNote = async function(viaWhatsApp){
-  const text = document.getElementById('followup-text')?.value.trim();
-  if(!text){toast('Please type a message first','error');return;}
-  const sel = document.getElementById('followup-artisan-select');
-  const artisanName = sel?.value||'';
-  try{
-    await window._addDoc(
-      window._collection(window.db,'jobCards',window._followUpJobId,'messages'),
-      {
-        text,
-        sender:'manager',
-        senderName:'Admin',
-        type: viaWhatsApp?'followup':'note',
-        artisan: artisanName,
-        viaWhatsApp: viaWhatsApp||false,
-        jobNumber: window._followUpJobNum,
-        companyId: window._loggedInCompanyId||null,
-        createdAt: window._serverTimestamp()
-      }
-    );
-    document.getElementById('followup-text').value='';
-    if(!viaWhatsApp) toast('Note saved to job card','success');
-  }catch(e){toast('Error saving: '+e.message,'error');}
-};
-
-window.sendFollowUpWhatsApp = async function(){
-  const text = document.getElementById('followup-text')?.value.trim();
-  if(!text){toast('Please type a message first','error');return;}
-  const sel = document.getElementById('followup-artisan-select');
-  const artisanName = sel?.value||'';
-  const phone = sel?.options[sel.selectedIndex]?.dataset?.phone||'';
-  if(!artisanName){toast('Please select an artisan to send to','error');return;}
-  if(!phone){toast(artisanName+' has no phone number saved — add it in Manage Users','error');return;}
-
-  const job = allJobs.find(j=>j.id===window._followUpJobId);
-  const waText =
-    '🔧 *PlantFlow Follow-up — '+window._followUpJobNum+'*\n\n'+
-    (job?'*Task:* '+job.description+'\n':'') +
-    (job?.location?'*Location:* '+job.location+'\n':'')+
-    '\n'+text+'\n\n'+
-    '_Please reply to this message with your update._';
-
-  const ph = phone.replace(/\D/g,'').replace(/^0/,'27');
-  window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(waText),'_blank');
-
-  // Save to thread
-  await saveFollowUpNote(true);
-  toast('WhatsApp opened — message saved to job card thread','success');
-};
-
-// Close follow-up listener when modal overlay is clicked or X is pressed
-// (handled directly — no closeModal wrapper needed)
 
 window.openCompanyAsAdmin = function(){
   // Open the currently viewed company directly from SA detail panel
