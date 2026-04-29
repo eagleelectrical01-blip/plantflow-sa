@@ -2136,19 +2136,53 @@ window.submitArtisanInspection = async function(){
   if(failed>0&&!notes.trim()){toastMob('Please add notes describing the failed items','error');return;}
 
   try{
+    // Read item labels directly from the rendered checklist DOM — reliable even after page events
+    const clEl = document.getElementById('artisan-insp-checklist');
+    const domItems = clEl ? [...clEl.querySelectorAll('.insp-item')] : [];
+
+    let itemResults = [];
+    if(domItems.length > 0){
+      // Read label text and result from each DOM item
+      itemResults = domItems.map((row, idx)=>{
+      const labelEl = row.querySelector('div[style*="flex:1"] > div') || row.querySelector('div:last-child > div') || row.querySelector('div:last-child');
+        const label = labelEl ? labelEl.textContent.trim() : (window._inspectionAllItems||[])[idx] || 'Item '+(idx+1);
+        const circle = row.querySelector('.check-circle');
+        let result = 'not checked';
+        if(circle){
+          if(circle.classList.contains('pass')) result = 'pass';
+          else if(circle.classList.contains('fail')) result = 'fail';
+        } else {
+          result = artisanInspItems[idx] || 'not checked';
+        }
+        return {label, result};
+      });
+    } else {
+      // Fallback to window._inspectionAllItems
+      const allItems = window._inspectionAllItems||[];
+      itemResults = allItems.map((label,idx)=>({
+        label,
+        result: artisanInspItems[idx]||'not checked'
+      }));
+    }
+
+    const failedItems = itemResults.filter(x=>x.result==='fail').map(x=>x.label);
+
     await addDoc(collection(db,'inspections'),mcid({
       type: typeConfig.label,
       inspector: window._currentUserName||'Artisan',
       area,
-      totalItems: artisanInspItems.length,
+      totalItems: itemResults.length||artisanInspItems.length,
       passed,
       failed,
       notes,
+      failedItems,
+      itemResults,
       status: failed>0?'fails':'passed',
       scheduleId: window._inspectionScheduleId||'',
       scheduleTask: schedule?.task||'',
       scheduleAsset: schedule?.asset||'',
       submittedBy: window._currentUserName||'Artisan',
+      recommendations: '',
       createdAt: serverTimestamp()
     }));
 
