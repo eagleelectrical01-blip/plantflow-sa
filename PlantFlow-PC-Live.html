@@ -747,6 +747,32 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
 </div><!-- end main -->
 </div><!-- end app -->
 
+<!-- JOB COMMENTS MODAL -->
+<div class="modal-overlay" id="job-comments-modal" onclick="if(event.target===this)closeModal('job-comments-modal')">
+  <div class="modal" style="width:580px;max-height:88vh;display:flex;flex-direction:column">
+    <div class="modal-head">
+      <div class="modal-title" id="job-comments-title">Job Notes & Follow-up</div>
+      <div class="modal-close" onclick="closeModal('job-comments-modal')">×</div>
+    </div>
+    <!-- Comments thread -->
+    <div id="job-comments-thread" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:200px;max-height:400px;background:#f8fafc">
+      <div style="text-align:center;color:#9ca3af;font-size:12px;padding:20px">Loading notes...</div>
+    </div>
+    <!-- Add comment -->
+    <div style="padding:14px 16px;border-top:1px solid #e5e7eb;background:#fff">
+      <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Add a note / follow-up</div>
+      <div style="display:flex;gap:8px">
+        <textarea id="job-comment-input" placeholder="Type your note, follow-up or query here... (artisan can also add notes from the mobile app)" style="flex:1;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:13px;font-family:'Segoe UI',Arial,sans-serif;resize:none;line-height:1.5" rows="3" onkeydown="if(event.ctrlKey&&event.key==='Enter')addJobComment()"></textarea>
+        <button onclick="addJobComment()" style="background:#185FA5;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif;align-self:flex-end;white-space:nowrap">Send<br><span style="font-size:10px;font-weight:400">Ctrl+Enter</span></button>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+        <button id="job-comments-wa-btn" onclick="waFollowUpFromComments()" style="background:#25D366;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif">📲 Send WhatsApp follow-up</button>
+        <span style="font-size:11px;color:#9ca3af">Opens WhatsApp to notify the artisan — your note above will be included</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ MODALS ═══ -->
 
 <!-- FAULT MODAL -->
@@ -1138,6 +1164,45 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
   </div>
 </div>
 
+<!-- FOLLOW-UP MODAL -->
+<div class="modal-overlay" id="followup-modal" onclick="if(event.target===this)closeModal('followup-modal')">
+  <div class="modal" style="width:580px;max-height:88vh;display:flex;flex-direction:column">
+    <div class="modal-head" style="flex-shrink:0">
+      <div>
+        <div class="modal-title" id="followup-modal-title">Follow-up — JC-0001</div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:2px" id="followup-modal-sub">Messages are saved to the job card for future reference</div>
+      </div>
+      <div class="modal-close" onclick="closeModal('followup-modal')">×</div>
+    </div>
+
+    <!-- Message thread -->
+    <div id="followup-thread" style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-height:200px;background:#f8fafc">
+      <div style="text-align:center;color:#9ca3af;font-size:12px;padding:20px">No messages yet — send the first follow-up below.</div>
+    </div>
+
+    <!-- Compose area -->
+    <div style="flex-shrink:0;padding:14px 16px;border-top:1px solid #e5e7eb;background:#fff">
+      <div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Send follow-up message</div>
+      <textarea id="followup-text" rows="3" placeholder="e.g. Hi Daniel, just following up on JC-003 — what is the status? Is there a hold-up we need to address?"
+        style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:13px;font-family:'Segoe UI',Arial,sans-serif;resize:vertical;box-sizing:border-box;line-height:1.5"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
+        <select id="followup-artisan-select" style="flex:1;padding:8px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-family:'Segoe UI',Arial,sans-serif">
+          <option value="">-- Select artisan to WhatsApp --</option>
+        </select>
+        <button onclick="sendFollowUpWhatsApp()" style="background:#25D366;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif;white-space:nowrap">
+          📲 Send WhatsApp
+        </button>
+        <button onclick="saveFollowUpNote()" style="background:#185FA5;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif;white-space:nowrap">
+          💾 Save note only
+        </button>
+      </div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:8px">
+        💡 "Send WhatsApp" opens WhatsApp and saves the message. "Save note only" records without WhatsApp (e.g. artisan's reply, or a reminder to yourself).
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- USER MODAL -->
 <div class="modal-overlay" id="user-modal" onclick="if(event.target===this)closeModal('user-modal')">
   <div class="modal">
@@ -1384,10 +1449,14 @@ window.renderJobCards = function(){
           <button class="tb-btn" style="font-size:11px;padding:3px 8px" onclick="openAssignModal('${j.id}','${j.jobNumber}','${artisans.join(',')}')">👤 Assign</button>
           <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#fef3c7;border-color:#f59e0b;color:#92400e" onclick="openEditJobModal('${j.id}')">✏️ Edit</button>
           <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px" onclick="completeJob('${j.id}')">✓ Done</button>
+          <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#dcfce7;border-color:#86efac;color:#166534" onclick="openFollowUpModal('${j.id}','${j.jobNumber}')">💬 Follow-up</button>
+          <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#dcfce7;border-color:#86efac;color:#15803d" onclick="openJobComments('${j.id}','${j.jobNumber}')">💬 Notes</button>
+          <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#dcfce7;border-color:#25D366;color:#15803d" onclick="waFollowUp('${j.id}','${j.jobNumber}','${j.description?.replace(/'/g,'').replace(/"/g,'')||''}','${artisans.join(',')}')">📲 WA</button>
           ${j.permitRequired==='yes'&&!j.permitNumber?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px;margin-left:3px" onclick="quickPermit('${j.jobNumber}','${artisans[0]||''}')">PTW</button>`:''}
           ${j.awaitingSpares?`<button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#fee2e2;border-color:#fca5a5;color:#b91c1c" onclick="clearSpares('${j.id}')">Clear spares flag</button>`:''}
         ` : `
-          <button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteJob('${j.id}')">🗑 Delete</button>
+          <button class="tb-btn" style="font-size:11px;padding:3px 8px;background:#eff6ff;border-color:#93c5fd;color:#1d4ed8" onclick="openJobComments('${j.id}','${j.jobNumber}')">💬 Notes</button>
+          <button class="tb-btn danger" style="font-size:11px;padding:3px 8px;margin-left:3px" onclick="deleteJob('${j.id}')">🗑 Delete</button>
         `}
       </td>
     </tr>`;
@@ -3037,8 +3106,139 @@ window.runDashSearch = function(val){
   tbody.innerHTML=jobRows+permitRows;
 };
 
+// ── JOB COMMENTS / FOLLOW-UP ──
+window._currentJobCommentId = null;
+window._currentJobCommentNum = null;
+window._currentJobCommentArtisans = [];
+window._currentJobCommentDesc = '';
+let _commentsUnsub = null;
+
+window.openJobComments = function(jobId, jobNum){
+  const job = allJobs.find(j=>j.id===jobId);
+  if(!job) return;
+  window._currentJobCommentId = jobId;
+  window._currentJobCommentNum = jobNum;
+  window._currentJobCommentArtisans = Array.isArray(job.assignedArtisans)&&job.assignedArtisans.length ? job.assignedArtisans : (job.assignedTo?[job.assignedTo]:[]);
+  window._currentJobCommentDesc = job.description||'';
+  document.getElementById('job-comments-title').textContent = '💬 '+jobNum+' — Notes & Follow-up';
+  document.getElementById('job-comment-input').value='';
+
+  // Update WA button label
+  const waBtn = document.getElementById('job-comments-wa-btn');
+  if(waBtn) waBtn.textContent = window._currentJobCommentArtisans.length ? '📲 WhatsApp '+window._currentJobCommentArtisans.join(', ') : '📲 Send WhatsApp';
+
+  // Live listener on comments subcollection
+  if(_commentsUnsub) try{_commentsUnsub();}catch(e){}
+  const thread = document.getElementById('job-comments-thread');
+  thread.innerHTML='<div style="text-align:center;color:#9ca3af;font-size:12px;padding:20px">Loading notes...</div>';
+
+  _commentsUnsub = onSnapshot(
+    query(collection(db,'jobCards',jobId,'comments'), orderBy('createdAt','asc')),
+    snap=>{
+      if(snap.empty){
+        thread.innerHTML='<div style="text-align:center;color:#9ca3af;font-size:12.5px;padding:30px 20px">No notes yet.<br>Add a follow-up note below — artisans can also add notes from the mobile app.</div>';
+        return;
+      }
+      thread.innerHTML = snap.docs.map(d=>{
+        const c=d.data();
+        const isManager = c.from==='manager'||c.role==='manager';
+        const time = c.createdAt?.toDate ? c.createdAt.toDate().toLocaleString('en-ZA',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+        return `<div style="display:flex;flex-direction:column;align-items:${isManager?'flex-end':'flex-start'};margin-bottom:2px">
+          <div style="max-width:85%;background:${isManager?'#185FA5':'#fff'};color:${isManager?'#fff':'#111827'};padding:10px 14px;border-radius:${isManager?'14px 14px 4px 14px':'14px 14px 14px 4px'};box-shadow:0 1px 3px rgba(0,0,0,0.08);font-size:13px;line-height:1.5;border:${isManager?'none':'1px solid #e5e7eb'}">
+            <div style="font-size:10px;font-weight:700;opacity:0.7;margin-bottom:3px">${c.author||'Admin'} · ${time}</div>
+            ${c.text||''}
+          </div>
+        </div>`;
+      }).join('');
+      thread.scrollTop = thread.scrollHeight;
+    },
+    err=>{ console.error('comments:',err); }
+  );
+  openModal('job-comments-modal');
+};
+
+window.addJobComment = async function(){
+  const jobId = window._currentJobCommentId;
+  if(!jobId) return;
+  const text = document.getElementById('job-comment-input').value.trim();
+  if(!text){toast('Please type a note first','error');return;}
+  try{
+    await addDoc(collection(db,'jobCards',jobId,'comments'),{
+      text,
+      author: window._loggedInCompanyName||'Admin',
+      role: 'manager',
+      from: 'manager',
+      companyId: window._loggedInCompanyId||null,
+      createdAt: serverTimestamp()
+    });
+    document.getElementById('job-comment-input').value='';
+    toast('Note added','success');
+  }catch(e){toast('Error: '+e.message,'error');}
+};
+
+window.waFollowUp = function(jobId, jobNum, desc, artisansStr){
+  const artisans = artisansStr ? artisansStr.split(',').filter(Boolean) : [];
+  const job = allJobs.find(j=>j.id===jobId)||{};
+  _sendWaFollowUp(jobNum, desc||job.description||'', artisans);
+};
+
+window.waFollowUpFromComments = function(){
+  const jobId = window._currentJobCommentId;
+  const jobNum = window._currentJobCommentNum;
+  const desc = window._currentJobCommentDesc;
+  const artisans = window._currentJobCommentArtisans;
+  const note = document.getElementById('job-comment-input').value.trim();
+  if(note){
+    // Save the note first then send WA
+    window.addJobComment().then(()=>_sendWaFollowUp(jobNum, desc, artisans, note));
+  } else {
+    _sendWaFollowUp(jobNum, desc, artisans);
+  }
+};
+
+function _sendWaFollowUp(jobNum, desc, artisans, extraNote){
+  const contacts = artisans.map(name=>{
+    const u = allUsers.find(x=>x.name===name);
+    if(!u||!u.phone) return null;
+    const ph = u.phone.replace(/\D/g,'').replace(/^0/,'27');
+    const msg =
+      '🔧 *PlantFlow — Job Card Follow-up*\n\n'+
+      '*Job:* '+jobNum+'\n'+
+      '*Task:* '+desc+'\n\n'+
+      (extraNote?'*Manager note:* '+extraNote+'\n\n':'')+
+      'Please provide an update on the progress of this job.\n'+
+      'You can also add notes directly in the PlantFlow app.\n\n'+
+      '👉 https://eagleelectrical01-blip.github.io/plantflow-sa/PlantFlow-Mobile-Live.html';
+    return {name, url:'https://wa.me/'+ph+'?text='+encodeURIComponent(msg)};
+  }).filter(Boolean);
+
+  if(!contacts.length){
+    toast('No phone numbers found for assigned artisans — add phone numbers in Manage Users','error');
+    return;
+  }
+
+  // Reuse the WhatsApp overlay
+  window._waPendingContacts = contacts;
+  const waIcon='<svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
+  const rows = contacts.map((_,i)=>`
+    <label style="display:flex;align-items:center;gap:12px;padding:11px 14px;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;margin-bottom:8px" id="wa-row-${i}" onclick="waToggleRow(${i})">
+      <input type="checkbox" id="wa-chk-${i}" checked style="width:18px;height:18px;accent-color:#25D366" onclick="event.stopPropagation();waToggleRow(${i},this.checked)"/>
+      ${waIcon}
+      <span style="font-size:13px;font-weight:700;color:#111827;flex:1">${contacts[i].name}</span>
+    </label>`).join('');
+  const html=`<div id="wa-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="background:#fff;border-radius:16px;padding:24px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+      <div style="font-size:16px;font-weight:800;color:#0D1B2A;margin-bottom:4px">📲 WhatsApp Follow-up — ${jobNum}</div>
+      <div style="font-size:12px;color:#6b7280;margin-bottom:16px">Select who to notify and click Send.</div>
+      ${rows}
+      <button onclick="sendSelectedWhatsApps()" style="width:100%;padding:13px;background:#25D366;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:8px">📲 Send follow-up</button>
+      <button onclick="document.getElementById('wa-overlay').remove()" style="width:100%;padding:10px;background:#f3f4f6;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;color:#374151">Cancel</button>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+
 window.openEditJobModal = function(jobId){
-  const j = allJobs.find(x=>x.id===jobId);
   if(!j)return;
   window._editingJobId = jobId;
   document.getElementById('edit-job-num').textContent = j.jobNumber||'';
