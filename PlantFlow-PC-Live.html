@@ -1057,6 +1057,84 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
   </div>
 </div>
 
+<!-- INSPECTION DETAIL / EDIT MODAL -->
+<div class="modal-overlay" id="inspection-detail-modal" onclick="if(event.target===this)closeModal('inspection-detail-modal')">
+  <div class="modal" style="width:640px;max-height:85vh;overflow-y:auto">
+    <div class="modal-head">
+      <div class="modal-title" id="insp-det-title">Inspection Detail</div>
+      <div class="modal-close" onclick="closeModal('inspection-detail-modal')">×</div>
+    </div>
+    <div class="modal-body">
+      <!-- Summary row -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+        <div style="background:#f0fdf4;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#16a34a" id="insp-det-passed">—</div>
+          <div style="font-size:11px;color:#6b7280">Passed</div>
+        </div>
+        <div style="background:#fef2f2;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#dc2626" id="insp-det-failed">—</div>
+          <div style="font-size:11px;color:#6b7280">Failed</div>
+        </div>
+        <div style="background:#f0f9ff;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:13px;font-weight:700;color:#185FA5" id="insp-det-inspector">—</div>
+          <div style="font-size:11px;color:#6b7280">Inspector</div>
+        </div>
+        <div style="background:#f0f9ff;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:13px;font-weight:700;color:#185FA5" id="insp-det-date">—</div>
+          <div style="font-size:11px;color:#6b7280">Date</div>
+        </div>
+      </div>
+
+      <!-- Failed items list -->
+      <div id="insp-det-failed-section" style="display:none;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:#dc2626;margin-bottom:8px">❌ Failed inspection items</div>
+        <div id="insp-det-failed-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
+      </div>
+
+      <!-- All items detail -->
+      <div id="insp-det-items-section" style="display:none;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:8px">📋 Full checklist results</div>
+        <div id="insp-det-items-list" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden"></div>
+      </div>
+
+      <!-- Notes from artisan -->
+      <div class="form-group">
+        <div class="form-label">Notes on failed items (from artisan)</div>
+        <div id="insp-det-notes-display" style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:10px;font-size:13px;color:#713f12;min-height:40px"></div>
+      </div>
+
+      <!-- Follow-up status -->
+      <div class="form-group">
+        <div class="form-label" style="color:#185FA5;font-weight:700">🔄 Follow-up status <span style="color:#9ca3af;font-weight:400">(update after next inspection)</span></div>
+        <select class="form-select" id="insp-det-followup">
+          <option value="">Not yet reviewed</option>
+          <option value="pending">⏳ Pending — corrective action not yet done</option>
+          <option value="in-progress">🔧 In progress — being fixed</option>
+          <option value="fixed">✅ Fixed — confirmed in next inspection</option>
+          <option value="recurring">🔁 Recurring — failed again in next inspection</option>
+          <option value="na">N/A — no failures</option>
+        </select>
+      </div>
+
+      <!-- Manager recommendations (editable) -->
+      <div class="form-group">
+        <div class="form-label" style="color:#185FA5;font-weight:700">📋 Manager recommendations / corrective action <span style="color:#9ca3af;font-weight:400">(editable)</span></div>
+        <textarea class="form-input" id="insp-det-recommendations" rows="4" placeholder="Describe the corrective actions required, who must fix it, and by when..." style="font-size:13px;line-height:1.6"></textarea>
+      </div>
+
+      <!-- Edit notes (editable) -->
+      <div class="form-group">
+        <div class="form-label">Update inspection notes <span style="color:#9ca3af;font-weight:400">(editable)</span></div>
+        <textarea class="form-input" id="insp-det-notes-edit" rows="3" placeholder="Update or add to the inspection notes..." style="font-size:13px"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="tb-btn" onclick="closeModal('inspection-detail-modal')">Close</button>
+      <button class="tb-btn primary" onclick="saveInspectionEdit()">💾 Save changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- USER MODAL -->
 <div class="modal-overlay" id="user-modal" onclick="if(event.target===this)closeModal('user-modal')">
   <div class="modal">
@@ -1777,20 +1855,111 @@ window.renderInspections = function(){
   const tbody = document.getElementById('inspections-tbody');
   if(!tbody)return;
   if(!allInspections.length){tbody.innerHTML='<tr><td colspan="10" class="empty-state">No inspections submitted yet — artisans submit from their phones via the Schedule tab</td></tr>';return;}
-  tbody.innerHTML = allInspections.map(i=>`<tr>
+  const followupBadge = {
+    'pending':'<span class="badge b-amber">⏳ Pending fix</span>',
+    'in-progress':'<span class="badge b-blue">🔧 In progress</span>',
+    'fixed':'<span class="badge b-green">✅ Fixed</span>',
+    'recurring':'<span class="badge b-red">🔁 Recurring</span>',
+    'na':'<span class="badge b-gray">N/A</span>'
+  };
+  tbody.innerHTML = allInspections.map(i=>{
+    const hasFails = i.failed>0;
+    const failedList = (i.failedItems||[]);
+    const fuBadge = i.followupStatus ? (followupBadge[i.followupStatus]||'') : '';
+    return `<tr style="${hasFails?'background:#fffbeb;':''}">
     <td style="font-size:11px">${fmtDate(i.createdAt)}</td>
     <td><b>${i.type||'Safety inspection'}</b>${i.scheduleTask?`<br><span style="font-size:10px;color:#6b7280">${i.scheduleTask}</span>`:''}</td>
     <td>${i.inspector||i.submittedBy||'—'}</td>
     <td>${i.area||'—'}</td>
     <td>${i.totalItems||'—'}</td>
     <td style="color:#16a34a;font-weight:600">${i.passed||0}</td>
-    <td style="color:${i.failed>0?'#dc2626':'#16a34a'};font-weight:600">${i.failed||0}</td>
-    <td>${i.failed>0?'<span class="badge b-amber">'+i.failed+' fail(s)</span>':'<span class="badge b-green">All pass</span>'}</td>
-    <td style="font-size:12px;color:${i.failed>0?'#dc2626':'#6b7280'};max-width:220px">${
-      i.notes ? `<span title="${(i.notes||'').replace(/"/g,"'")}">${i.failed>0?'⚠ ':''}${i.notes}</span>` : '<span style="color:#d1d5db">—</span>'
-    }</td>
-    <td><button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteInspection('${i.id}')">🗑</button></td>
-  </tr>`).join('');
+    <td style="color:${hasFails?'#dc2626':'#16a34a'};font-weight:600">${i.failed||0}</td>
+    <td>${hasFails?'<span class="badge b-amber">'+i.failed+' fail(s)</span>':'<span class="badge b-green">All pass</span>'}${fuBadge?'<br>'+fuBadge:''}</td>
+    <td style="font-size:12px;max-width:200px">
+      ${hasFails&&i.notes?`<span style="color:#dc2626">⚠ ${i.notes}</span>`:i.notes?`<span style="color:#6b7280">${i.notes}</span>`:'<span style="color:#d1d5db">—</span>'}
+      ${i.recommendations?`<br><span style="color:#185FA5;font-weight:600;font-size:11px">📋 ${i.recommendations}</span>`:''}
+    </td>
+    <td style="white-space:nowrap">
+      <button class="tb-btn primary" style="font-size:11px;padding:3px 8px;margin-bottom:3px;width:100%" onclick="openInspectionDetail('${i.id}')">✏️ Edit / View</button>
+      <button class="tb-btn danger" style="font-size:11px;padding:3px 8px;width:100%" onclick="deleteInspection('${i.id}')">🗑 Delete</button>
+    </td>
+  </tr>
+  ${hasFails&&failedList.length?`<tr style="background:#fff8ed"><td colspan="10" style="padding:8px 14px;font-size:11px;border-bottom:2px solid #fde68a">
+    <b style="color:#92400e">❌ Failed items:</b>
+    ${failedList.map(f=>`<span style="background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:10px;margin:2px;display:inline-block">${f}</span>`).join('')}
+  </td></tr>`:''}`;
+  }).join('');
+};
+
+
+window.openInspectionDetail = function(id){
+  const i = allInspections.find(x=>x.id===id);
+  if(!i) return;
+  window._editingInspectionId = id;
+
+  document.getElementById('insp-det-title').textContent = (i.type||'Inspection')+' — '+(i.area||'');
+  document.getElementById('insp-det-passed').textContent = i.passed||0;
+  document.getElementById('insp-det-failed').textContent = i.failed||0;
+  document.getElementById('insp-det-inspector').textContent = i.inspector||i.submittedBy||'—';
+  document.getElementById('insp-det-date').textContent = fmtDate(i.createdAt)||'—';
+  document.getElementById('insp-det-notes-display').textContent = i.notes||'No notes provided';
+  document.getElementById('insp-det-notes-edit').value = i.notes||'';
+  document.getElementById('insp-det-recommendations').value = i.recommendations||'';
+  const fuEl = document.getElementById('insp-det-followup');
+  if(fuEl) fuEl.value = i.followupStatus||'';
+
+  // Failed items section
+  const failedSec = document.getElementById('insp-det-failed-section');
+  const failedList = document.getElementById('insp-det-failed-list');
+  const failedItems = i.failedItems||[];
+  if(failedItems.length>0){
+    failedSec.style.display='block';
+    failedList.innerHTML = failedItems.map(f=>
+      `<span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid #fca5a5">${f}</span>`
+    ).join('');
+  } else {
+    failedSec.style.display='none';
+  }
+
+  // All items checklist
+  const itemsSec = document.getElementById('insp-det-items-section');
+  const itemsList = document.getElementById('insp-det-items-list');
+  const itemResults = i.itemResults||[];
+  if(itemResults.length>0){
+    itemsSec.style.display='block';
+    itemsList.innerHTML = itemResults.map((item,idx)=>{
+      const isPassed = item.result==='pass';
+      const isFailed = item.result==='fail';
+      const bg = isFailed?'#fef2f2':isPassed?'#f0fdf4':'#f9fafb';
+      const icon = isFailed?'<span style="color:#dc2626;font-weight:700">✕</span>':isPassed?'<span style="color:#16a34a;font-weight:700">✓</span>':'<span style="color:#d1d5db">—</span>';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:${bg};border-bottom:1px solid #e5e7eb;font-size:12.5px">
+        <div style="width:24px;text-align:center">${icon}</div>
+        <div style="flex:1">${item.label}</div>
+        <div style="font-size:11px;font-weight:600;color:${isFailed?'#dc2626':isPassed?'#16a34a':'#9ca3af'}">${item.result||'not checked'}</div>
+      </div>`;
+    }).join('');
+  } else {
+    itemsSec.style.display='none';
+  }
+
+  openModal('inspection-detail-modal');
+};
+
+window.saveInspectionEdit = async function(){
+  if(!window._editingInspectionId) return;
+  const recs = document.getElementById('insp-det-recommendations').value.trim();
+  const notes = document.getElementById('insp-det-notes-edit').value.trim();
+  const followupStatus = document.getElementById('insp-det-followup')?.value||'';
+  try{
+    await updateDoc(doc(db,'inspections',window._editingInspectionId),{
+      recommendations: recs,
+      notes: notes,
+      followupStatus: followupStatus,
+      updatedAt: serverTimestamp()
+    });
+    closeModal('inspection-detail-modal');
+    toast('Inspection updated','success');
+  }catch(e){toast('Error: '+e.message,'error');}
 };
 
 window.deleteInspection = async function(id){
