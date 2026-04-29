@@ -1165,14 +1165,14 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
 </div>
 
 <!-- FOLLOW-UP MODAL -->
-<div class="modal-overlay" id="followup-modal" onclick="if(event.target===this)closeModal('followup-modal')">
+<div class="modal-overlay" id="followup-modal" onclick="if(event.target===this)closeFollowUpModal()">
   <div class="modal" style="width:580px;max-height:88vh;display:flex;flex-direction:column">
     <div class="modal-head" style="flex-shrink:0">
       <div>
         <div class="modal-title" id="followup-modal-title">Follow-up — JC-0001</div>
         <div style="font-size:11px;color:#9ca3af;margin-top:2px" id="followup-modal-sub">Messages are saved to the job card for future reference</div>
       </div>
-      <div class="modal-close" onclick="closeModal('followup-modal')">×</div>
+      <div class="modal-close" onclick="closeFollowUpModal()">×</div>
     </div>
 
     <!-- Message thread -->
@@ -1296,6 +1296,7 @@ window.db = db;
 // Expose Firebase functions so non-module scripts can use them
 window._addDoc = addDoc;
 window._collection = collection;
+window._onSnapshot = onSnapshot;
 window._doc = doc;
 window._updateDoc = updateDoc;
 window._serverTimestamp = serverTimestamp;
@@ -3239,6 +3240,7 @@ function _sendWaFollowUp(jobNum, desc, artisans, extraNote){
 }
 
 window.openEditJobModal = function(jobId){
+  const j = allJobs.find(x=>x.id===jobId);
   if(!j)return;
   window._editingJobId = jobId;
   document.getElementById('edit-job-num').textContent = j.jobNumber||'';
@@ -3873,6 +3875,132 @@ window.logoutCompany = function(){
   ['company-login-email','company-login-pass','sa-master-pass'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   ['login-error','sa-login-error'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
 };
+
+// ── JOB CARD FOLLOW-UP / MESSAGE THREAD ──
+window._followUpJobId = null;
+window._followUpJobNum = null;
+let _followUpUnsub = null;
+
+window.closeFollowUpModal = function(){
+  if(_followUpUnsub){ try{_followUpUnsub();}catch(e){} _followUpUnsub=null; }
+  closeModal('followup-modal');
+};
+
+window.openFollowUpModal = function(jobId, jobNum){
+  window._followUpJobId = jobId;
+  window._followUpJobNum = jobNum;
+  const job = allJobs.find(j=>j.id===jobId);
+  document.getElementById('followup-modal-title').textContent = 'Follow-up — '+jobNum;
+  document.getElementById('followup-modal-sub').textContent =
+    (job?job.description:'')+(job&&job.location?' · '+job.location:'');
+
+  // Populate artisan selector
+  const artisans = job ? (job.assignedArtisans||[job.assignedTo].filter(Boolean)) : [];
+  const sel = document.getElementById('followup-artisan-select');
+  sel.innerHTML = '<option value="">-- Select artisan to WhatsApp --</option>'+
+    artisans.map(name=>{
+      const u = allUsers.find(x=>x.name===name);
+      return `<option value="${name}" data-phone="${u?.phone||''}">${name}${u?.phone?' ('+u.phone+')':' — no phone saved'}</option>`;
+    }).join('');
+  if(artisans.length===1) sel.selectedIndex=1;
+
+  // Live-listen to messages subcollection
+  if(_followUpUnsub){ try{_followUpUnsub();}catch(e){} }
+  const messagesRef = window._collection(window.db,'jobCards',jobId,'messages');
+  _followUpUnsub = window._onSnapshot(
+    window._query(messagesRef, window._orderBy('createdAt','asc')),
+    snap=>{
+      const msgs = snap.docs.map(d=>({id:d.id,...d.data()}));
+      renderFollowUpThread(msgs);
+    },
+    err=>{ console.error('messages:',err); renderFollowUpThread([]); }
+  );
+
+  document.getElementById('followup-text').value='';
+  openModal('followup-modal');
+};
+
+function renderFollowUpThread(msgs){
+  const thread = document.getElementById('followup-thread');
+  if(!thread) return;
+  if(!msgs.length){
+    thread.innerHTML='<div style="text-align:center;color:#9ca3af;font-size:12px;padding:20px">No messages yet — send the first follow-up below.</div>';
+    return;
+  }
+  thread.innerHTML = msgs.map(m=>{
+    const isManager = m.sender==='manager';
+    const isReply = m.type==='reply';
+    const bg = isReply?'#f0fdf4':isManager?'#eff6ff':'#f9fafb';
+    const border = isReply?'#86efac':isManager?'#bfdbfe':'#e5e7eb';
+    const icon = isReply?'💬':isManager?'📤':'📝';
+    const dateStr = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleString('en-ZA',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+    return `<div style="background:${bg};border:1.5px solid ${border};border-radius:12px;padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <span style="font-size:14px">${icon}</span>
+        <span style="font-size:11px;font-weight:700;color:#374151">${m.senderName||'Admin'}</span>
+        <span style="font-size:10px;color:#9ca3af;margin-left:auto">${dateStr}</span>
+        ${m.viaWhatsApp?'<span style="font-size:10px;background:#dcfce7;color:#166534;padding:1px 6px;border-radius:6px;font-weight:700">WhatsApp sent</span>':''}
+        ${isReply?'<span style="font-size:10px;background:#f0fdf4;color:#166534;padding:1px 6px;border-radius:6px;font-weight:700">Artisan reply</span>':''}
+      </div>
+      <div style="font-size:13px;color:#111827;line-height:1.6;white-space:pre-wrap">${m.text}</div>
+    </div>`;
+  }).join('');
+  // Scroll to bottom
+  thread.scrollTop = thread.scrollHeight;
+}
+
+window.saveFollowUpNote = async function(viaWhatsApp){
+  const text = document.getElementById('followup-text')?.value.trim();
+  if(!text){toast('Please type a message first','error');return;}
+  const sel = document.getElementById('followup-artisan-select');
+  const artisanName = sel?.value||'';
+  try{
+    await window._addDoc(
+      window._collection(window.db,'jobCards',window._followUpJobId,'messages'),
+      {
+        text,
+        sender:'manager',
+        senderName:'Admin',
+        type: viaWhatsApp?'followup':'note',
+        artisan: artisanName,
+        viaWhatsApp: viaWhatsApp||false,
+        jobNumber: window._followUpJobNum,
+        companyId: window._loggedInCompanyId||null,
+        createdAt: window._serverTimestamp()
+      }
+    );
+    document.getElementById('followup-text').value='';
+    if(!viaWhatsApp) toast('Note saved to job card','success');
+  }catch(e){toast('Error saving: '+e.message,'error');}
+};
+
+window.sendFollowUpWhatsApp = async function(){
+  const text = document.getElementById('followup-text')?.value.trim();
+  if(!text){toast('Please type a message first','error');return;}
+  const sel = document.getElementById('followup-artisan-select');
+  const artisanName = sel?.value||'';
+  const phone = sel?.options[sel.selectedIndex]?.dataset?.phone||'';
+  if(!artisanName){toast('Please select an artisan to send to','error');return;}
+  if(!phone){toast(artisanName+' has no phone number saved — add it in Manage Users','error');return;}
+
+  const job = allJobs.find(j=>j.id===window._followUpJobId);
+  const waText =
+    '🔧 *PlantFlow Follow-up — '+window._followUpJobNum+'*\n\n'+
+    (job?'*Task:* '+job.description+'\n':'') +
+    (job?.location?'*Location:* '+job.location+'\n':'')+
+    '\n'+text+'\n\n'+
+    '_Please reply to this message with your update._';
+
+  const ph = phone.replace(/\D/g,'').replace(/^0/,'27');
+  window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(waText),'_blank');
+
+  // Save to thread
+  await saveFollowUpNote(true);
+  toast('WhatsApp opened — message saved to job card thread','success');
+};
+
+// Close follow-up listener when modal overlay is clicked or X is pressed
+// (handled directly — no closeModal wrapper needed)
 
 window.openCompanyAsAdmin = function(){
   // Open the currently viewed company directly from SA detail panel
