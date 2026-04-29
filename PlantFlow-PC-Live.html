@@ -3199,8 +3199,10 @@ window.sendPaymentRequest = function(){
   const email = opt.dataset.email||opt.text.split(' · ')[1]||'';
   const price = opt.dataset.price||'299';
   const pfMerchant = document.getElementById('sa-pf-merchant')?.value||'';
-  const subject = encodeURIComponent('PlantFlow Subscription — Payment Required');
-  const body = encodeURIComponent(
+  if(!email){toast('This company has no email address — open their detail page to add one','error');return;}
+
+  const subject = 'PlantFlow Subscription — Payment Required';
+  const bodyText =
     'Dear '+name+',\n\n'+
     'Thank you for using PlantFlow — Maintenance OS.\n\n'+
     'Your free trial period is ending soon. To continue using PlantFlow without interruption, please arrange payment of:\n\n'+
@@ -3210,15 +3212,59 @@ window.sendPaymentRequest = function(){
     '• PayFast — Merchant ID: '+pfMerchant+'\n'+
     '• Contact us on WhatsApp to arrange payment\n\n'+
     'Once payment is received, your subscription will be activated for the next 30 days.\n\n'+
-    'If you have any questions, please reply to this email or contact us directly.\n\n'+
-    'Kind regards,\n'+
-    'Eagle Electrical Ventures\n'+
-    'PlantFlow — Maintenance OS\n'+
-    'infobookanartisan01@gmail.com'
-  );
-  if(!email){toast('This company has no email address — open their detail page to add one','error');return;}
-  window.open('mailto:'+email+'?subject='+subject+'&body='+body);
-  toast('Payment email opened for '+name,'success');
+    'Kind regards,\nEagle Electrical Ventures\nPlantFlow — Maintenance OS\ninfobookanartisan01@gmail.com';
+
+  const subjectEnc = encodeURIComponent(subject);
+  const bodyEnc = encodeURIComponent(bodyText);
+
+  // Gmail compose URL
+  const gmailUrl = 'https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(email)+'&su='+subjectEnc+'&body='+bodyEnc;
+  // Outlook web compose URL
+  const outlookUrl = 'https://outlook.office.com/mail/deeplink/compose?to='+encodeURIComponent(email)+'&subject='+subjectEnc+'&body='+encodeURIComponent(bodyText.replace(/\n/g,'%0D%0A'));
+  // mailto fallback
+  const mailtoUrl = 'mailto:'+email+'?subject='+subjectEnc+'&body='+bodyEnc;
+
+  // Show choice overlay
+  const html = `
+    <div id="email-choice-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px">
+      <div style="background:#fff;border-radius:16px;padding:28px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+        <div style="font-size:16px;font-weight:800;color:#0D1B2A;margin-bottom:4px">📧 Send payment request</div>
+        <div style="font-size:12.5px;color:#6b7280;margin-bottom:20px">Sending to: <b>${email}</b> (${name})<br>Choose your email app:</div>
+
+        <a href="${gmailUrl}" target="_blank" onclick="setTimeout(()=>document.getElementById('email-choice-overlay').remove(),500)"
+          style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid #e5e7eb;border-radius:12px;text-decoration:none;margin-bottom:10px;cursor:pointer;color:#111827">
+          <svg width="24" height="24" viewBox="0 0 24 24"><path fill="#EA4335" d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 010 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"/><path fill="#188038" d="M0 5.457L12 14.09l12-8.636"/></svg>
+          <div>
+            <div style="font-weight:700;font-size:14px">Open in Gmail</div>
+            <div style="font-size:11px;color:#6b7280">Opens Gmail in a new tab</div>
+          </div>
+        </a>
+
+        <a href="${outlookUrl}" target="_blank" onclick="setTimeout(()=>document.getElementById('email-choice-overlay').remove(),500)"
+          style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid #e5e7eb;border-radius:12px;text-decoration:none;margin-bottom:10px;cursor:pointer;color:#111827">
+          <svg width="24" height="24" viewBox="0 0 24 24"><path fill="#0078D4" d="M24 7.387v10.478L19.2 21l-9.6-2.4V5.4L19.2 3z"/><path fill="#28A8E8" d="M24 7.387L19.2 10.2V21l4.8-3.135z"/><path fill="#50D9FF" d="M19.2 10.2L9.6 5.4v13.2L19.2 21z"/><path fill="#0078D4" d="M0 6l9.6-1.8v13.8L0 18z"/><ellipse fill="#fff" cx="4.8" cy="12" rx="3" ry="3.6"/></svg>
+          <div>
+            <div style="font-weight:700;font-size:14px">Open in Outlook</div>
+            <div style="font-size:11px;color:#6b7280">Opens Outlook web in a new tab</div>
+          </div>
+        </a>
+
+        <a href="${mailtoUrl}" onclick="setTimeout(()=>document.getElementById('email-choice-overlay').remove(),500)"
+          style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid #e5e7eb;border-radius:12px;text-decoration:none;margin-bottom:16px;cursor:pointer;color:#111827">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+          <div>
+            <div style="font-weight:700;font-size:14px">Default mail app</div>
+            <div style="font-size:11px;color:#6b7280">Opens your computer's default email app</div>
+          </div>
+        </a>
+
+        <button onclick="document.getElementById('email-choice-overlay').remove()"
+          style="width:100%;padding:10px;background:#f3f4f6;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;color:#374151">
+          Cancel
+        </button>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
 };
 
 window.migrateUntaggedData = async function(){
