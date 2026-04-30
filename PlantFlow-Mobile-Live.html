@@ -641,9 +641,22 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
         <div class="form-group"><div class="form-label">Your name</div><input class="form-input" id="fault-name" placeholder="Full name (optional)"/></div>
         <div class="form-group"><div class="form-label">Department</div><input class="form-input" id="fault-dept" placeholder="e.g. Production, Finance, HR..."/></div>
       </div>
-      <div class="photo-upload" onclick="toastMob('Camera would open here on phone','success')">
-        <div class="photo-upload-icon">📷</div>
-        <div style="font-size:13px;font-weight:600;color:#6b7280">Photo of the fault (optional)</div>
+      <!-- Photo upload — real camera/gallery picker -->
+      <div style="margin:0 14px 14px">
+        <div class="form-label" style="margin-bottom:8px">Photo of the fault (optional)</div>
+        <input type="file" id="fault-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleFaultPhotoSelect(this)"/>
+        <div id="fault-photo-preview" style="display:none;margin-bottom:10px;border-radius:12px;overflow:hidden;border:2px solid #e5e7eb">
+          <img id="fault-photo-img" style="width:100%;max-height:220px;object-fit:cover;display:block"/>
+          <div style="padding:8px 12px;background:#f9fafb;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:#6b7280" id="fault-photo-label">Photo selected</span>
+            <button onclick="clearFaultPhoto()" style="background:none;border:none;color:#dc2626;font-size:12px;font-weight:700;cursor:pointer;padding:0">✕ Remove</button>
+          </div>
+        </div>
+        <div class="photo-upload" id="fault-photo-btn" onclick="document.getElementById('fault-photo-input').click()">
+          <div class="photo-upload-icon">📷</div>
+          <div style="font-size:13px;font-weight:700;color:#374151">Take photo or choose from gallery</div>
+          <div style="font-size:11px;color:#9ca3af;margin-top:3px">Tap to open camera · JPG, PNG up to 5MB</div>
+        </div>
       </div>
       <div style="padding:4px 14px 24px">
         <button class="btn btn-danger" onclick="submitFaultMobile()">Submit fault report →</button>
@@ -2268,6 +2281,38 @@ window.convertFaultMobile = async function(id,desc,loc,priority){
   toastMob('Fault converted to '+jNum,'success');
 };
 
+// ── PHOTO UPLOAD FUNCTIONS ──
+window._faultPhotoBase64 = null;
+
+window.handleFaultPhotoSelect = function(input){
+  const file = input.files[0];
+  if(!file) return;
+  if(file.size > 5*1024*1024){toastMob('Photo is too large — max 5MB. Try a lower quality setting.','error');return;}
+  const reader = new FileReader();
+  reader.onload = function(e){
+    window._faultPhotoBase64 = e.target.result; // full data URL
+    const img = document.getElementById('fault-photo-img');
+    const preview = document.getElementById('fault-photo-preview');
+    const btn = document.getElementById('fault-photo-btn');
+    const label = document.getElementById('fault-photo-label');
+    if(img) img.src = e.target.result;
+    if(preview) preview.style.display='block';
+    if(btn) btn.style.display='none';
+    if(label) label.textContent = file.name+' ('+Math.round(file.size/1024)+'KB)';
+  };
+  reader.readAsDataURL(file);
+};
+
+window.clearFaultPhoto = function(){
+  window._faultPhotoBase64 = null;
+  const input = document.getElementById('fault-photo-input');
+  if(input) input.value='';
+  const preview = document.getElementById('fault-photo-preview');
+  const btn = document.getElementById('fault-photo-btn');
+  if(preview) preview.style.display='none';
+  if(btn) btn.style.display='block';
+};
+
 window.submitFaultMobile = async function(){
   const desc = document.getElementById('fault-desc').value.trim();
   const loc = document.getElementById('fault-loc').value.trim();
@@ -2282,9 +2327,11 @@ window.submitFaultMobile = async function(){
       loggedBy:document.getElementById('fault-name').value||'Anonymous',
       department:document.getElementById('fault-dept').value||'Unknown',
       status:'new',source:'mobile',
+      photoBase64: window._faultPhotoBase64||null,
       createdAt:serverTimestamp()
     }));
     ['fault-desc','fault-loc','fault-name','fault-dept'].forEach(id=>document.getElementById(id).value='');
+    clearFaultPhoto();
     showSC('sc-fault-success');
   }catch(e){toastMob('Error: '+e.message,'error');}
 };

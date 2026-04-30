@@ -1464,7 +1464,7 @@ window.renderFaults = function(){
     <tr>
       <td style="color:#9ca3af;font-size:11px">${f.faultNumber||'—'}</td>
       <td><span class="badge ${f.type==='factory'?'b-red':'b-amber'}">${f.type==='factory'?'Factory':'Office'}</span></td>
-      <td><b>${f.description||'—'}</b></td>
+      <td><b>${f.description||'—'}</b>${f.photoBase64?'<br><span style="font-size:10px;color:#185FA5;cursor:pointer" onclick="viewFaultPhoto(\''+f.id+'\')">📷 View photo</span>':''}</td>
       <td>${f.location||'—'}</td>
       <td>${f.loggedBy||'Anonymous'}</td>
       <td>${f.department||'—'}</td>
@@ -1479,13 +1479,29 @@ window.renderFaults = function(){
           <button class="tb-btn danger" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="deleteFault('${f.id}')">🗑</button>`
         :`<button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteFault('${f.id}')">🗑 Delete</button>`
       }</td>
-    </tr>`).join('');
+    </tr>
+    ${f.photoBase64?`<tr id="fault-photo-row-${f.id}" style="display:none"><td colspan="10" style="padding:8px 14px;background:#f0f9ff;border-bottom:2px solid #bae6fd">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <img src="${f.photoBase64}" style="max-width:280px;max-height:200px;border-radius:10px;object-fit:cover;border:2px solid #e0f2fe"/>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#0369a1;margin-bottom:4px">📷 Fault photo — ${f.faultNumber}</div>
+          <div style="font-size:11px;color:#6b7280">${f.description}</div>
+          <button onclick="document.getElementById('fault-photo-row-${f.id}').style.display='none'" style="margin-top:8px;background:#e0f2fe;border:none;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;color:#0369a1">Hide photo</button>
+        </div>
+      </div>
+    </td></tr>`:''}
+  `).join('');
 
   const newFaults = allFaults.filter(f=>f.status==='new');
   const fcNew = document.getElementById('fault-new-count');
   const fcDone = document.getElementById('fault-done-count');
   if(fcNew) fcNew.textContent = newFaults.length;
   if(fcDone) fcDone.textContent = allFaults.filter(f=>f.status==='converted').length;
+};
+
+window.viewFaultPhoto = function(faultId){
+  const row = document.getElementById('fault-photo-row-'+faultId);
+  if(row) row.style.display = row.style.display==='none' ? 'table-row' : 'none';
 };
 
 window.renderDashFaults = function(){
