@@ -785,43 +785,187 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
   <!-- ════════════════════════════════ -->
   <div class="screen" id="sc-maint-manager">
     <div class="scroll-content">
-      <div class="home-header" style="background:#16a34a">
+      <div class="home-header" style="background:#185FA5">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
-            <div class="greeting">Good morning 👋</div>
-            <div class="user-name">Maintenance Manager</div>
-            <div class="role-pill" style="background:rgba(255,255,255,0.2)"><svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="1.8"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>Maintenance Manager</div>
+            <div class="greeting">PlantFlow Manager 👷</div>
+            <div class="user-name" id="mm-user-name-disp">Manager</div>
+            <div class="role-pill" style="background:rgba(255,255,255,0.2)">Full control · Mobile</div>
           </div>
-          <div class="notif-btn"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="1.8"><path d="M9 1.5a5.5 5.5 0 015.5 5.5v3.5l1.5 2.5H2L3.5 10.5V7A5.5 5.5 0 019 1.5z"/><path d="M7 15a2 2 0 004 0"/></svg><div class="notif-badge"></div></div>
+          <div onclick="logoutMobile()" style="background:rgba(255,255,255,0.15);border-radius:10px;padding:6px 12px;color:#fff;font-size:11px;font-weight:700;cursor:pointer">Sign out</div>
+        </div>
+        <!-- Quick action buttons -->
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button onclick="openMgrNewJob()" style="flex:1;background:#fff;color:#185FA5;border:none;border-radius:12px;padding:11px 8px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif">
+            ➕ New Job Card
+          </button>
+          <button onclick="showSC('sc-mgr-permits');loadMgrPermits()" style="flex:1;background:rgba(255,255,255,0.2);color:#fff;border:2px solid rgba(255,255,255,0.4);border-radius:12px;padding:11px 8px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif">
+            🛡 Issue PTW
+          </button>
         </div>
       </div>
 
+      <!-- Stats -->
       <div class="home-stats">
-        <div class="home-stat"><div class="hs-label">New faults</div><div class="hs-val c-red" id="mm-fault-count">—</div><div class="hs-sub c-red">Need action</div></div>
-        <div class="home-stat"><div class="hs-label">Open jobs</div><div class="hs-val" id="mm-job-count">—</div><div class="hs-sub c-amber" id="mm-job-sub">Loading...</div></div>
+        <div class="home-stat"><div class="hs-label">Open jobs</div><div class="hs-val c-amber" id="mm-job-count">—</div><div class="hs-sub">Assigned &amp; open</div></div>
+        <div class="home-stat"><div class="hs-label">Faults</div><div class="hs-val c-red" id="mm-fault-count">—</div><div class="hs-sub c-red">New &amp; unresolved</div></div>
+        <div class="home-stat"><div class="hs-label">Active PTW</div><div class="hs-val" id="mm-permit-count">—</div><div class="hs-sub">Permits to work</div></div>
       </div>
 
-      <div class="section-title">New fault reports — action needed</div>
-      <div id="mm-faults-list"><div class="empty-state-mob"><div class="empty-icon">✅</div><div class="empty-title">No new faults</div><div class="empty-sub">All faults have been actioned. New employee fault reports appear here in real time.</div></div></div>
+      <!-- All open job cards -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 14px 6px">
+        <div class="section-title" style="margin:0">All open job cards</div>
+        <select id="mgr-job-filter" onchange="renderMMJobs()" style="font-size:11px;padding:4px 8px;border:1px solid #e5e7eb;border-radius:8px;background:#fff">
+          <option value="">All</option>
+          <option value="open">Open</option>
+          <option value="assigned">Assigned</option>
+          <option value="in-progress">In progress</option>
+          <option value="blocked">Blocked</option>
+        </select>
+      </div>
+      <div id="mm-jobs-list" style="padding:0 14px 10px"><div style="font-size:13px;color:#9ca3af;text-align:center;padding:20px">Loading...</div></div>
 
-      <div class="section-title">Open job cards</div>
-      <div id="mm-jobs-list"><div style="padding:0 14px 10px;font-size:13px;color:#9ca3af">Loading...</div></div>
+      <!-- Fault reports -->
+      <div class="section-title">Fault reports — action needed</div>
+      <div id="mm-faults-list"><div class="empty-state-mob"><div class="empty-icon">✅</div><div class="empty-title">No new faults</div></div></div>
 
-      <div style="padding:6px 14px 20px;display:flex;flex-direction:column;gap:10px">
-        <button class="btn btn-secondary" onclick="showSC('sc-inspection')">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 14l3-3.5 2.5 2.5 4-5"/></svg>
-          Start safety inspection
-        </button>
-        <button class="btn btn-secondary" onclick="showSC('sc-log-fault')">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 1.5l7.5 13H1.5z"/><path d="M9 7v4M9 12.5h.01"/></svg>
-          Log a fault
-        </button>
+      <div style="height:20px"></div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <div class="tab-item active" onclick="showSC('sc-maint-manager');setTab(this)">
+        <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="13" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
+        <div class="tab-label">Dashboard</div>
+      </div>
+      <div class="tab-item" onclick="showSC('sc-mgr-jobs');renderMMAllJobs()">
+        <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="16" height="16" rx="2"/><path d="M7 8h8M7 12h8M7 16h4"/></svg>
+        <div class="tab-label">All Jobs</div>
+      </div>
+      <div class="tab-item" onclick="openMgrNewJob()">
+        <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="9"/><path d="M11 7v8M7 11h8"/></svg>
+        <div class="tab-label">New Job</div>
+      </div>
+      <div class="tab-item" onclick="showSC('sc-inspection');setTab(this)">
+        <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 16l4-5 3 3.5 5-7"/></svg>
+        <div class="tab-label">Inspect</div>
+      </div>
+      <div class="tab-item" onclick="showSC('sc-log-fault');setTab(this)">
+        <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 2l9 16H2z"/><path d="M11 9v5M11 15.5h.01"/></svg>
+        <div class="tab-label">Log Fault</div>
       </div>
     </div>
-    <div class="tab-bar">
-      <div class="tab-item active" onclick="showSC('sc-maint-manager');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="13" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><div class="tab-label">Dashboard</div></div>
-      <div class="tab-item" onclick="showSC('sc-inspection');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 16l4-5 3 3.5 5-7"/></svg><div class="tab-label">Inspect</div></div>
-      <div class="tab-item" onclick="showSC('sc-log-fault');setTab(this)"><svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 2l9 16H2z"/><path d="M11 9v5M11 15.5h.01"/></svg><div class="tab-label">Log Fault</div></div>
+  </div>
+
+  <!-- MGR: ALL JOBS SCREEN -->
+  <div class="screen" id="sc-mgr-jobs">
+    <div class="top-header" style="background:#185FA5">
+      <div class="th-row">
+        <div class="back-btn" onclick="showSC('sc-maint-manager')" style="background:rgba(255,255,255,0.2)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.2"><path d="M10 13L5 8l5-5"/></svg></div>
+        <div><div class="th-title">All Job Cards</div><div style="font-size:12px;color:rgba(255,255,255,0.8)">Tap a job to manage it</div></div>
+        <button onclick="openMgrNewJob()" style="background:#F5820A;border:none;color:#fff;font-size:12px;font-weight:700;padding:7px 13px;border-radius:10px;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif">+ New</button>
+      </div>
+    </div>
+    <div class="scroll-content" style="padding:14px">
+      <div id="mgr-all-jobs-list"><div style="text-align:center;color:#9ca3af;padding:30px;font-size:13px">Loading jobs...</div></div>
+    </div>
+  </div>
+
+  <!-- MGR: NEW JOB CARD SCREEN -->
+  <div class="screen" id="sc-mgr-new-job">
+    <div class="top-header" style="background:#185FA5">
+      <div class="th-row">
+        <div class="back-btn" onclick="showSC('sc-maint-manager')" style="background:rgba(255,255,255,0.2)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.2"><path d="M10 13L5 8l5-5"/></svg></div>
+        <div><div class="th-title">Create Job Card</div><div style="font-size:12px;color:rgba(255,255,255,0.8)">Fill in details and assign artisans</div></div>
+      </div>
+    </div>
+    <div class="scroll-content" style="padding:14px">
+      <div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div class="form-group"><div class="form-label">Job description *</div><input class="form-input" id="mgr-jc-desc" placeholder="e.g. Fix leaking valve on Tank 3"/></div>
+        <div class="form-group"><div class="form-label">Location *</div><input class="form-input" id="mgr-jc-location" placeholder="e.g. Tank Farm, Section B"/></div>
+        <div class="form-group"><div class="form-label">Asset / Equipment</div><input class="form-input" id="mgr-jc-asset" placeholder="e.g. Pump P-201"/></div>
+        <div class="form-group"><div class="form-label">Priority</div>
+          <select class="form-input" id="mgr-jc-priority">
+            <option value="low">🟢 Low</option>
+            <option value="medium" selected>🟡 Medium</option>
+            <option value="high">🔴 High — urgent</option>
+            <option value="critical">🚨 Critical — stop work</option>
+          </select>
+        </div>
+        <div class="form-group"><div class="form-label">Permit required?</div>
+          <select class="form-input" id="mgr-jc-permit">
+            <option value="no">No</option>
+            <option value="yes">Yes — hazardous work</option>
+          </select>
+        </div>
+        <div class="form-group"><div class="form-label">Notes / special instructions</div><textarea class="form-textarea" id="mgr-jc-notes" rows="2" placeholder="Any special instructions for the artisan..."></textarea></div>
+        <div class="form-group">
+          <div class="form-label">Assign to artisans <span style="color:#185FA5;font-weight:600">(tick one or more)</span></div>
+          <div id="mgr-artisan-checkboxes" style="border:1.5px solid #e5e7eb;border-radius:10px;max-height:200px;overflow-y:auto;padding:8px">
+            <div style="font-size:12px;color:#9ca3af;padding:6px">Loading artisans...</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="submitMgrJobCard()">Create Job Card</button>
+        <button class="btn btn-secondary" style="margin-top:8px" onclick="showSC('sc-maint-manager')">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MGR: JOB DETAIL SCREEN (for managing individual jobs) -->
+  <div class="screen" id="sc-mgr-job-detail">
+    <div class="top-header" style="background:#185FA5">
+      <div class="th-row">
+        <div class="back-btn" onclick="showSC('sc-mgr-jobs');renderMMAllJobs()" style="background:rgba(255,255,255,0.2)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.2"><path d="M10 13L5 8l5-5"/></svg></div>
+        <div><div class="th-title" id="mgr-job-detail-num">Job Detail</div><div style="font-size:11px;color:rgba(255,255,255,0.8)" id="mgr-job-detail-status">—</div></div>
+      </div>
+    </div>
+    <div class="scroll-content" style="padding:14px" id="mgr-job-detail-body">
+      <div style="text-align:center;color:#9ca3af;padding:30px">Loading...</div>
+    </div>
+  </div>
+
+  <!-- MGR: PERMITS SCREEN -->
+  <div class="screen" id="sc-mgr-permits">
+    <div class="top-header" style="background:#7c3aed">
+      <div class="th-row">
+        <div class="back-btn" onclick="showSC('sc-maint-manager')" style="background:rgba(255,255,255,0.2)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" stroke-width="2.2"><path d="M10 13L5 8l5-5"/></svg></div>
+        <div><div class="th-title">Issue Permit to Work</div><div style="font-size:12px;color:rgba(255,255,255,0.8)">OHSA compliance PTW</div></div>
+      </div>
+    </div>
+    <div class="scroll-content" style="padding:14px">
+      <div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:14px">
+        <div class="form-group"><div class="form-label">Permit type *</div>
+          <select class="form-input" id="mgr-ptw-type">
+            <option value="">-- Select --</option>
+            <option>General maintenance</option>
+            <option>Hot work (welding/cutting/grinding)</option>
+            <option>Electrical isolation / LOTO</option>
+            <option>Confined space entry</option>
+            <option>Working at height</option>
+            <option>Chemical handling</option>
+          </select>
+        </div>
+        <div class="form-group"><div class="form-label">Permit number <span style="color:#9ca3af;font-weight:400">(leave blank to auto-generate)</span></div><input class="form-input" id="mgr-ptw-num" placeholder="e.g. PTW-0042 or leave blank"/></div>
+        <div class="form-group"><div class="form-label">Job card # *</div><input class="form-input" id="mgr-ptw-job" placeholder="e.g. JC-0001"/></div>
+        <div class="form-group"><div class="form-label">Location *</div><input class="form-input" id="mgr-ptw-location" placeholder="e.g. Tank Farm"/></div>
+        <div class="form-group"><div class="form-label">Issued to (artisan name)</div><input class="form-input" id="mgr-ptw-artisan" placeholder="e.g. Daniel Khumalo"/></div>
+        <div class="form-group"><div class="form-label">Scope of work *</div><textarea class="form-textarea" id="mgr-ptw-scope" rows="3" placeholder="Describe exactly what work is permitted..."></textarea></div>
+        <div class="form-group"><div class="form-label">Valid from</div><input class="form-input" type="date" id="mgr-ptw-from"/></div>
+        <div class="form-group"><div class="form-label">Valid until</div><input class="form-input" type="date" id="mgr-ptw-until"/></div>
+        <div style="background:#fef3c7;border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:#92400e;line-height:1.6">
+          ⚠️ By issuing this permit I confirm: area has been inspected, hazards identified, PPE confirmed, and all safety measures are in place.
+        </div>
+        <label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;cursor:pointer">
+          <input type="checkbox" id="mgr-ptw-confirm" style="width:18px;height:18px;accent-color:#7c3aed;flex-shrink:0;margin-top:1px"/>
+          <span style="font-size:13px;color:#374151;font-weight:600">I confirm the above safety requirements are met</span>
+        </label>
+        <button class="btn btn-primary" style="background:#7c3aed" onclick="submitMgrPermit()">🛡 Issue Permit to Work</button>
+        <button class="btn btn-secondary" style="margin-top:8px" onclick="showSC('sc-maint-manager')">Cancel</button>
+      </div>
+
+      <!-- Active permits list -->
+      <div class="section-title">Active permits</div>
+      <div id="mgr-permits-list"><div style="text-align:center;color:#9ca3af;padding:20px;font-size:13px">Loading...</div></div>
     </div>
   </div>
 
@@ -1848,6 +1992,222 @@ window.issuePTW = async function(){
   }catch(e){toastMob('Error: '+e.message,'error');}
 };
 
+// ── MANAGER MOBILE FUNCTIONS ──
+
+function nextMgrJobNum(){
+  const existing = allJobs.map(j=>parseInt((j.jobNumber||'JC-0000').replace('JC-',''))||0);
+  return 'JC-'+String(Math.max(0,...existing)+1).padStart(4,'0');
+}
+function nextMgrPtwNum(){
+  const existing = allPermits.map(p=>parseInt((p.permitNumber||'PTW-0000').replace('PTW-',''))||0);
+  return 'PTW-'+String(Math.max(0,...existing)+1).padStart(4,'0');
+}
+
+window.openMgrNewJob = function(){
+  // Populate artisan checkboxes
+  const artisans = allUsers.filter(u=>u.role==='artisan'||u.role==='contractor'||u.role==='employee');
+  const box = document.getElementById('mgr-artisan-checkboxes');
+  if(box){
+    box.innerHTML = artisans.length ? artisans.map(u=>{
+      const display = u.role==='contractor'&&u.company ? u.name+' — '+u.company : u.name;
+      return `<label style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer;margin-bottom:2px">
+        <input type="checkbox" value="${u.name}" style="width:16px;height:16px;accent-color:#185FA5"/>
+        <span style="font-size:13px;font-weight:600">${display}</span>
+        <span style="font-size:11px;color:#9ca3af;margin-left:auto">${u.trade||u.role}</span>
+      </label>`;
+    }).join('') : '<div style="font-size:12px;color:#9ca3af;padding:6px">No artisans added yet</div>';
+  }
+  // Clear fields
+  ['mgr-jc-desc','mgr-jc-location','mgr-jc-asset','mgr-jc-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const priEl=document.getElementById('mgr-jc-priority');if(priEl)priEl.value='medium';
+  const ptEl=document.getElementById('mgr-jc-permit');if(ptEl)ptEl.value='no';
+  showSC('sc-mgr-new-job');
+};
+
+window.submitMgrJobCard = async function(){
+  const desc=document.getElementById('mgr-jc-desc')?.value.trim();
+  const loc=document.getElementById('mgr-jc-location')?.value.trim();
+  if(!desc){toastMob('Please enter a job description','error');return;}
+  if(!loc){toastMob('Please enter a location','error');return;}
+  const checked=[...document.querySelectorAll('#mgr-artisan-checkboxes input[type=checkbox]:checked')].map(c=>c.value);
+  const jobNum=nextMgrJobNum();
+  try{
+    await addDoc(collection(db,'jobCards'),mcid({
+      jobNumber:jobNum,
+      description:desc,
+      location:loc,
+      asset:document.getElementById('mgr-jc-asset')?.value||'',
+      priority:document.getElementById('mgr-jc-priority')?.value||'medium',
+      permitRequired:document.getElementById('mgr-jc-permit')?.value||'no',
+      notes:document.getElementById('mgr-jc-notes')?.value||'',
+      assignedTo:checked[0]||'',
+      assignedArtisans:checked,
+      status:checked.length>0?'assigned':'open',
+      loggedBy:window._currentUserName||'Manager',
+      source:'mobile-manager',
+      createdAt:serverTimestamp()
+    }));
+    // WhatsApp to assigned artisans
+    if(checked.length>0){
+      const waMsg=encodeURIComponent('🔧 *PlantFlow — New Job Assigned*\n\n*Job:* '+jobNum+'\n*Task:* '+desc+'\n*Location:* '+loc+'\n\nOpen PlantFlow to view details.');
+      checked.forEach((name,i)=>{
+        const u=allUsers.find(x=>x.name===name);
+        if(u?.phone){
+          const ph=u.phone.replace(/\D/g,'').replace(/^0/,'27');
+          setTimeout(()=>window.open('https://wa.me/'+ph+'?text='+waMsg,'_blank'),i*800);
+        }
+      });
+    }
+    toastMob(jobNum+' created'+(checked.length?' — '+checked.length+' artisan(s) notified':''),'success');
+    showSC('sc-maint-manager');
+  }catch(e){toastMob('Error: '+e.message,'error');}
+};
+
+window.renderMMAllJobs = function(){
+  const list=document.getElementById('mgr-all-jobs-list');
+  if(!list)return;
+  const jobs=allJobs.filter(j=>j.status!=='completed'&&j.status!=='closed');
+  if(!jobs.length){list.innerHTML='<div style="text-align:center;color:#9ca3af;padding:30px;font-size:13px">No open jobs</div>';return;}
+  list.innerHTML=jobs.map(j=>{
+    const pri={low:'🟢',medium:'🟡',high:'🔴',critical:'🚨'}[j.priority]||'🟡';
+    const artisans=(j.assignedArtisans||[j.assignedTo].filter(Boolean)).join(', ')||'Unassigned';
+    return `<div style="background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.07);border-left:4px solid ${j.status==='blocked'?'#dc2626':j.status==='assigned'?'#185FA5':'#f59e0b'}" onclick="openMgrJobDetail('${j.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <span style="font-size:11px;font-weight:700;color:#185FA5">${j.jobNumber}</span>
+        <span style="font-size:11px;background:#f3f4f6;padding:2px 8px;border-radius:10px;color:#374151">${j.status||'open'}</span>
+      </div>
+      <div style="font-size:14px;font-weight:700;color:#111827;margin-bottom:4px">${j.description}</div>
+      <div style="font-size:12px;color:#6b7280">📍 ${j.location} &nbsp;${pri} ${j.priority||'medium'}</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:2px">👤 ${artisans}</div>
+    </div>`;
+  }).join('');
+};
+
+window.openMgrJobDetail = function(jobId){
+  const j=allJobs.find(x=>x.id===jobId);
+  if(!j)return;
+  window._mgrDetailJobId=jobId;
+  document.getElementById('mgr-job-detail-num').textContent=j.jobNumber;
+  document.getElementById('mgr-job-detail-status').textContent=(j.status||'open').toUpperCase();
+  const artisans=(j.assignedArtisans||[j.assignedTo].filter(Boolean));
+  const allArtisans=allUsers.filter(u=>u.role==='artisan'||u.role==='contractor');
+  document.getElementById('mgr-job-detail-body').innerHTML=`
+    <div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+      <div style="font-size:13px;font-weight:700;color:#185FA5;margin-bottom:4px">${j.jobNumber} — ${j.status||'open'}</div>
+      <div style="font-size:16px;font-weight:800;color:#111827;margin-bottom:8px">${j.description}</div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:4px">📍 ${j.location||'—'}</div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:4px">🔧 ${j.asset||'—'}</div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:4px">👤 ${artisans.join(', ')||'Unassigned'}</div>
+      <div style="font-size:13px;color:#6b7280">🗓 ${j.createdAt?.toDate?j.createdAt.toDate().toLocaleDateString('en-ZA'):'—'}</div>
+      ${j.notes?`<div style="margin-top:8px;padding:10px;background:#f9fafb;border-radius:8px;font-size:13px;color:#374151">${j.notes}</div>`:''}
+    </div>
+    <div style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;margin-bottom:8px">Reassign artisans</div>
+    <div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px;max-height:180px;overflow-y:auto">
+      ${allArtisans.map(u=>`
+        <label style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer">
+          <input type="checkbox" class="mgr-reassign-chk" value="${u.name}" ${artisans.includes(u.name)?'checked':''} style="width:16px;height:16px;accent-color:#185FA5"/>
+          <span style="font-size:13px;font-weight:600">${u.name}</span>
+          <span style="font-size:11px;color:#9ca3af;margin-left:auto">${u.trade||u.role}</span>
+        </label>`).join('')}
+    </div>
+    <button class="btn btn-primary" onclick="saveMgrReassign('${jobId}')">💾 Save assignment</button>
+    <button class="btn btn-secondary" style="margin-top:8px;background:#16a34a;color:#fff;border-color:#16a34a" onclick="completeMgrJob('${jobId}')">✅ Mark complete</button>
+    <button class="btn btn-secondary" style="margin-top:8px" onclick="showSC('sc-mgr-jobs');renderMMAllJobs()">← Back to jobs</button>`;
+  showSC('sc-mgr-job-detail');
+};
+
+window.saveMgrReassign = async function(jobId){
+  const checked=[...document.querySelectorAll('.mgr-reassign-chk:checked')].map(c=>c.value);
+  if(!checked.length){toastMob('Please select at least one artisan','error');return;}
+  try{
+    await updateDoc(doc(db,'jobCards',jobId),{
+      assignedTo:checked[0],assignedArtisans:checked,status:'assigned',updatedAt:serverTimestamp()
+    });
+    toastMob('Artisans updated — '+checked.join(', '),'success');
+    // WhatsApp new assignments
+    const j=allJobs.find(x=>x.id===jobId)||{};
+    const waMsg=encodeURIComponent('🔧 *PlantFlow — Job Reassigned to You*\n\n*Job:* '+j.jobNumber+'\n*Task:* '+j.description+'\n*Location:* '+j.location+'\n\nOpen PlantFlow to view details.');
+    checked.forEach((name,i)=>{
+      const u=allUsers.find(x=>x.name===name);
+      if(u?.phone){const ph=u.phone.replace(/\D/g,'').replace(/^0/,'27');setTimeout(()=>window.open('https://wa.me/'+ph+'?text='+waMsg,'_blank'),i*800);}
+    });
+  }catch(e){toastMob('Error: '+e.message,'error');}
+};
+
+window.completeMgrJob = async function(jobId){
+  try{
+    await updateDoc(doc(db,'jobCards',jobId),{status:'completed',completedAt:serverTimestamp()});
+    toastMob('Job marked complete','success');
+    showSC('sc-mgr-jobs');renderMMAllJobs();
+  }catch(e){toastMob('Error: '+e.message,'error');}
+};
+
+window.loadMgrPermits = function(){
+  const list=document.getElementById('mgr-permits-list');
+  if(!list)return;
+  const today=new Date().toISOString().split('T')[0];
+  const el=document.getElementById('mgr-ptw-from');if(el&&!el.value)el.value=today;
+  const active=allPermits.filter(p=>p.status==='active');
+  if(!active.length){list.innerHTML='<div style="text-align:center;color:#9ca3af;padding:20px;font-size:13px">No active permits</div>';return;}
+  list.innerHTML=active.map(p=>`
+    <div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border-left:4px solid #7c3aed">
+      <div style="font-size:11px;font-weight:700;color:#7c3aed">${p.permitNumber}</div>
+      <div style="font-size:13px;font-weight:700;color:#111827;margin:3px 0">${p.type}</div>
+      <div style="font-size:12px;color:#6b7280">👤 ${p.issuedTo||'—'} · 📍 ${p.location||'—'}</div>
+      <div style="font-size:12px;color:#6b7280">Valid until: ${p.validUntil||'—'}</div>
+    </div>`).join('');
+};
+
+window.submitMgrPermit = async function(){
+  const type=document.getElementById('mgr-ptw-type')?.value;
+  const job=document.getElementById('mgr-ptw-job')?.value.trim();
+  const loc=document.getElementById('mgr-ptw-location')?.value.trim();
+  const scope=document.getElementById('mgr-ptw-scope')?.value.trim();
+  if(!type||!job||!loc||!scope){toastMob('Please fill in all required fields','error');return;}
+  if(!document.getElementById('mgr-ptw-confirm')?.checked){toastMob('Please confirm the safety requirements','error');return;}
+  const customNum=document.getElementById('mgr-ptw-num')?.value.trim();
+  const pNum=customNum||nextMgrPtwNum();
+  try{
+    await addDoc(collection(db,'permits'),mcid({
+      permitNumber:pNum,type,jobCard:job,location:loc,
+      issuedTo:document.getElementById('mgr-ptw-artisan')?.value||'',
+      issuedBy:window._currentUserName||'Manager',
+      validFrom:document.getElementById('mgr-ptw-from')?.value||'',
+      validUntil:document.getElementById('mgr-ptw-until')?.value||'',
+      scope,status:'active',source:'mobile-manager',
+      createdAt:serverTimestamp()
+    }));
+    ['mgr-ptw-type','mgr-ptw-num','mgr-ptw-job','mgr-ptw-location','mgr-ptw-artisan','mgr-ptw-scope'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    const chk=document.getElementById('mgr-ptw-confirm');if(chk)chk.checked=false;
+    loadMgrPermits();
+    toastMob(pNum+' issued successfully','success');
+  }catch(e){toastMob('Error: '+e.message,'error');}
+};
+
+// Update MM stats to include permits
+window.updateMMStats = function(){
+  const openJobs=allJobs.filter(j=>j.status!=='completed'&&j.status!=='closed');
+  const newFaults=allFaults.filter(f=>f.status==='new'||f.status==='open');
+  const activePermits=allPermits.filter(p=>p.status==='active');
+  const jc=document.getElementById('mm-job-count');if(jc)jc.textContent=openJobs.length;
+  const fc=document.getElementById('mm-fault-count');if(fc)fc.textContent=newFaults.length;
+  const pc=document.getElementById('mm-permit-count');if(pc)pc.textContent=activePermits.length;
+};
+
+// Update user name display on manager screen
+window._origProcessLogin = window.processLogin;
+window.processLogin = function(userDoc){
+  window._origProcessLogin(userDoc);
+  const nameEl=document.getElementById('mm-user-name-disp');
+  if(nameEl) nameEl.textContent=window._currentUserName||'Manager';
+};
+
+window.logoutMobile = function(){
+  if(!confirm('Sign out of PlantFlow?'))return;
+  window._currentUserName='';window._currentUserRole='';window._currentCompanyId='';
+  showSC('sc-role');
+};
+
 window.renderMMFaults = function(){
   const list = document.getElementById('mm-faults-list');
   if(!list)return;
@@ -1874,26 +2234,25 @@ window.renderMMFaults = function(){
 window.renderMMJobs = function(){
   const list = document.getElementById('mm-jobs-list');
   if(!list)return;
-  const openJobs = allJobs.filter(j=>j.status!=='completed');
-  const jobCount = document.getElementById('mm-job-count');
-  const jobSub = document.getElementById('mm-job-sub');
-  if(jobCount)jobCount.textContent = openJobs.length;
-  if(jobSub)jobSub.textContent = allJobs.filter(j=>j.status==='blocked').length+' blocked';
-  if(!openJobs.length){list.innerHTML='<div style="padding:0 14px 10px;font-size:13px;color:#9ca3af">No open jobs</div>';return;}
-  list.innerHTML = openJobs.slice(0,5).map(j=>`
-    <div class="sched-item">
+  const filterVal = document.getElementById('mgr-job-filter')?.value||'';
+  let openJobs = allJobs.filter(j=>j.status!=='completed'&&j.status!=='closed');
+  if(filterVal) openJobs = openJobs.filter(j=>j.status===filterVal);
+  if(!openJobs.length){list.innerHTML='<div style="padding:0 14px 10px;font-size:13px;color:#9ca3af;text-align:center">No open jobs</div>';return;}
+  list.innerHTML = openJobs.slice(0,8).map(j=>`
+    <div class="sched-item" onclick="openMgrJobDetail('${j.id}')" style="cursor:pointer">
       <div class="sched-stripe" style="background:${j.priority==='high'||j.priority==='critical'?'#dc2626':j.priority==='medium'?'#d97706':'#185FA5'}"></div>
       <div class="sched-body">
+        <div class="sched-title" style="font-size:11px;color:#185FA5;margin-bottom:2px">${j.jobNumber}</div>
         <div class="sched-title">${j.description||'—'}</div>
-        <div class="sched-meta">${j.location||'—'} · ${j.assignedTo||'Unassigned'}</div>
+        <div class="sched-meta">📍 ${j.location||'—'} · 👤 ${(j.assignedArtisans||[j.assignedTo]).filter(Boolean).join(', ')||'Unassigned'}</div>
       </div>
       <div class="sched-right">
-        <span class="badge b-${j.status==='blocked'?'red':j.status==='in-progress'?'amber':'blue'}">${j.status||'open'}</span>
+        <span class="badge b-${j.status==='blocked'?'red':j.status==='assigned'?'blue':'amber'}">${j.status||'open'}</span>
+        <div style="font-size:18px;color:#d1d5db;margin-top:4px">›</div>
       </div>
     </div>`).join('');
 };
 
-window.updateMMStats = function(){};
 window.updateMgrStats = function(){};
 
 window.convertFaultMobile = async function(id,desc,loc,priority){
