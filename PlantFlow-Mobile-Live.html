@@ -2287,18 +2287,35 @@ window._faultPhotoBase64 = null;
 window.handleFaultPhotoSelect = function(input){
   const file = input.files[0];
   if(!file) return;
-  if(file.size > 5*1024*1024){toastMob('Photo is too large — max 5MB. Try a lower quality setting.','error');return;}
+
   const reader = new FileReader();
   reader.onload = function(e){
-    window._faultPhotoBase64 = e.target.result; // full data URL
-    const img = document.getElementById('fault-photo-img');
-    const preview = document.getElementById('fault-photo-preview');
-    const btn = document.getElementById('fault-photo-btn');
-    const label = document.getElementById('fault-photo-label');
-    if(img) img.src = e.target.result;
-    if(preview) preview.style.display='block';
-    if(btn) btn.style.display='none';
-    if(label) label.textContent = file.name+' ('+Math.round(file.size/1024)+'KB)';
+    // Compress using canvas before storing
+    const img = new Image();
+    img.onload = function(){
+      const canvas = document.createElement('canvas');
+      // Max dimension 800px — keeps file well under Firestore 1MB limit
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if(w > h){ if(w>MAX){h=Math.round(h*MAX/w);w=MAX;} }
+      else{ if(h>MAX){w=Math.round(w*MAX/h);h=MAX;} }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      // JPEG at 70% quality — typically 50-150KB
+      const compressed = canvas.toDataURL('image/jpeg', 0.70);
+      window._faultPhotoBase64 = compressed;
+
+      const previewImg = document.getElementById('fault-photo-img');
+      const preview = document.getElementById('fault-photo-preview');
+      const label = document.getElementById('fault-photo-label');
+      if(previewImg) previewImg.src = compressed;
+      if(preview) preview.style.display = 'block';
+      const kb = Math.round(compressed.length * 0.75 / 1024);
+      if(label) label.textContent = file.name + ' → compressed to ~' + kb + 'KB';
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 };
