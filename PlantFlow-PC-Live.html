@@ -1340,6 +1340,14 @@ function setSync(){
 
 // ── COUNTERS ──
 let allJobs=[], allFaults=[], allPermits=[], allMaterials=[], allUsers=[], allSchedules=[], allInspections=[];
+// Expose data arrays to window so regular-script functions can read them
+window.allJobs = allJobs;
+window.allFaults = allFaults;
+window.allPermits = allPermits;
+window.allMaterials = allMaterials;
+window.allUsers = allUsers;
+window.allSchedules = allSchedules;
+window.allInspections = allInspections;
 let _activeListeners = [];
 
 // ── LIVE LISTENERS — called after login with companyId ──
@@ -1356,37 +1364,37 @@ window.startListeners = function(companyId){
   }
 
   _activeListeners.push(onSnapshot(query(collection(db,'jobCards'),orderBy('createdAt','desc')), snap => {
-    allJobs = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})));
+    allJobs.length=0; filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()}))).forEach(d=>allJobs.push(d));
     renderJobCards(); renderDashJobs(); updateJobStats(); updateMaterialStats(); renderReports(); setSync();
   }, err => { console.error('jobCards:',err.code); showConnError(err.code); }));
 
   _activeListeners.push(onSnapshot(query(collection(db,'faults'),orderBy('createdAt','desc')), snap => {
-    allFaults = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})));
+    allFaults.length=0; filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()}))).forEach(d=>allFaults.push(d));
     renderFaults(); renderDashFaults(); updateFaultStats(); setSync();
   }, err => { console.error('faults:',err.code); }));
 
   _activeListeners.push(onSnapshot(query(collection(db,'permits'),orderBy('createdAt','desc')), snap => {
-    allPermits = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})));
+    allPermits.length=0; filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()}))).forEach(d=>allPermits.push(d));
     renderPermits(); renderDashPermits(); updatePermitStats(); renderPermitAudit(); setSync();
   }, err => { console.error('permits:',err.code); }));
 
   _activeListeners.push(onSnapshot(query(collection(db,'materials'),orderBy('description','asc')), snap => {
-    allMaterials = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})));
+    allMaterials.length=0; filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()}))).forEach(d=>allMaterials.push(d));
     renderMaterials(); renderDashMaterials(); updateMaterialStats(); setSync();
   }, err => { console.error('materials:',err.code); }));
 
   _activeListeners.push(onSnapshot(query(collection(db,'users'),orderBy('name','asc')), snap => {
-    allUsers = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})));
+    allUsers.length=0; filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()}))).forEach(d=>allUsers.push(d));
     renderUsers(); populateArtisanDropdowns(); setSync();
   }, err => { console.error('users:',err.code); }));
 
   _activeListeners.push(onSnapshot(query(collection(db,'schedules'),orderBy('createdAt','desc')), snap => {
-    allSchedules = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})));
+    allSchedules.length=0; filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()}))).forEach(d=>allSchedules.push(d));
     renderSchedules(); setSync();
   }, err => { console.error('schedules:',err.code); }));
 
   _activeListeners.push(onSnapshot(query(collection(db,'inspections'),orderBy('createdAt','desc')), snap => {
-    allInspections = filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()})));
+    allInspections.length=0; filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()}))).forEach(d=>allInspections.push(d));
     renderInspections(); renderOHSA(); setSync();
   }, err => { console.error('inspections:',err.code); }));
 };
@@ -3933,7 +3941,7 @@ window.logoutCompany = function(){
 // ── REOPEN JOB CARD ──
 window.openReopenModal = function(jobId, jobNum){
   window._reopenJobId = jobId;
-  const j = allJobs.find(x=>x.id===jobId);
+  const j = (window.allJobs||[]).find(x=>x.id===jobId);
   document.getElementById('reopen-job-num').textContent = jobNum;
 
   // Show previous completion notes if any
@@ -3968,12 +3976,10 @@ window.confirmReopenJob = async function(){
   const awaitingSpares = document.getElementById('reopen-awaiting-spares')?.checked||false;
   const sparesDetail = document.getElementById('reopen-spares-detail')?.value.trim()||'';
   const sendWa = document.getElementById('reopen-send-wa')?.checked||false;
-  const j = allJobs.find(x=>x.id===jobId);
+  const j = (window.allJobs||[]).find(x=>x.id===jobId);
   if(!j)return;
 
   try{
-    // Reopen the job — keep same number, description, artisans
-    // Append reopen note to completion notes history
     const noteHistory = [
       j.completionNotes ? '✅ Previous: '+j.completionNotes : null,
       '🔄 Reopened: '+notes
@@ -3991,12 +3997,8 @@ window.confirmReopenJob = async function(){
     });
 
     closeModal('reopen-job-modal');
-    toast(j.jobNumber+' reopened — '+
-      (awaitingSpares?'flagged as awaiting spares':'status set to assigned'),
-      'success'
-    );
+    toast(j.jobNumber+' reopened — '+(awaitingSpares?'flagged as awaiting spares':'status set to assigned'),'success');
 
-    // WhatsApp notification to artisans
     if(sendWa){
       const artisans = j.assignedArtisans||[j.assignedTo].filter(Boolean);
       const waMsg = encodeURIComponent(
@@ -4009,7 +4011,7 @@ window.confirmReopenJob = async function(){
         '\n\nPlease check PlantFlow for the latest status.'
       );
       const contacts = artisans.map(name=>{
-        const u=allUsers.find(x=>x.name===name);
+        const u=(window.allUsers||[]).find(x=>x.name===name);
         return u?.phone ? {name, url:'https://wa.me/'+u.phone.replace(/\D/g,'').replace(/^0/,'27')+'?text='+waMsg} : null;
       }).filter(Boolean);
 
