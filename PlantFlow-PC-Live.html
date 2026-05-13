@@ -1164,6 +1164,61 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
   </div>
 </div>
 
+<!-- REOPEN JOB MODAL -->
+<div class="modal-overlay" id="reopen-job-modal" onclick="if(event.target===this)closeModal('reopen-job-modal')">
+  <div class="modal" style="width:520px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">🔄 Reopen Job Card — <span id="reopen-job-num" style="color:#185FA5"></span></div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:2px">This will reopen the job as assigned — same artisans, same details. Add notes explaining why it's being reopened.</div>
+      </div>
+      <div class="modal-close" onclick="closeModal('reopen-job-modal')">×</div>
+    </div>
+    <div class="modal-body">
+      <!-- Previous completion notes (read-only) -->
+      <div id="reopen-prev-notes-wrap" style="display:none;margin-bottom:14px;padding:12px 14px;background:#f0fdf4;border-radius:10px;border-left:4px solid #86efac">
+        <div style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:4px">Previous completion notes</div>
+        <div style="font-size:13px;color:#374151" id="reopen-prev-notes"></div>
+      </div>
+      <!-- Reason for reopening -->
+      <div class="form-group">
+        <div class="form-label">Reason for reopening / additional notes *</div>
+        <textarea class="form-input" id="reopen-notes" rows="4"
+          placeholder="e.g. Awaiting spares — part ordered from supplier, expected 5 May 2026. Job to continue when parts arrive.&#10;&#10;Or: Job not complete — valve still leaking, needs further investigation."
+          style="font-size:13px;line-height:1.6"></textarea>
+      </div>
+      <!-- Awaiting spares option -->
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="checkbox" id="reopen-awaiting-spares" style="width:16px;height:16px;accent-color:#dc2626"/>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#374151">Flag as awaiting spares</div>
+            <div style="font-size:11px;color:#6b7280">Adds the red ⚠ AWAITING SPARES banner on the job card</div>
+          </div>
+        </label>
+      </div>
+      <div class="form-group" id="reopen-spares-detail-wrap" style="display:none">
+        <div class="form-label">What spares are needed?</div>
+        <input class="form-input" id="reopen-spares-detail" placeholder="e.g. 50mm gate valve, 3/4 inch — ordered from RS Components"/>
+      </div>
+      <!-- Send WhatsApp to artisans -->
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="checkbox" id="reopen-send-wa" checked style="width:16px;height:16px;accent-color:#25D366"/>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#374151">Notify artisans via WhatsApp</div>
+            <div style="font-size:11px;color:#6b7280">Opens WhatsApp for each assigned artisan with the reopened job details</div>
+          </div>
+        </label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="tb-btn" onclick="closeModal('reopen-job-modal')">Cancel</button>
+      <button class="tb-btn primary" style="background:#d97706;border-color:#d97706" onclick="confirmReopenJob()">🔄 Reopen job card</button>
+    </div>
+  </div>
+</div>
+
 <!-- USER MODAL -->
 <div class="modal-overlay" id="user-modal" onclick="if(event.target===this)closeModal('user-modal')">
   <div class="modal">
@@ -1440,17 +1495,16 @@ window.renderDashJobs = function(){
       <td>${statusBadge(j.status||'open')}${j.awaitingSpares?'<br><span style="color:#dc2626;font-size:10px;font-weight:700">⚠ AWAITING SPARES</span>':''}</td>
       <td style="font-size:11px;color:#6b7280">${fmtDate(j.createdAt)||'—'}</td>
       <td style="font-size:11px;color:${isCompleted?'#16a34a':'#9ca3af'}">${isCompleted?fmtDate(j.completedAt)||'—':'—'}</td>
+      <td style="font-size:11px;max-width:160px;color:#374151">${j.completionNotes?`<span title="${j.completionNotes.replace(/"/g,"'")}">${j.completionNotes}</span>`:'<span style="color:#d1d5db">—</span>'}</td>
       <td style="white-space:nowrap">
         ${isCompleted
-          ? `<button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteJob('${j.id}')">🗑 Delete</button>`
+          ? `<button class="tb-btn" style="font-size:11px;padding:3px 8px;background:#fef3c7;border-color:#f59e0b;color:#92400e;margin-bottom:3px;display:block;width:100%" onclick="openReopenModal('${j.id}','${j.jobNumber}')">🔄 Reopen job</button>
+             <button class="tb-btn danger" style="font-size:11px;padding:3px 8px;display:block;width:100%" onclick="deleteJob('${j.id}')">🗑 Delete</button>`
           : `<button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="openAssignModal('${j.id}','${j.jobNumber}','${(artisans).replace(/'/g,"\\'")}')">Assign →</button>`
         }
       </td>
-      ${j.awaitingSpares?`<tr><td colspan="8" style="background:#fff5f5;padding:6px 14px;font-size:11px;color:#dc2626;font-weight:600;border-bottom:2px solid #fca5a5">
+      ${j.awaitingSpares?`<tr><td colspan="9" style="background:#fff5f5;padding:6px 14px;font-size:11px;color:#dc2626;font-weight:600;border-bottom:2px solid #fca5a5">
         🔧 Spares needed: ${j.sparesNeeded||'See job card for details'}
-      </td></tr>`:''}
-      ${isCompleted&&j.completionNotes?`<tr><td colspan="8" style="background:#f0fdf4;padding:6px 14px;font-size:11px;color:#15803d;border-bottom:1px solid #bbf7d0">
-        ✅ Completion notes: ${j.completionNotes}
       </td></tr>`:''}
     </tr>`;
   }).join('');
@@ -3875,6 +3929,110 @@ window.logoutCompany = function(){
 };
 
 
+// ── REOPEN JOB CARD ──
+window.openReopenModal = function(jobId, jobNum){
+  window._reopenJobId = jobId;
+  const j = allJobs.find(x=>x.id===jobId);
+  document.getElementById('reopen-job-num').textContent = jobNum;
+
+  // Show previous completion notes if any
+  const prevWrap = document.getElementById('reopen-prev-notes-wrap');
+  const prevNotes = document.getElementById('reopen-prev-notes');
+  if(j?.completionNotes){
+    prevWrap.style.display='block';
+    prevNotes.textContent = j.completionNotes;
+  } else {
+    prevWrap.style.display='none';
+  }
+
+  // Reset fields
+  document.getElementById('reopen-notes').value='';
+  document.getElementById('reopen-awaiting-spares').checked=false;
+  document.getElementById('reopen-spares-detail-wrap').style.display='none';
+  document.getElementById('reopen-spares-detail').value='';
+  document.getElementById('reopen-send-wa').checked=true;
+
+  // Toggle spares detail on checkbox change
+  document.getElementById('reopen-awaiting-spares').onchange = function(){
+    document.getElementById('reopen-spares-detail-wrap').style.display = this.checked?'block':'none';
+  };
+
+  openModal('reopen-job-modal');
+};
+
+window.confirmReopenJob = async function(){
+  const jobId = window._reopenJobId;
+  const notes = document.getElementById('reopen-notes')?.value.trim();
+  if(!notes){toast('Please add a reason for reopening the job','error');return;}
+  const awaitingSpares = document.getElementById('reopen-awaiting-spares')?.checked||false;
+  const sparesDetail = document.getElementById('reopen-spares-detail')?.value.trim()||'';
+  const sendWa = document.getElementById('reopen-send-wa')?.checked||false;
+  const j = allJobs.find(x=>x.id===jobId);
+  if(!j)return;
+
+  try{
+    // Reopen the job — keep same number, description, artisans
+    // Append reopen note to completion notes history
+    const noteHistory = [
+      j.completionNotes ? '✅ Previous: '+j.completionNotes : null,
+      '🔄 Reopened: '+notes
+    ].filter(Boolean).join('\n');
+
+    await updateDoc(doc(db,'jobCards',jobId),{
+      status: 'assigned',
+      completedAt: null,
+      completionNotes: '',
+      noteHistory: noteHistory,
+      awaitingSpares: awaitingSpares,
+      sparesNeeded: awaitingSpares ? (sparesDetail||'See notes') : '',
+      reopenedAt: serverTimestamp(),
+      reopenNotes: notes
+    });
+
+    closeModal('reopen-job-modal');
+    toast(j.jobNumber+' reopened — '+
+      (awaitingSpares?'flagged as awaiting spares':'status set to assigned'),
+      'success'
+    );
+
+    // WhatsApp notification to artisans
+    if(sendWa){
+      const artisans = j.assignedArtisans||[j.assignedTo].filter(Boolean);
+      const waMsg = encodeURIComponent(
+        '🔄 *PlantFlow — Job Card Reopened*\n\n'+
+        '*Job:* '+j.jobNumber+'\n'+
+        '*Task:* '+j.description+'\n'+
+        '*Location:* '+(j.location||'—')+'\n\n'+
+        '*Reason:* '+notes+
+        (awaitingSpares?'\n\n⚠ *Awaiting spares:* '+(sparesDetail||'See job card'):'')+
+        '\n\nPlease check PlantFlow for the latest status.'
+      );
+      const contacts = artisans.map(name=>{
+        const u=allUsers.find(x=>x.name===name);
+        return u?.phone ? {name, url:'https://wa.me/'+u.phone.replace(/\D/g,'').replace(/^0/,'27')+'?text='+waMsg} : null;
+      }).filter(Boolean);
+
+      if(contacts.length>0){
+        window._waPendingContacts = contacts;
+        const rows = contacts.map((c,i)=>`
+          <a href="${c.url}" target="_blank" style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#f0fdf4;border:2px solid #86efac;border-radius:10px;text-decoration:none;margin-bottom:8px;color:#15803d;font-weight:700;font-size:14px"
+            onclick="this.style.background='#dcfce7';this.innerHTML=this.innerHTML.replace('Send to','✅ Sent to')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Send to ${c.name}
+          </a>`).join('');
+        document.body.insertAdjacentHTML('beforeend',`
+          <div id="wa-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px">
+            <div style="background:#fff;border-radius:16px;padding:24px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.35)">
+              <div style="font-size:16px;font-weight:800;color:#0D1B2A;margin-bottom:4px">📲 Notify artisans — ${j.jobNumber} reopened</div>
+              <div style="font-size:12px;color:#6b7280;margin-bottom:16px">Click each button to send the WhatsApp notification.</div>
+              ${rows}
+              <button onclick="document.getElementById('wa-overlay').remove()" style="width:100%;padding:11px;background:#f3f4f6;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;color:#374151;margin-top:4px">Done — close</button>
+            </div>
+          </div>`);
+      }
+    }
+  }catch(e){toast('Error: '+e.message,'error');}
+};
 window.openCompanyAsAdmin = function(){
   // Open the currently viewed company directly from SA detail panel
   const name = document.getElementById('sa-det-name')?.value||'Company';
