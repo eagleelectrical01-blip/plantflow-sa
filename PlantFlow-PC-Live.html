@@ -3044,7 +3044,7 @@ window.saveLoginCredentials = async function(){
 window.exportMaterials = function(){
   // Calculate live usage from job cards
   const usageMap = {};
-  allJobs.forEach(j=>{
+  window.allJobs.forEach(j=>{
     (j.materials||[]).forEach(m=>{
       const key=(m.name||'').toLowerCase().trim();
       if(!usageMap[key]){usageMap[key]={qty:0,cost:0,jobs:[]};}
@@ -3058,7 +3058,7 @@ window.exportMaterials = function(){
   const rows = [
     [q('Code'),q('Description'),q('Category'),q('Unit Cost (R)'),q('In Stock'),q('Min Level'),q('Used MTD (qty)'),q('Cost MTD (R)'),q('Used On Jobs'),q('Status'),q('Supplier')]
   ];
-  allMaterials.forEach(m=>{
+  window.allMaterials.forEach(m=>{
     const usage = usageMap[(m.description||'').toLowerCase().trim()]||{qty:0,cost:0,jobs:[]};
     const usedQty = Math.max(m.usedMTD||0, usage.qty);
     const usedCost = usedQty*(parseFloat(m.unitCost)||0);
@@ -3087,7 +3087,7 @@ window.exportMaterials = function(){
 
 window.exportReport = function(){
   const rows = [['Job #','Description','Location','Artisan','Material','Qty','Unit','Unit Price','Line Total','Job Total','Status','Date']];
-  allJobs.filter(j=>(j.materials||[]).length>0).forEach(j=>{
+  window.allJobs.filter(j=>(j.materials||[]).length>0).forEach(j=>{
     const mats = j.materials||[];
     if(!mats.length){
       rows.push([j.jobNumber,j.description,j.location,j.assignedTo,'—','','','','',j.totalCost||0,j.status,j.createdAt?new Date(j.createdAt.seconds*1000).toLocaleDateString('en-ZA'):'']);
@@ -3107,8 +3107,8 @@ window.exportReport = function(){
 window.renderReports = function(){
   const tbody = document.getElementById('reports-tbody');
   if(!tbody)return;
-  const jobsWithMats = allJobs.filter(j=>(j.materials||[]).length>0);
-  const totalCost = allJobs.reduce((s,j)=>s+(parseFloat(j.totalCost)||0),0);
+  const jobsWithMats = window.allJobs.filter(j=>(j.materials||[]).length>0);
+  const totalCost = window.allJobs.reduce((s,j)=>s+(parseFloat(j.totalCost)||0),0);
   const el = document.getElementById('rep-cost');
   if(el) el.textContent='R '+totalCost.toFixed(2);
   if(!jobsWithMats.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state">No jobs with materials logged yet — artisans log materials from their phones</td></tr>';return;}
@@ -3140,8 +3140,8 @@ window.runDashSearch = function(val){
   const title=document.getElementById('search-results-title');
   if(!q){panel.style.display='none';return;}
   // Search jobs and permits
-  const matchJobs=allJobs.filter(j=>(j.jobNumber||'').toLowerCase().includes(q)||(j.description||'').toLowerCase().includes(q)||(j.location||'').toLowerCase().includes(q));
-  const matchPermits=allPermits.filter(p=>(p.permitNumber||'').toLowerCase().includes(q)||(p.type||'').toLowerCase().includes(q));
+  const matchJobs=window.allJobs.filter(j=>(j.jobNumber||'').toLowerCase().includes(q)||(j.description||'').toLowerCase().includes(q)||(j.location||'').toLowerCase().includes(q));
+  const matchPermits=window.allPermits.filter(p=>(p.permitNumber||'').toLowerCase().includes(q)||(p.type||'').toLowerCase().includes(q));
   const total=matchJobs.length+matchPermits.length;
   title.textContent=total+' result'+(total!==1?'s':'')+ ' for "'+val+'"';
   panel.style.display='block';
@@ -3176,7 +3176,7 @@ window._currentJobCommentDesc = '';
 let _commentsUnsub = null;
 
 window.openJobComments = function(jobId, jobNum){
-  const job = allJobs.find(j=>j.id===jobId);
+  const job = window.allJobs.find(j=>j.id===jobId);
   if(!job) return;
   window._currentJobCommentId = jobId;
   window._currentJobCommentNum = jobNum;
@@ -3240,7 +3240,7 @@ window.addJobComment = async function(){
 
 window.waFollowUp = function(jobId, jobNum, desc, artisansStr){
   const artisans = artisansStr ? artisansStr.split(',').filter(Boolean) : [];
-  const job = allJobs.find(j=>j.id===jobId)||{};
+  const job = window.allJobs.find(j=>j.id===jobId)||{};
   _sendWaFollowUp(jobNum, desc||job.description||'', artisans);
 };
 
@@ -3260,7 +3260,7 @@ window.waFollowUpFromComments = function(){
 
 function _sendWaFollowUp(jobNum, desc, artisans, extraNote){
   const contacts = artisans.map(name=>{
-    const u = allUsers.find(x=>x.name===name);
+    const u = window.allUsers.find(x=>x.name===name);
     if(!u||!u.phone) return null;
     const ph = u.phone.replace(/\D/g,'').replace(/^0/,'27');
     const msg =
@@ -3301,7 +3301,7 @@ function _sendWaFollowUp(jobNum, desc, artisans, extraNote){
 }
 
 window.openEditJobModal = function(jobId){
-  const j = allJobs.find(x=>x.id===jobId);
+  const j = window.allJobs.find(x=>x.id===jobId);
   if(!j)return;
   window._editingJobId = jobId;
   document.getElementById('edit-job-num').textContent = j.jobNumber||'';
@@ -3336,7 +3336,7 @@ window.openAssignModal = function(jobId, jobNum, currentAssigneesStr){
   window._assigningJobId = jobId;
   const currentList = currentAssigneesStr ? currentAssigneesStr.split(',').filter(Boolean) : [];
   document.getElementById('assign-job-num').textContent = jobNum;
-  const artisans = allUsers.filter(u=>u.role==='artisan'||u.role==='contractor');
+  const artisans = window.allUsers.filter(u=>u.role==='artisan'||u.role==='contractor');
   const list = document.getElementById('assign-artisan-list');
   if(!artisans.length){
     list.innerHTML='<div style="padding:20px;text-align:center;color:#9ca3af">No artisans added yet — go to Manage Users first.</div>';
@@ -3375,7 +3375,7 @@ window.saveAssignments = async function(){
   });
   // Notify each assigned artisan
   for(const name of checked){
-    const job = allJobs.find(j=>j.id===window._assigningJobId);
+    const job = window.allJobs.find(j=>j.id===window._assigningJobId);
     await addDoc(collection(db,'notifications'),cid({
       for: name,
       type: 'job-assigned',
