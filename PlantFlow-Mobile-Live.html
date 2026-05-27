@@ -2409,106 +2409,25 @@ window.submitInspection = async function(){
 };
 
 // ── TASK-SPECIFIC INSPECTION CHECKLISTS ──
-const INSPECTION_TYPES = {
-  electrical: {
-    label: 'Electrical Inspection',
-    color: '#185FA5',
-    keywords: ['electrical','electric','loto','isolat','db board','panel','cable','wiring','switchgear','transformer','motor','generator','earthing','earth','volt'],
-    sections: [
-      {heading:'⚡ Electrical Safety', items:[
-        'All DB boards closed, locked and labelled',
-        'No exposed or damaged wiring visible',
-        'All cable trays and conduits sealed',
-        'Earthing conductors intact and connected',
-        'Isolation LOTO points labelled and accessible',
-        'No overloaded extension leads or adaptors',
-        'Panel area clear of combustibles (500mm)',
-        'Emergency stop buttons functional and accessible',
-        'All equipment properly bonded and earthed'
-      ]}
-    ]
-  },
-  mechanical: {
-    label: 'Mechanical / Fitter Inspection',
-    color: '#d97706',
-    keywords: ['pump','valve','pipe','fitting','coupling','bearing','seal','gearbox','conveyor','belt','chain','compressor','pressure','vessel','boiler','machinery','machine','fan','motor','mechanical','fitter'],
-    sections: [
-      {heading:'⚙️ Rotating Equipment', items:[
-        'All guards and covers in place and secured',
-        'No unusual vibration or noise from equipment',
-        'Coupling guards fitted and undamaged',
-        'Belt tension within specification',
-        'Bearing temperatures normal (no overheating)'
-      ]},
-      {heading:'🔧 Pipework & Fittings', items:[
-        'No visible leaks on pipe joints or valves',
-        'All pipe supports and hangers intact',
-        'Pressure gauges reading within normal range',
-        'Safety relief valves unobstructed and in date'
-      ]}
-    ]
-  },
-  fire: {
-    label: 'Fire Safety Inspection',
-    color: '#dc2626',
-    keywords: ['fire','extinguish','sprinkler','hose','reel','smoke','alarm','evacuation','emergency','exit','escape'],
-    sections: [
-      {heading:'🔴 Fire Equipment', items:[
-        'All fire extinguishers in correct locations',
-        'Extinguisher inspection tags current (within 1 year)',
-        'Hose reels unobstructed and pressure adequate',
-        'Sprinkler heads clear and unobstructed',
-        'Fire alarm panel showing no faults'
-      ]},
-      {heading:'🚪 Evacuation', items:[
-        'All emergency exits unlocked and unobstructed',
-        'Exit signage illuminated and visible',
-        'Evacuation route free of obstructions',
-        'Assembly point signage in place'
-      ]}
-    ]
-  },
-  chemical: {
-    label: 'Chemical / Hazmat Inspection',
-    color: '#7c3aed',
-    keywords: ['chemical','hazmat','sds','msds','hazard','storage','chemical store','drum','container','spill','bund','ppe','chemical handling'],
-    sections: [
-      {heading:'🧪 Chemical Storage', items:[
-        'SDS sheets accessible at each chemical storage point',
-        'All containers correctly labelled and sealed',
-        'Bunding intact with no residue or leaks',
-        'Incompatible chemicals correctly segregated',
-        'Chemical store ventilation functional'
-      ]},
-      {heading:'🥽 PPE & Emergency', items:[
-        'PPE station stocked — gloves, goggles, aprons',
-        'Eyewash station accessible and functional',
-        'Emergency shower accessible and functional',
-        'Spill kit available and fully stocked'
-      ]}
-    ]
-  },
-  general: {
-    label: 'General Safety Inspection',
-    color: '#374151',
-    keywords: [],
-    sections: [
-      {heading:'🏭 General Housekeeping', items:[
-        'Work area clean, tidy, and free of slip hazards',
-        'All tools and equipment stored correctly',
-        'Waste bins not overflowing, waste correctly sorted',
-        'No blocked aisles or emergency access routes',
-        'Adequate lighting in all work areas'
-      ]},
-      {heading:'⚠️ General Safety', items:[
-        'Safety notices and signage visible and legible',
-        'First aid kit accessible and stocked',
-        'No obvious hazards or unsafe conditions observed',
-        'Personal PPE worn correctly by all personnel'
-      ]}
-    ]
-  }
+// Load inspection types from Firestore (set by PC admin), fall back to defaults
+let INSPECTION_TYPES = {};
+const DEFAULT_INSPECTION_TYPES = {
+  electrical:{label:'Electrical Inspection',color:'#185FA5',keywords:['electrical','electric','loto','isolat','db board','panel','cable','wiring','motor','generator','earthing'],sections:[{heading:'⚡ Electrical Safety',items:['All DB boards closed, locked and labelled','No exposed or damaged wiring visible','All cable trays and conduits sealed','Earthing conductors intact and connected','Isolation LOTO points labelled and accessible','No overloaded extension leads or adaptors','Panel area clear of combustibles (500mm)','Emergency stop buttons functional and accessible','All equipment properly bonded and earthed']}]},
+  mechanical:{label:'Mechanical / Fitter Inspection',color:'#d97706',keywords:['pump','valve','pipe','bearing','gearbox','conveyor','belt','compressor','machinery','mechanical','fitter'],sections:[{heading:'⚙️ Rotating Equipment',items:['All guards and covers in place and secured','No unusual vibration or noise from equipment','Coupling guards fitted and undamaged','Belt tension within specification','Bearing temperatures normal (no overheating)']},{heading:'🔧 Pipework & Fittings',items:['No visible leaks on pipe joints or valves','All pipe supports and hangers intact','Pressure gauges reading within normal range','Safety relief valves unobstructed and in date']}]},
+  fire:{label:'Fire Safety Inspection',color:'#dc2626',keywords:['fire','extinguish','sprinkler','hose','reel','smoke','alarm','evacuation','emergency','exit'],sections:[{heading:'🔴 Fire Equipment',items:['All fire extinguishers in correct locations','Extinguisher inspection tags current (within 1 year)','Hose reels unobstructed and pressure adequate','Sprinkler heads clear and unobstructed','Fire alarm panel showing no faults']},{heading:'🚪 Evacuation',items:['All emergency exits unlocked and unobstructed','Exit signage illuminated and visible','Evacuation route free of obstructions','Assembly point signage in place']}]},
+  chemical:{label:'Chemical / Hazmat Inspection',color:'#7c3aed',keywords:['chemical','hazmat','sds','hazard','storage','drum','container','spill','bund','ppe'],sections:[{heading:'🧪 Chemical Storage',items:['SDS sheets accessible at each chemical storage point','All containers correctly labelled and sealed','Bunding intact with no residue or leaks','Incompatible chemicals correctly segregated','Chemical store ventilation functional']},{heading:'🥽 PPE & Emergency',items:['PPE station stocked — gloves, goggles, aprons','Eyewash station accessible and functional','Emergency shower accessible and functional','Spill kit available and fully stocked']}]},
+  general:{label:'General Safety Inspection',color:'#374151',keywords:[],sections:[{heading:'🏭 Housekeeping',items:['Work area clean, tidy, and free of slip hazards','All tools and equipment stored correctly','Waste bins not overflowing, waste correctly sorted','No blocked aisles or emergency access routes','Adequate lighting in all work areas']},{heading:'⚠️ General Safety',items:['Safety notices and signage visible and legible','First aid kit accessible and stocked','No obvious hazards or unsafe conditions observed','Personal PPE worn correctly by all personnel']}]}
 };
+INSPECTION_TYPES = DEFAULT_INSPECTION_TYPES;
+
+// Try to load company-specific checklists from Firestore
+getDocs(collection(db,'config')).then(snap=>{
+  const clDoc = snap.docs.find(d=>d.id==='checklists');
+  if(clDoc && clDoc.data().types && Object.keys(clDoc.data().types).length>0){
+    INSPECTION_TYPES = clDoc.data().types;
+  }
+}).catch(()=>{});
+
 
 function detectInspectionType(task){
   const text = (task.task||''+task.asset||''+task.materialsRequired||'').toLowerCase();

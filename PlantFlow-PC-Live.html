@@ -565,6 +565,51 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
         </div>
       </div>
     </div>
+
+    <!-- INSPECTION CHECKLISTS MANAGER — full width below -->
+    <div class="section-head" style="margin-top:20px;display:flex;align-items:center;justify-content:space-between">
+      <span>📋 Inspection checklists — manage items per category</span>
+      <button class="tb-btn primary" style="font-size:11px;padding:5px 14px" onclick="addChecklistType()">+ Add checklist type</button>
+    </div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:12px">These checklists appear on the mobile app when artisans do an inspection. Each category can have multiple sections with multiple items.</div>
+    <div id="checklist-manager" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px">
+      <div style="padding:30px;text-align:center;color:#9ca3af;font-size:13px">Loading checklists...</div>
+    </div>
+
+  </div>
+
+  <!-- CHECKLIST EDIT MODAL -->
+  <div class="modal-overlay" id="checklist-modal" onclick="if(event.target===this)closeModal('checklist-modal')">
+    <div class="modal" style="width:600px;max-height:88vh;display:flex;flex-direction:column">
+      <div class="modal-head" style="flex-shrink:0">
+        <div class="modal-title" id="checklist-modal-title">Add checklist type</div>
+        <div class="modal-close" onclick="closeModal('checklist-modal')">×</div>
+      </div>
+      <div class="modal-body" style="flex:1;overflow-y:auto">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <div class="form-label">Checklist name *</div>
+            <input class="form-input" id="cl-name" placeholder="e.g. Electrical Inspection"/>
+          </div>
+          <div class="form-group">
+            <div class="form-label">Category key (no spaces) *</div>
+            <input class="form-input" id="cl-key" placeholder="e.g. electrical" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'')"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="form-label">Keywords (comma separated — used to auto-detect from job descriptions)</div>
+          <input class="form-input" id="cl-keywords" placeholder="e.g. electrical, loto, db board, wiring, panel"/>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px">Checklist sections and items</div>
+        <div id="cl-sections-container"></div>
+        <button class="tb-btn" style="margin-top:8px;width:100%;justify-content:center" onclick="addChecklistSection()">+ Add section</button>
+      </div>
+      <div class="modal-foot" style="flex-shrink:0">
+        <button class="tb-btn" onclick="closeModal('checklist-modal')">Cancel</button>
+        <button class="tb-btn danger" id="cl-delete-btn" style="display:none" onclick="deleteChecklistType()">🗑 Delete this checklist</button>
+        <button class="tb-btn primary" onclick="saveChecklist()">💾 Save checklist</button>
+      </div>
+    </div>
   </div>
 
   <!-- SUPER ADMIN -->
@@ -1313,6 +1358,7 @@ window.db = db;
 window._addDoc = addDoc;
 window._collection = collection;
 window._onSnapshot = onSnapshot;
+window._setDoc = setDoc;
 window._doc = doc;
 window._updateDoc = updateDoc;
 window._serverTimestamp = serverTimestamp;
@@ -3401,6 +3447,8 @@ function nav(id,el){
   if(el)el.classList.add('active');
   const titles={dashboard:'Dashboard',schedules:'PM Schedules',jobcards:'Job Cards',faults:'Fault Reports',permits:'Permits to Work',inspections:'Inspections',ohsa:'OHSA Compliance',materials:'Materials & Spares',artisans:'Artisans & Contractors',reports:'Reports',users:'Manage Users',settings:'Settings',superadmin:'Super Admin — Eagle Electrical Ventures'};
   document.getElementById('page-title').textContent=titles[id]||id;
+  // Load checklists when navigating to Settings
+  if(id==='settings') loadCompanyChecklists();
 }
 
 const SA_PASSWORD = 'Eagle2024!';
@@ -4036,8 +4084,161 @@ window.confirmReopenJob = async function(){
     }
   }catch(e){toast('Error: '+e.message,'error');}
 };
-window.openCompanyAsAdmin = function(){
+// ── INSPECTION CHECKLIST MANAGER ──
+const DEFAULT_CHECKLISTS = {
+  electrical:{label:'Electrical Inspection',color:'#185FA5',keywords:['electrical','electric','loto','isolat','db board','panel','cable','wiring','switchgear','motor','generator','earthing'],sections:[{heading:'⚡ Electrical Safety',items:['All DB boards closed, locked and labelled','No exposed or damaged wiring visible','All cable trays and conduits sealed','Earthing conductors intact and connected','Isolation LOTO points labelled and accessible','No overloaded extension leads or adaptors','Panel area clear of combustibles (500mm)','Emergency stop buttons functional and accessible','All equipment properly bonded and earthed']}]},
+  mechanical:{label:'Mechanical / Fitter Inspection',color:'#d97706',keywords:['pump','valve','pipe','bearing','gearbox','conveyor','belt','compressor','machinery','mechanical','fitter'],sections:[{heading:'⚙️ Rotating Equipment',items:['All guards and covers in place and secured','No unusual vibration or noise from equipment','Coupling guards fitted and undamaged','Belt tension within specification','Bearing temperatures normal (no overheating)']},{heading:'🔧 Pipework & Fittings',items:['No visible leaks on pipe joints or valves','All pipe supports and hangers intact','Pressure gauges reading within normal range','Safety relief valves unobstructed and in date']}]},
+  fire:{label:'Fire Safety Inspection',color:'#dc2626',keywords:['fire','extinguish','sprinkler','hose','reel','smoke','alarm','evacuation','emergency','exit'],sections:[{heading:'🔴 Fire Equipment',items:['All fire extinguishers in correct locations','Extinguisher inspection tags current (within 1 year)','Hose reels unobstructed and pressure adequate','Sprinkler heads clear and unobstructed','Fire alarm panel showing no faults']},{heading:'🚪 Evacuation',items:['All emergency exits unlocked and unobstructed','Exit signage illuminated and visible','Evacuation route free of obstructions','Assembly point signage in place']}]},
+  chemical:{label:'Chemical / Hazmat Inspection',color:'#7c3aed',keywords:['chemical','hazmat','sds','hazard','storage','drum','container','spill','bund','ppe'],sections:[{heading:'🧪 Chemical Storage',items:['SDS sheets accessible at each chemical storage point','All containers correctly labelled and sealed','Bunding intact with no residue or leaks','Incompatible chemicals correctly segregated','Chemical store ventilation functional']},{heading:'🥽 PPE & Emergency',items:['PPE station stocked — gloves, goggles, aprons','Eyewash station accessible and functional','Emergency shower accessible and functional','Spill kit available and fully stocked']}]},
+  general:{label:'General Safety Inspection',color:'#374151',keywords:[],sections:[{heading:'🏭 Housekeeping',items:['Work area clean, tidy, and free of slip hazards','All tools and equipment stored correctly','Waste bins not overflowing, waste correctly sorted','No blocked aisles or emergency access routes','Adequate lighting in all work areas']},{heading:'⚠️ General Safety',items:['Safety notices and signage visible and legible','First aid kit accessible and stocked','No obvious hazards or unsafe conditions observed','Personal PPE worn correctly by all personnel']}]}
+};
+
+let _companyChecklists = null; // loaded from Firestore or defaults
+
+async function loadCompanyChecklists(){
+  try{
+    const snap = await window._getDocs(window._collection(window.db,'config'));
+    const clDoc = snap.docs.find(d=>d.id==='checklists');
+    if(clDoc && clDoc.data().types){
+      _companyChecklists = clDoc.data().types;
+    } else {
+      _companyChecklists = JSON.parse(JSON.stringify(DEFAULT_CHECKLISTS));
+    }
+  }catch(e){
+    _companyChecklists = JSON.parse(JSON.stringify(DEFAULT_CHECKLISTS));
+  }
+  renderChecklistManager();
+}
+
+function renderChecklistManager(){
+  const container = document.getElementById('checklist-manager');
+  if(!container) return;
+  const checklists = _companyChecklists || DEFAULT_CHECKLISTS;
+  const keys = Object.keys(checklists);
+  if(!keys.length){container.innerHTML='<div style="color:#9ca3af;text-align:center;padding:30px">No checklists yet — click "+ Add checklist type" to start</div>';return;}
+  container.innerHTML = keys.map(key=>{
+    const cl = checklists[key];
+    const totalItems = (cl.sections||[]).reduce((s,sec)=>s+(sec.items||[]).length,0);
+    return `<div style="background:#fff;border-radius:14px;border:2px solid #e5e7eb;padding:16px;position:relative">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:12px;height:12px;border-radius:50%;background:${cl.color||'#374151'};flex-shrink:0"></div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:700;color:#111827">${cl.label||key}</div>
+          <div style="font-size:11px;color:#6b7280">${(cl.sections||[]).length} section(s) · ${totalItems} items</div>
+        </div>
+        <button class="tb-btn primary" style="font-size:11px;padding:4px 12px" onclick="editChecklistType('${key}')">✏️ Edit</button>
+      </div>
+      ${(cl.sections||[]).map(sec=>`
+        <div style="margin-bottom:8px">
+          <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px">${sec.heading}</div>
+          ${(sec.items||[]).map(item=>`<div style="font-size:11px;color:#6b7280;padding:2px 0 2px 10px;border-left:2px solid #e5e7eb">• ${item}</div>`).join('')}
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+window.addChecklistType = function(){
+  window._editingChecklistKey = null;
+  document.getElementById('checklist-modal-title').textContent = 'Add new checklist type';
+  document.getElementById('cl-name').value = '';
+  document.getElementById('cl-key').value = '';
+  document.getElementById('cl-keywords').value = '';
+  document.getElementById('cl-delete-btn').style.display = 'none';
+  document.getElementById('cl-sections-container').innerHTML = '';
+  addChecklistSection(); // start with one empty section
+  openModal('checklist-modal');
+};
+
+window.editChecklistType = function(key){
+  const cl = (_companyChecklists||DEFAULT_CHECKLISTS)[key];
+  if(!cl) return;
+  window._editingChecklistKey = key;
+  document.getElementById('checklist-modal-title').textContent = 'Edit — '+cl.label;
+  document.getElementById('cl-name').value = cl.label||'';
+  document.getElementById('cl-key').value = key;
+  document.getElementById('cl-key').disabled = true; // can't change key of existing
+  document.getElementById('cl-keywords').value = (cl.keywords||[]).join(', ');
+  document.getElementById('cl-delete-btn').style.display = 'block';
+
+  // Populate sections
+  const container = document.getElementById('cl-sections-container');
+  container.innerHTML = '';
+  (cl.sections||[]).forEach(sec=>addChecklistSection(sec));
+  openModal('checklist-modal');
+};
+
+window.addChecklistSection = function(existingSec){
+  const container = document.getElementById('cl-sections-container');
+  const idx = container.querySelectorAll('.cl-section').length;
+  const heading = existingSec?.heading||'';
+  const items = (existingSec?.items||[]).join('\n');
+  const div = document.createElement('div');
+  div.className = 'cl-section';
+  div.style.cssText = 'background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:10px;padding:12px;margin-bottom:10px';
+  div.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <input class="form-input" placeholder="Section heading e.g. ⚡ Electrical Safety" value="${heading.replace(/"/g,'&quot;')}" style="flex:1;font-size:12.5px;font-weight:700"/>
+      <button onclick="this.closest('.cl-section').remove()" style="background:#fee2e2;border:none;border-radius:8px;color:#dc2626;font-weight:700;cursor:pointer;padding:6px 10px;flex-shrink:0">✕</button>
+    </div>
+    <div class="form-label" style="margin-bottom:4px">Checklist items — one per line *</div>
+    <textarea style="width:100%;min-height:120px;padding:10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12.5px;font-family:'Segoe UI',Arial,sans-serif;line-height:1.7;box-sizing:border-box;resize:vertical" placeholder="One checklist item per line&#10;e.g. All DB boards closed, locked and labelled&#10;No exposed wiring visible">${items.replace(/</g,'&lt;')}</textarea>`;
+  container.appendChild(div);
+};
+
+window.saveChecklist = async function(){
+  const name = document.getElementById('cl-name').value.trim();
+  let key = document.getElementById('cl-key').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  if(!name||!key){toast('Please enter a checklist name and key','error');return;}
+
+  const keywords = (document.getElementById('cl-keywords').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+
+  // Read sections
+  const sections = [];
+  document.querySelectorAll('.cl-section').forEach(secEl=>{
+    const headingInput = secEl.querySelector('input');
+    const textArea = secEl.querySelector('textarea');
+    const heading = headingInput?.value.trim()||'';
+    const items = (textArea?.value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+    if(items.length) sections.push({heading, items});
+  });
+
+  if(!sections.length||!sections[0].items.length){toast('Please add at least one section with items','error');return;}
+
+  const checklists = _companyChecklists || JSON.parse(JSON.stringify(DEFAULT_CHECKLISTS));
+  checklists[key] = {label:name, color: checklists[key]?.color||'#374151', keywords, sections};
+  _companyChecklists = checklists;
+
+  try{
+    await window._setDoc(window._doc(window.db,'config','checklists'),{
+      types: checklists,
+      companyId: window._loggedInCompanyId||null,
+      updatedAt: window._serverTimestamp()
+    });
+    closeModal('checklist-modal');
+    document.getElementById('cl-key').disabled = false;
+    renderChecklistManager();
+    toast('Checklist saved — artisans will see updated items on their next inspection','success');
+  }catch(e){toast('Error saving: '+e.message,'error');}
+};
+
+window.deleteChecklistType = async function(){
+  const key = window._editingChecklistKey;
+  if(!key||!confirm('Delete the "'+key+'" checklist? This cannot be undone.')) return;
+  const checklists = _companyChecklists||{};
+  delete checklists[key];
+  _companyChecklists = checklists;
+  try{
+    await window._setDoc(window._doc(window.db,'config','checklists'),{
+      types: checklists, companyId: window._loggedInCompanyId||null, updatedAt: window._serverTimestamp()
+    });
+    closeModal('checklist-modal');
+    document.getElementById('cl-key').disabled = false;
+    renderChecklistManager();
+    toast('Checklist deleted','success');
+  }catch(e){toast('Error: '+e.message,'error');}
+};
   // Open the currently viewed company directly from SA detail panel
+window.openCompanyAsAdmin = function(){
   const name = document.getElementById('sa-det-name')?.value||'Company';
   const id = window._editingSACompanyId||'';
   closeSACompanyDetail();
