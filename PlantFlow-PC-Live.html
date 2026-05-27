@@ -1397,7 +1397,8 @@ window.allSchedules = allSchedules;
 window.allInspections = allInspections;
 let _activeListeners = [];
 
-// ── LIVE LISTENERS — called after login with companyId ──
+// Signal that module has fully loaded
+window._moduleReady = true;
 window.startListeners = function(companyId){
   // Unsubscribe any previous listeners
   _activeListeners.forEach(u=>{ try{u();}catch(e){} });
@@ -1413,37 +1414,37 @@ window.startListeners = function(companyId){
   _activeListeners.push(onSnapshot(query(collection(db,'jobCards'),orderBy('createdAt','desc')), snap => {
     allJobs.length=0; filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()}))).forEach(d=>allJobs.push(d));
     renderJobCards(); renderDashJobs(); updateJobStats(); updateMaterialStats(); renderReports(); setSync();
-  }, err => { console.error('jobCards:',err.code); showConnError(err.code); }));
+  }, err => { console.error('jobCards:',err); showConnError('jobCards: '+err.code); }));
 
   _activeListeners.push(onSnapshot(query(collection(db,'faults'),orderBy('createdAt','desc')), snap => {
     allFaults.length=0; filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()}))).forEach(d=>allFaults.push(d));
     renderFaults(); renderDashFaults(); updateFaultStats(); setSync();
-  }, err => { console.error('faults:',err.code); }));
+  }, err => { console.error('faults:',err); showConnError('faults: '+err.code); }));
 
   _activeListeners.push(onSnapshot(query(collection(db,'permits'),orderBy('createdAt','desc')), snap => {
     allPermits.length=0; filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()}))).forEach(d=>allPermits.push(d));
     renderPermits(); renderDashPermits(); updatePermitStats(); renderPermitAudit(); setSync();
-  }, err => { console.error('permits:',err.code); }));
+  }, err => { console.error('permits:',err); showConnError('permits: '+err.code); }));
 
   _activeListeners.push(onSnapshot(query(collection(db,'materials'),orderBy('description','asc')), snap => {
     allMaterials.length=0; filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()}))).forEach(d=>allMaterials.push(d));
     renderMaterials(); renderDashMaterials(); updateMaterialStats(); setSync();
-  }, err => { console.error('materials:',err.code); }));
+  }, err => { console.error('materials:',err); showConnError('materials: '+err.code); }));
 
   _activeListeners.push(onSnapshot(query(collection(db,'users'),orderBy('name','asc')), snap => {
     allUsers.length=0; filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()}))).forEach(d=>allUsers.push(d));
     renderUsers(); populateArtisanDropdowns(); setSync();
-  }, err => { console.error('users:',err.code); }));
+  }, err => { console.error('users:',err); showConnError('users: '+err.code); }));
 
   _activeListeners.push(onSnapshot(query(collection(db,'schedules'),orderBy('createdAt','desc')), snap => {
     allSchedules.length=0; filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()}))).forEach(d=>allSchedules.push(d));
     renderSchedules(); setSync();
-  }, err => { console.error('schedules:',err.code); }));
+  }, err => { console.error('schedules:',err); showConnError('schedules: '+err.code); }));
 
   _activeListeners.push(onSnapshot(query(collection(db,'inspections'),orderBy('createdAt','desc')), snap => {
     allInspections.length=0; filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()}))).forEach(d=>allInspections.push(d));
     renderInspections(); renderOHSA(); setSync();
-  }, err => { console.error('inspections:',err.code); }));
+  }, err => { console.error('inspections:',err); showConnError('inspections: '+err.code); }));
 };
 
 // Helper: stamp companyId on all new documents
@@ -1451,10 +1452,14 @@ function cid(data){ return {...data, companyId: window._loggedInCompanyId||null}
 window.cid = cid;
 
 function showConnError(code){
-  if(bar) bar.textContent = '⚠ Firebase error: '+code+' — Are you opening from file://? Use the GitHub Pages URL instead.';
+  const bar = document.getElementById('conn-text');
+  if(bar) bar.textContent = '⚠ Firebase error: '+code;
   const dot = document.getElementById('conn-dot');
   if(dot) dot.style.background = '#f87171';
 }
+
+// Expose showConnError so regular script can show errors too
+window.showConnError = showConnError;
 
 // ── RENDER FUNCTIONS ──
 
@@ -4253,24 +4258,35 @@ window.openCompanyAsAdmin = function(){
 };
 
 // Auto-login from localStorage if previously logged in
-// Auto-login from localStorage — wait for module to fully load
+// Auto-login — wait for module to be fully ready before calling startListeners
 function checkStoredLogin(){
   const storedId = localStorage.getItem('pf_company_id');
   const storedName = localStorage.getItem('pf_company_name');
   if(storedId && storedName){
     enterApp(storedName, storedId, false);
   }
-  // If no stored session, show login screen (already shown by default)
 }
-// Try at 1s and again at 3s in case Firebase takes longer
-setTimeout(checkStoredLogin, 1000);
-setTimeout(function(){
-  // If still showing "Loading..." after 3s, listeners may not have started — retry
-  const dashJobs = document.getElementById('dash-jobs');
-  if(dashJobs && dashJobs.innerHTML.includes('Waiting for data') || dashJobs && dashJobs.innerHTML.includes('Loading')){
+
+function waitForModuleThenLogin(){
+  if(window._moduleReady){
     checkStoredLogin();
+  } else {
+    // Module not ready yet — check again in 200ms
+    setTimeout(waitForModuleThenLogin, 200);
   }
-}, 3000);
+}
+// Start checking immediately
+waitForModuleThenLogin();
+
+// Safety net — if still loading after 5s, try forcing listeners
+setTimeout(function(){
+  const dashJobs = document.getElementById('dash-jobs');
+  if(dashJobs && (dashJobs.innerHTML.includes('Waiting for data') || dashJobs.innerHTML.includes('Loading'))){
+    if(window._moduleReady && typeof window.startListeners === 'function'){
+      window.startListeners(window._loggedInCompanyId||null);
+    }
+  }
+}, 5000);
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){
   document.getElementById(id).classList.remove('open');
