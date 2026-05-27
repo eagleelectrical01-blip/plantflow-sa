@@ -1370,7 +1370,8 @@ window._where = where;
 
 // Connection indicator
 document.getElementById('conn-text').textContent = 'Connected to plantflow-sa Firebase — live sync active';
-document.getElementById('firebase-status').textContent = 'Connected';
+const fsEl = document.getElementById('firebase-status');
+if(fsEl) fsEl.textContent = 'Connected';
 setSync();
 
 // Warn if opened from file:// — Firebase won't work
@@ -3885,17 +3886,21 @@ function enterApp(companyName, companyId, isSA){
   window._loggedInCompanyId = companyId||null;
   window._loggedInCompanyName = companyName||'Admin Panel';
   window._isSuperAdmin = isSA||false;
-  // Update sidebar
   const sideEl=document.getElementById('sidebar-company-name');
   if(sideEl) sideEl.textContent = companyName||'Admin Panel';
-  // Show the app, hide login
   const overlay=document.getElementById('company-login-overlay');
   const app=document.getElementById('main-app');
   if(overlay) overlay.style.display='none';
   if(app) app.style.display='flex';
-  // Start data listeners filtered to this company (or all for SA)
-  if(typeof window.startListeners==='function') window.startListeners(companyId||null);
-  // Add logout button to sidebar user area
+  // Start listeners — retry up to 5 times if module not ready yet
+  function tryStart(attempts){
+    if(typeof window.startListeners==='function'){
+      window.startListeners(companyId||null);
+    } else if(attempts>0){
+      setTimeout(()=>tryStart(attempts-1), 400);
+    }
+  }
+  tryStart(5);
   const userArea=document.getElementById('sidebar-user-area');
   if(userArea) userArea.innerHTML=
     '<div class="av" style="width:32px;height:32px">'+initials(companyName)+'</div>'+
@@ -4248,16 +4253,24 @@ window.openCompanyAsAdmin = function(){
 };
 
 // Auto-login from localStorage if previously logged in
-setTimeout(function checkStoredLogin(){
+// Auto-login from localStorage — wait for module to fully load
+function checkStoredLogin(){
   const storedId = localStorage.getItem('pf_company_id');
   const storedName = localStorage.getItem('pf_company_name');
   if(storedId && storedName){
     enterApp(storedName, storedId, false);
-  } else {
-    // No stored session — just start listeners with no filter (SA mode until login)
-    // so data loads when SA bypasses login
   }
-}, 1500);
+  // If no stored session, show login screen (already shown by default)
+}
+// Try at 1s and again at 3s in case Firebase takes longer
+setTimeout(checkStoredLogin, 1000);
+setTimeout(function(){
+  // If still showing "Loading..." after 3s, listeners may not have started — retry
+  const dashJobs = document.getElementById('dash-jobs');
+  if(dashJobs && dashJobs.innerHTML.includes('Waiting for data') || dashJobs && dashJobs.innerHTML.includes('Loading')){
+    checkStoredLogin();
+  }
+}, 3000);
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){
   document.getElementById(id).classList.remove('open');
