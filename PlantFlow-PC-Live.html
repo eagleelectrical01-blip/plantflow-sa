@@ -3884,7 +3884,10 @@ window._isSuperAdmin = false;
 
 function showLoginError(msg){
   const el=document.getElementById('login-error');
-  if(el){el.textContent=msg;el.style.display='block';}
+  if(!el)return;
+  if(!msg){el.style.display='none';el.textContent='';return;}
+  el.textContent=msg;
+  el.style.display='block';
 }
 
 function enterApp(companyName, companyId, isSA){
@@ -3917,41 +3920,46 @@ window.doCompanyLogin = async function(){
   const emailInput = (document.getElementById('company-login-email')?.value||'').trim();
   const emailLower = emailInput.toLowerCase();
   const pass = document.getElementById('company-login-pass')?.value||'';
-  if(!emailInput||!pass){showLoginError('Please enter your company email and access code.');return;}
-  if(!window._getDocs||!window._collection||!window._query||!window._where){
-    showLoginError('Still connecting to database — please wait a moment and try again.');return;
+  if(!emailInput||!pass){showLoginError('Please enter your company email and password.');return;}
+
+  // Wait up to 3s for module to be ready
+  let waited = 0;
+  while((!window._getDocs||!window._collection)&&waited<3000){
+    await new Promise(r=>setTimeout(r,200));
+    waited+=200;
   }
+  if(!window._getDocs||!window._collection){
+    showLoginError('Cannot connect to database. Please refresh the page and try again.');return;
+  }
+
+  showLoginError('');
   try{
-    // Try exact match first, then lowercase match via full scan
     let matchDoc = null;
     const snap1 = await window._getDocs(window._query(window._collection(window.db,'companies'),window._where('adminEmail','==',emailInput)));
     if(!snap1.empty){ matchDoc = snap1.docs[0]; }
     else {
-      // Try lowercase version
       const snap2 = await window._getDocs(window._query(window._collection(window.db,'companies'),window._where('adminEmail','==',emailLower)));
       if(!snap2.empty){ matchDoc = snap2.docs[0]; }
       else {
-        // Scan all companies for case-insensitive match
         const snapAll = await window._getDocs(window._collection(window.db,'companies'));
         snapAll.docs.forEach(d=>{ if((d.data().adminEmail||'').toLowerCase()===emailLower) matchDoc=d; });
       }
     }
     if(!matchDoc){
-      showLoginError('No company found with that email address. Contact Eagle Electrical Ventures to register your company.');
+      showLoginError('No company found with that email. Contact Eagle Electrical Ventures to register.');
       return;
     }
     const c = matchDoc.data();
-    // Check access code
     if(!c.accessCode){
-      showLoginError('Your company account has no access code set yet. Contact Eagle Electrical Ventures — they need to set your access code in Super Admin first.');
+      showLoginError('No password set for this company. Log in as Super Admin and set an access code for this company.');
       return;
     }
     if(c.accessCode !== pass){
-      showLoginError('Incorrect access code. Check the temporary password Eagle Electrical Ventures gave you, or contact them to reset it.');
+      showLoginError('Incorrect password. Use the password set by Super Admin, or go to Settings to change it.');
       return;
     }
     if(c.status==='held'){
-      showLoginError('Your account is on hold due to a payment issue. Please contact Eagle Electrical Ventures to resolve it.');
+      showLoginError('This account is on hold. Contact Eagle Electrical Ventures.');
       return;
     }
     localStorage.setItem('pf_company_id', matchDoc.id);
@@ -3960,24 +3968,26 @@ window.doCompanyLogin = async function(){
     enterApp(c.name||emailInput, matchDoc.id, false);
     const setComp=document.getElementById('set-company');
     if(setComp) setComp.value=c.name||'';
-    const setInd=document.getElementById('set-industry');
-    if(setInd&&c.industry){for(let i=0;i<setInd.options.length;i++){if(setInd.options[i].text.includes(c.industry)){setInd.selectedIndex=i;break;}}}
     updateTrialCountdown();
     toast('Welcome to PlantFlow, '+(c.name||emailInput)+'!','success');
-  }catch(e){showLoginError('Login error: '+e.message+'. Please try again.');}
+  }catch(e){showLoginError('Login error: '+e.message+'. Please refresh and try again.');}
 };
 
 window.doSABypass = function(){
   const pass = document.getElementById('sa-master-pass')?.value||'';
+  const errEl = document.getElementById('sa-login-error');
   if(pass!==SA_MASTER_PASSWORD){
-    const errEl=document.getElementById('sa-login-error');
     if(errEl){errEl.textContent='Incorrect master password. Try again.';errEl.style.display='block';}
     return;
   }
+  if(errEl) errEl.style.display='none';
+  // Clear any stored company session — SA has no company
   localStorage.removeItem('pf_company_id');
   localStorage.removeItem('pf_company_name');
-  enterApp('Eagle Electrical Ventures', null, true);
-  toast('Logged in as Super Admin','success');
+  localStorage.removeItem('pf_company_email');
+  // Enter as SA — null companyId, isSA=true
+  enterApp('Super Admin', null, true);
+  toast('Logged in as Super Admin — Eagle Electrical Ventures','success');
 };
 
 window.logoutCompany = function(){
