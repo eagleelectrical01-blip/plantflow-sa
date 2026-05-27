@@ -531,7 +531,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
         </div>
         <div class="section-head" style="margin-top:16px">Change login credentials</div>
         <div class="settings-section">
-          <div style="padding:12px 16px;font-size:12px;color:#6b7280;line-height:1.7">Update your company email and password here. You will use these to log in next time.</div>
+          <div style="padding:12px 16px;font-size:12px;color:#6b7280;line-height:1.7">
+            Update your company email and password here. You will use these to log in next time.<br>
+            <span id="credentials-target-info" style="color:#185FA5;font-weight:600"></span>
+          </div>
           <div class="settings-row"><div style="flex:1;font-size:12.5px;font-weight:500">New login email</div><input class="form-input" id="set-new-email" type="email" placeholder="New email address" style="width:220px;font-size:12px;padding:5px 9px"/></div>
           <div class="settings-row"><div style="flex:1;font-size:12.5px;font-weight:500">New password</div><input class="form-input" id="set-new-pass" type="password" placeholder="New password" style="width:220px;font-size:12px;padding:5px 9px"/></div>
           <div class="settings-row"><div style="flex:1;font-size:12.5px;font-weight:500">Confirm password</div><input class="form-input" id="set-confirm-pass" type="password" placeholder="Confirm new password" style="width:220px;font-size:12px;padding:5px 9px"/></div>
@@ -3072,24 +3075,29 @@ window.saveSettings = async function(){
 };
 
 window.saveLoginCredentials = async function(){
-  if(!window._loggedInCompanyId){toast('Not logged in as a company','error');return;}
+  // Work for company login OR when SA has opened a specific company
+  const targetId = window._loggedInCompanyId || window._editingSACompanyId;
+  if(!targetId){
+    toast('Open a specific company first (Super Admin → Open company app), then change credentials','error');
+    return;
+  }
   const newEmail = document.getElementById('set-new-email')?.value.trim().toLowerCase()||'';
   const newPass = document.getElementById('set-new-pass')?.value||'';
   const confPass = document.getElementById('set-confirm-pass')?.value||'';
-  if(!newEmail&&!newPass){toast('Enter a new email or password to update','error');return;}
+  if(!newEmail&&!newPass){toast('Enter a new email or new password to update','error');return;}
   if(newPass&&newPass!==confPass){toast('Passwords do not match','error');return;}
-  if(newPass&&newPass.length<6){toast('Password must be at least 6 characters','error');return;}
+  if(newPass&&newPass.length<4){toast('Password must be at least 4 characters','error');return;}
   const updates = {};
   if(newEmail) updates.adminEmail = newEmail;
   if(newPass) updates.accessCode = newPass;
   updates.updatedAt = window._serverTimestamp();
   try{
-    await _upd('companies', window._loggedInCompanyId, updates);
-    if(newEmail){ localStorage.setItem('pf_company_email',newEmail); }
+    await _upd('companies', targetId, updates);
+    if(newEmail && window._loggedInCompanyId){ localStorage.setItem('pf_company_email',newEmail); }
     document.getElementById('set-new-email').value='';
     document.getElementById('set-new-pass').value='';
     document.getElementById('set-confirm-pass').value='';
-    toast('Login credentials updated — use your new details next time you log in','success');
+    toast('Login credentials updated — use your new email/password next time you log in','success');
   }catch(e){toast('Error: '+e.message,'error');}
 };
 
@@ -3454,7 +3462,17 @@ function nav(id,el){
   const titles={dashboard:'Dashboard',schedules:'PM Schedules',jobcards:'Job Cards',faults:'Fault Reports',permits:'Permits to Work',inspections:'Inspections',ohsa:'OHSA Compliance',materials:'Materials & Spares',artisans:'Artisans & Contractors',reports:'Reports',users:'Manage Users',settings:'Settings',superadmin:'Super Admin — Eagle Electrical Ventures'};
   document.getElementById('page-title').textContent=titles[id]||id;
   // Load checklists when navigating to Settings
-  if(id==='settings') loadCompanyChecklists();
+  if(id==='settings'){
+    loadCompanyChecklists();
+    // Show who credentials are for
+    const infoEl = document.getElementById('credentials-target-info');
+    if(infoEl){
+      const targetId = window._loggedInCompanyId || window._editingSACompanyId;
+      if(!targetId) infoEl.textContent = '⚠ Log in as a company or open a company from Super Admin to change credentials.';
+      else if(window._isSuperAdmin && window._editingSACompanyId) infoEl.textContent = 'Changing credentials for: '+window._loggedInCompanyName;
+      else infoEl.textContent = '';
+    }
+  }
 }
 
 const SA_PASSWORD = 'Eagle2024!';
