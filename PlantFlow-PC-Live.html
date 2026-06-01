@@ -301,8 +301,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
     <div class="panel">
       <div class="panel-head"><div class="panel-title">PM Schedule</div><button class="tb-btn primary" style="font-size:11px;padding:5px 10px" onclick="openModal('schedule-modal')">+ Add task</button></div>
       <table class="tbl">
-        <thead><tr><th>Freq.</th><th>Task</th><th>Asset/Area</th><th>Days</th><th>Assigned to</th><th>Next due</th><th>Permit</th><th>Status</th><th>Action</th></tr></thead>
-        <tbody id="schedules-tbody"><tr><td colspan="9" class="empty-state">Loading...</td></tr></tbody>
+        <thead><tr><th>Freq.</th><th>Task</th><th>Asset/Area</th><th>Days</th><th>Assigned to</th><th>Next due</th><th>🔔 Reminder date</th><th>Permit</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="schedules-tbody"><tr><td colspan="10" class="empty-state">Loading...</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -1041,7 +1041,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
       </div>
       <div class="form-grid-2">
         <div class="form-group"><div class="form-label">First due date</div><input class="form-input" type="date" id="sc-start-date"/></div>
-        <div class="form-group"><div class="form-label">Est. time</div><input class="form-input" id="sc-time" placeholder="e.g. 30 min"/></div>
+        <div class="form-group">
+          <div class="form-label">🔔 Reminder date</div>
+          <input class="form-input" type="date" id="sc-reminder-date"/>
+          <div style="font-size:11px;color:#6b7280;margin-top:3px">Artisan gets a reminder on login from this date</div>
+        </div>
       </div>
       <div class="form-group">
         <div class="form-label">Assign to <span style="color:#185FA5;font-weight:600">(tick one or more artisans)</span></div>
@@ -1099,7 +1103,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
       </div>
       <div class="form-grid-2">
         <div class="form-group"><div class="form-label">First due date</div><input class="form-input" type="date" id="esc-start-date"/></div>
-        <div class="form-group"><div class="form-label">Est. time</div><input class="form-input" id="esc-time" placeholder="e.g. 30 min"/></div>
+        <div class="form-group">
+          <div class="form-label">🔔 Reminder date <span style="color:#9ca3af;font-weight:400">(artisan gets alerted on login)</span></div>
+          <input class="form-input" type="date" id="esc-reminder-date"/>
+          <div style="font-size:11px;color:#6b7280;margin-top:3px">Set to a few days before the inspection is due</div>
+        </div>
       </div>
       <div class="form-group">
         <div class="form-label">Assigned artisans</div>
@@ -1998,11 +2006,27 @@ setTimeout(loadSavedCompanyName, 2000);
 window.renderSchedules = function(){
   const tbody = document.getElementById('schedules-tbody');
   if(!tbody)return;
-  if(!allSchedules.length){tbody.innerHTML='<tr><td colspan="9" class="empty-state">No PM tasks yet — add tasks above</td></tr>';return;}
+  if(!allSchedules.length){tbody.innerHTML='<tr><td colspan="10" class="empty-state">No PM tasks yet — add tasks above</td></tr>';return;}
   const freqClass={daily:'ft-day',weekly:'ft-week',monthly:'ft-month',quarterly:'ft-month'};
+  const today = new Date(); today.setHours(0,0,0,0);
   tbody.innerHTML = allSchedules.map(s=>{
     const artisans = (s.assignedArtisans||[s.assignedTo]).filter(Boolean);
     const daysLabel = (s.daysOfWeek||[]).join(', ')||'Any day';
+
+    // Reminder date display
+    let reminderHtml = '<span style="color:#d1d5db;font-size:11px">Not set</span>';
+    if(s.reminderDate){
+      const rem = new Date(s.reminderDate); rem.setHours(0,0,0,0);
+      const diffDays = Math.round((rem-today)/(1000*60*60*24));
+      let color='#16a34a', label='';
+      if(diffDays<0){ color='#dc2626'; label=' (overdue)'; }
+      else if(diffDays===0){ color='#d97706'; label=' (today!)'; }
+      else if(diffDays===1){ color='#d97706'; label=' (tomorrow)'; }
+      else if(diffDays<=7){ color='#d97706'; label=' ('+diffDays+'d away)'; }
+      else { label=' ('+diffDays+'d away)'; }
+      reminderHtml = `<span style="color:${color};font-weight:700;font-size:11px">${s.reminderDate}${label}</span>`;
+    }
+
     return `<tr>
     <td><span class="freq-tag ${freqClass[s.frequency]||'ft-week'}">${s.frequency||'weekly'}</span></td>
     <td><b>${s.task||'—'}</b>${s.materialsRequired?`<br><span style="font-size:10px;color:#6b7280">🔧 ${s.materialsRequired}</span>`:''}</td>
@@ -2010,10 +2034,13 @@ window.renderSchedules = function(){
     <td style="font-size:11px;color:#185FA5;font-weight:600">${daysLabel}</td>
     <td style="font-size:11px">${artisans.join('<br>')||'Unassigned'}</td>
     <td>${s.nextDue||'—'}</td>
+    <td>${reminderHtml}</td>
     <td>${s.permitRequired==='yes'?'<span class="badge b-red">PTW</span>':'<span class="badge b-green">No</span>'}</td>
     <td><span class="badge b-blue">Scheduled</span></td>
-    <td><button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteDoc_('schedules','${s.id}')">Delete</button>
-    <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="openEditSchedule('${s.id}')">✏️ Edit</button></td>
+    <td style="white-space:nowrap">
+      <button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteDoc_('schedules','${s.id}')">Delete</button>
+      <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="openEditSchedule('${s.id}')">✏️ Edit</button>
+    </td>
   </tr>`;
   }).join('');
 };
@@ -2884,6 +2911,7 @@ window.addSchedule = async function(){
       inspectionType: document.getElementById('sc-insp-type')?.value||'general',
       status: 'scheduled',
       startDate: startDateVal||firstDue.toISOString().split('T')[0],
+      reminderDate: document.getElementById('sc-reminder-date')?.value||'',
       nextDue: nextDueStr,
       createdAt: serverTimestamp()
     }));
@@ -2901,6 +2929,7 @@ window.addSchedule = async function(){
     closeModal('schedule-modal');
     document.getElementById('sc-task').value='';
     if(document.getElementById('sc-start-date')) document.getElementById('sc-start-date').value='';
+    if(document.getElementById('sc-reminder-date')) document.getElementById('sc-reminder-date').value='';
     document.querySelectorAll('#sc-artisan-checkboxes input[type=checkbox]').forEach(c=>c.checked=false);
     dowIds.forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
     document.querySelectorAll('[id^="dow-"][id$="-label"]').forEach(l=>{l.style.borderColor='#e5e7eb';l.style.background='';});
@@ -2921,6 +2950,8 @@ window.openEditSchedule = function(id){
   const inspEl = document.getElementById('esc-insp-type');
   if(inspEl) inspEl.value = s.inspectionType||'general';
   if(document.getElementById('esc-start-date')) document.getElementById('esc-start-date').value = s.startDate||'';
+  const remEl = document.getElementById('esc-reminder-date');
+  if(remEl) remEl.value = s.reminderDate||'';
 
   // Pre-tick days of week
   const dowIds = ['esc-dow-mon','esc-dow-tue','esc-dow-wed','esc-dow-thu','esc-dow-fri','esc-dow-sat','esc-dow-eom'];
@@ -2970,6 +3001,7 @@ window.saveEditSchedule = async function(){
     assignedTo: checkedArtisans[0]||'',
     assignedArtisans: checkedArtisans,
     startDate: document.getElementById('esc-start-date')?.value||'',
+    reminderDate: document.getElementById('esc-reminder-date')?.value||'',
     updatedAt: serverTimestamp()
   });
   closeModal('edit-schedule-modal');

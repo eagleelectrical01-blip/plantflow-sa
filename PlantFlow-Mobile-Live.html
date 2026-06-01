@@ -1162,7 +1162,10 @@ function processLogin(userDoc){
   showSC(target);
   toastMob('Welcome, '+window._currentUserName+' ('+role+')','success');
 
-  // Request notification permission so browser can show alerts even when screen is off
+  // Check for upcoming inspection reminders
+  setTimeout(()=>checkInspectionReminders(window._currentUserName), 1500);
+
+  // Request notification permission
   if('Notification' in window && Notification.permission === 'default'){
     setTimeout(()=>{
       Notification.requestPermission().then(perm=>{
@@ -2769,7 +2772,69 @@ if('serviceWorker' in navigator){
   });
 }
 
-// ── PWA INSTALL SYSTEM ──
+// ── INSPECTION REMINDER CHECK ──
+window.checkInspectionReminders = function(artisanName){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const reminders = allSchedules.filter(s=>{
+    if(!s.reminderDate) return false;
+    const isAssigned = s.assignedTo===artisanName||(s.assignedArtisans||[]).includes(artisanName);
+    if(!isAssigned) return false;
+    const remDate = new Date(s.reminderDate); remDate.setHours(0,0,0,0);
+    const diffDays = Math.round((remDate-today)/(1000*60*60*24));
+    return diffDays>=0 && diffDays<=7; // show reminders due within 7 days
+  });
+
+  if(!reminders.length) return;
+
+  // Play chime
+  playJobNotification();
+
+  // Show reminder banner
+  const existing = document.getElementById('inspection-reminder-banner');
+  if(existing) existing.remove();
+
+  const banner = document.createElement('div');
+  banner.id = 'inspection-reminder-banner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9997;background:linear-gradient(135deg,#d97706,#b45309);padding:0;box-shadow:0 4px 20px rgba(0,0,0,0.3)';
+  banner.innerHTML = `
+    <div style="max-width:500px;margin:0 auto;padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:22px">🔔</span>
+        <div>
+          <div style="font-size:14px;font-weight:800;color:#fff">Upcoming Inspections — Reminder</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.8)">${reminders.length} inspection(s) due soon</div>
+        </div>
+        <button onclick="document.getElementById('inspection-reminder-banner').remove()" style="margin-left:auto;background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center">×</button>
+      </div>
+      ${reminders.map(s=>{
+        const remDate = new Date(s.reminderDate); remDate.setHours(0,0,0,0);
+        const diffDays = Math.round((remDate-today)/(1000*60*60*24));
+        const when = diffDays===0?'Today!':diffDays===1?'Tomorrow':'In '+diffDays+' days';
+        return `<div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:10px 12px;margin-bottom:6px">
+          <div style="font-size:13px;font-weight:700;color:#fff">${s.task}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.85);margin-top:2px">
+            📅 ${when} (${s.reminderDate}) · 📍 ${s.asset||'—'} · ⏱ ${s.frequency}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  document.body.appendChild(banner);
+
+  // Also show native notification if permission granted
+  if('Notification' in window && Notification.permission==='granted'){
+    reminders.forEach(s=>{
+      const remDate = new Date(s.reminderDate); remDate.setHours(0,0,0,0);
+      const diffDays = Math.round((remDate-today)/(1000*60*60*24));
+      const when = diffDays===0?'Today!':diffDays===1?'Tomorrow':'In '+diffDays+' days';
+      new Notification('PlantFlow — Inspection Reminder', {
+        body: s.task+' · '+when+' ('+s.reminderDate+')\n📍 '+s.asset,
+        icon: './plantflow-icon-192.png',
+        tag: 'reminder-'+s.id
+      });
+    });
+  }
+};
 let _deferredInstallPrompt = null;
 const _isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
 const _isAndroid = /android/.test(navigator.userAgent.toLowerCase());
