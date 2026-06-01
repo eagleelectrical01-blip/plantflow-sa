@@ -2938,7 +2938,7 @@ window.addSchedule = async function(){
 };
 
 window.openEditSchedule = function(id){
-  const s = allSchedules.find(x=>x.id===id);
+  const s = (window.allSchedules||[]).find(x=>x.id===id);
   if(!s)return;
   window._editingScheduleId = id;
   document.getElementById('esc-task').value = s.task||'';
@@ -2962,7 +2962,7 @@ window.openEditSchedule = function(id){
   });
 
   // Populate artisan checkboxes
-  const artisans = allUsers.filter(u=>u.role==='artisan'||u.role==='contractor');
+  const artisans = (window.allUsers||[]).filter(u=>u.role==='artisan'||u.role==='contractor');
   const assigned = s.assignedArtisans||[s.assignedTo].filter(Boolean);
   const box = document.getElementById('esc-artisan-checkboxes');
   if(box){
@@ -2988,7 +2988,7 @@ window.saveEditSchedule = async function(){
   const selectedDays = dowIds.map(id=>document.getElementById(id)).filter(el=>el&&el.checked).map(el=>el.value);
   const checkedArtisans = [...document.querySelectorAll('#esc-artisan-checkboxes input[type=checkbox]:checked')].map(c=>c.value);
 
-  await updateDoc(doc(db,'schedules',window._editingScheduleId),{
+  await window._updateDoc(window._doc(window.db,'schedules',window._editingScheduleId),{
     task,
     frequency: document.getElementById('esc-freq').value,
     asset: document.getElementById('esc-asset').value,
@@ -3002,7 +3002,7 @@ window.saveEditSchedule = async function(){
     assignedArtisans: checkedArtisans,
     startDate: document.getElementById('esc-start-date')?.value||'',
     reminderDate: document.getElementById('esc-reminder-date')?.value||'',
-    updatedAt: serverTimestamp()
+    updatedAt: window._serverTimestamp()
   });
   closeModal('edit-schedule-modal');
   toast('PM task updated','success');
