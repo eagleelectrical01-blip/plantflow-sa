@@ -2944,7 +2944,7 @@ window.openEditSchedule = function(id){
   document.getElementById('esc-task').value = s.task||'';
   document.getElementById('esc-freq').value = s.frequency||'weekly';
   document.getElementById('esc-asset').value = s.asset||'';
-  document.getElementById('esc-time').value = s.estTime||'';
+  const escTime = document.getElementById('esc-time'); if(escTime) escTime.value = s.estTime||'';
   document.getElementById('esc-mats').value = s.materialsRequired||'';
   document.getElementById('esc-permit').value = s.permitRequired||'no';
   const inspEl = document.getElementById('esc-insp-type');
