@@ -2980,7 +2980,7 @@ window.openEditSchedule = function(id){
 };
 
 window.saveEditSchedule = async function(){
-  if(!window._editingScheduleId)return;
+  if(!window._editingScheduleId){toast('No schedule selected','error');return;}
   const task = document.getElementById('esc-task').value.trim();
   if(!task){toast('Task description required','error');return;}
 
@@ -2988,24 +2988,28 @@ window.saveEditSchedule = async function(){
   const selectedDays = dowIds.map(id=>document.getElementById(id)).filter(el=>el&&el.checked).map(el=>el.value);
   const checkedArtisans = [...document.querySelectorAll('#esc-artisan-checkboxes input[type=checkbox]:checked')].map(c=>c.value);
 
-  await window._updateDoc(window._doc(window.db,'schedules',window._editingScheduleId),{
-    task,
-    frequency: document.getElementById('esc-freq').value,
-    asset: document.getElementById('esc-asset').value,
-    daysOfWeek: selectedDays,
-    daysOfWeekLabel: selectedDays.join(', ')||'Any day',
-    estTime: document.getElementById('esc-time').value,
-    materialsRequired: document.getElementById('esc-mats').value,
-    permitRequired: document.getElementById('esc-permit').value,
-    inspectionType: document.getElementById('esc-insp-type')?.value||'general',
-    assignedTo: checkedArtisans[0]||'',
-    assignedArtisans: checkedArtisans,
-    startDate: document.getElementById('esc-start-date')?.value||'',
-    reminderDate: document.getElementById('esc-reminder-date')?.value||'',
-    updatedAt: window._serverTimestamp()
-  });
-  closeModal('edit-schedule-modal');
-  toast('PM task updated','success');
+  try{
+    await window._updateDoc(window._doc(window.db,'schedules',window._editingScheduleId),{
+      task,
+      frequency: document.getElementById('esc-freq').value,
+      asset: document.getElementById('esc-asset').value,
+      daysOfWeek: selectedDays,
+      daysOfWeekLabel: selectedDays.join(', ')||'Any day',
+      materialsRequired: document.getElementById('esc-mats').value,
+      permitRequired: document.getElementById('esc-permit').value,
+      inspectionType: document.getElementById('esc-insp-type')?.value||'general',
+      assignedTo: checkedArtisans[0]||'',
+      assignedArtisans: checkedArtisans,
+      startDate: document.getElementById('esc-start-date')?.value||'',
+      reminderDate: document.getElementById('esc-reminder-date')?.value||'',
+      updatedAt: window._serverTimestamp()
+    });
+    closeModal('edit-schedule-modal');
+    toast('PM task updated','success');
+  }catch(e){
+    toast('Error saving: '+e.message,'error');
+    console.error('saveEditSchedule error:',e);
+  }
 };
 
 window.addUser = async function(){
