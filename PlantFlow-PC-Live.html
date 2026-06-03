@@ -2905,7 +2905,7 @@ window.addSchedule = async function(){
       asset: document.getElementById('sc-asset').value,
       assignedTo: firstArtisan,
       assignedArtisans: checkedArtisans,
-      estTime: document.getElementById('sc-time').value,
+      estTime: document.getElementById('sc-time')?.value||'',
       materialsRequired: document.getElementById('sc-mats').value,
       permitRequired: document.getElementById('sc-permit').value,
       inspectionType: document.getElementById('sc-insp-type')?.value||'general',
