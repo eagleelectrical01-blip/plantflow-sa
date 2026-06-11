@@ -1358,6 +1358,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
 <div class="toast" id="toast"></div>
 
 <!-- FIREBASE SDK -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, serverTimestamp, where, getDocs, getDoc, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
@@ -4348,6 +4349,8 @@ window.clearInspFilter = function(){
 };
 
 window.exportInspectionsExcel = function(){
+  if(typeof XLSX === 'undefined'){toast('Excel library not loaded — please refresh the page and try again','error');return;}
+
   const fromVal = document.getElementById('insp-filter-from')?.value||'';
   const toVal = document.getElementById('insp-filter-to')?.value||'';
 
@@ -4363,72 +4366,91 @@ window.exportInspectionsExcel = function(){
       return true;
     });
   }
-
   if(!inspections.length){toast('No inspections to export for the selected date range','error');return;}
 
-  // Build CSV rows
-  const q = v => '"'+String(v||'').replace(/"/g,'""')+'"';
-  const rows = [];
-
-  // Header row
-  rows.push([
-    'Date','Inspection Type','Inspector','Area',
+  // ── SHEET 1: Summary — one row per inspection ──
+  const summaryHeaders = [
+    'Date','Time','Inspection Type','Inspector','Area',
     'Total Items','Passed','Failed','Result',
     'Notes on Failed Items','Failed Items (Detail)',
     'Manager Recommendations','Follow-up Status',
     'Schedule Task','Schedule Asset'
-  ].map(q).join(','));
+  ];
 
-  // Data rows
-  inspections.forEach(i=>{
-    const dateStr = i.createdAt?.toDate ? i.createdAt.toDate().toLocaleDateString('en-ZA') : (i.createdAt||'');
+  const summaryRows = inspections.map(i=>{
+    const dt = i.createdAt?.toDate ? i.createdAt.toDate() : new Date(i.createdAt||0);
+    const dateStr = dt.toLocaleDateString('en-ZA',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const timeStr = dt.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
     const result = i.failed>0 ? i.failed+' failure(s)' : 'All pass';
     const failedItems = (i.failedItems||[]).join(' | ');
-    const followup = {pending:'Pending fix','in-progress':'In progress',fixed:'Fixed',recurring:'Recurring',na:'N/A'}[i.followupStatus||'']||'Not reviewed';
-
-    rows.push([
-      dateStr,
+    const followup = {pending:'Pending fix','in-progress':'In progress',fixed:'Fixed',recurring:'Recurring',na:'N/A'}[i.followupStatus||'']||'Not yet reviewed';
+    return [
+      dateStr, timeStr,
       i.type||'Safety inspection',
       i.inspector||i.submittedBy||'',
       i.area||'',
-      i.totalItems||'',
-      i.passed||0,
-      i.failed||0,
-      result,
-      i.notes||'',
-      failedItems,
-      i.recommendations||'',
-      followup,
-      i.scheduleTask||'',
-      i.scheduleAsset||''
-    ].map(q).join(','));
+      i.totalItems||'', i.passed||0, i.failed||0, result,
+      i.notes||'', failedItems,
+      i.recommendations||'', followup,
+      i.scheduleTask||'', i.scheduleAsset||''
+    ];
+  });
 
-    // Add a detail row per checklist item if available
+  // ── SHEET 2: Checklist Detail — one row per checklist item ──
+  const detailHeaders = [
+    'Date','Inspection Type','Inspector','Area','Checklist Item','Result'
+  ];
+
+  const detailRows = [];
+  inspections.forEach(i=>{
+    const dt = i.createdAt?.toDate ? i.createdAt.toDate() : new Date(i.createdAt||0);
+    const dateStr = dt.toLocaleDateString('en-ZA',{day:'2-digit',month:'2-digit',year:'numeric'});
     if(i.itemResults&&i.itemResults.length){
       i.itemResults.forEach(item=>{
-        rows.push([
-          dateStr+' (detail)',
+        detailRows.push([
+          dateStr,
           i.type||'',
           i.inspector||'',
           i.area||'',
-          '— item —',
-          item.result==='pass'?'1':'',
-          item.result==='fail'?'1':'',
-          item.result||'not checked',
           item.label||'',
-          '','','','',''
-        ].map(q).join(','));
+          (item.result||'not checked').toUpperCase()
+        ]);
       });
     }
   });
 
-  const csv = '\uFEFF'+rows.join('\r\n'); // BOM for Excel UTF-8
-  const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const dateRange = fromVal&&toVal ? fromVal+'_to_'+toVal : fromVal||toVal||'all';
-  a.href=url; a.download='PlantFlow_Inspections_'+dateRange+'.csv';
-  a.click(); URL.revokeObjectURL(url);
+  // Build workbook
+  const wb = XLSX.utils.book_new();
+
+  // Summary sheet
+  const summaryData = [summaryHeaders, ...summaryRows];
+  const ws1 = XLSX.utils.aoa_to_sheet(summaryData);
+  // Set column widths
+  ws1['!cols'] = [
+    {wch:12},{wch:8},{wch:25},{wch:18},{wch:20},
+    {wch:8},{wch:8},{wch:8},{wch:14},
+    {wch:35},{wch:35},
+    {wch:35},{wch:18},
+    {wch:30},{wch:20}
+  ];
+  // Style header row bold
+  summaryHeaders.forEach((_,col)=>{
+    const cell = XLSX.utils.encode_cell({r:0,c:col});
+    if(ws1[cell]) ws1[cell].s = {font:{bold:true},fill:{fgColor:{rgb:'1E4080'}},font:{color:{rgb:'FFFFFF'},bold:true}};
+  });
+  XLSX.utils.book_append_sheet(wb, ws1, 'Inspection Summary');
+
+  // Detail sheet (only if there are items)
+  if(detailRows.length>0){
+    const detailData = [detailHeaders, ...detailRows];
+    const ws2 = XLSX.utils.aoa_to_sheet(detailData);
+    ws2['!cols'] = [{wch:12},{wch:25},{wch:18},{wch:20},{wch:50},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Checklist Detail');
+  }
+
+  // Download
+  const dateRange = fromVal&&toVal ? fromVal+'_to_'+toVal : fromVal||toVal||'all-dates';
+  XLSX.writeFile(wb, 'PlantFlow_Inspections_'+dateRange+'.xlsx');
   toast('Exported '+inspections.length+' inspection(s) to Excel','success');
 };
 window.openCompanyAsAdmin = function(){
