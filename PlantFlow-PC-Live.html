@@ -1504,7 +1504,19 @@ function fmtTime(ts){
 }
 function fmtDateTime(ts){
   if(!ts)return '—';
-  return fmtDate(ts)+' '+fmtTime(ts);
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  if(isNaN(d.getTime())) return '—';
+  const dateStr = d.toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'2-digit'});
+  const timeStr = d.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+  return dateStr+' · '+timeStr;
+}
+function fmtDateTimeStacked(ts){
+  if(!ts)return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  if(isNaN(d.getTime())) return '—';
+  const dateStr = d.toLocaleDateString('en-ZA',{day:'2-digit',month:'short',year:'2-digit'});
+  const timeStr = d.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+  return dateStr+'<br><b style="font-size:12px">'+timeStr+'</b>';
 }
 
 window.renderJobCards = function(){
@@ -1589,8 +1601,8 @@ window.renderDashJobs = function(){
       <td>${j.assignedTo||artisans||'<span style="color:#dc2626">Unassigned</span>'}</td>
       <td>${statusBadge(j.status||'open')}${j.awaitingSpares?'<br><span style="color:#dc2626;font-size:10px;font-weight:700">⚠ AWAITING SPARES</span>':''}</td>
       <td style="font-size:11px;color:#6b7280">${fmtDate(j.createdAt)||'—'}</td>
-      <td style="font-size:11px;color:${j.startedAt?'#185FA5':'#9ca3af'}">${j.startedAt?fmtDateTime(j.startedAt):'<span style="color:#d1d5db">Not started</span>'}</td>
-      <td style="font-size:11px;color:${isCompleted?'#16a34a':'#9ca3af'}">${isCompleted?fmtDateTime(j.completedAt)||'—':'—'}</td>
+      <td style="font-size:11px;color:${j.startedAt?'#185FA5':'#9ca3af'}">${j.startedAt?fmtDateTimeStacked(j.startedAt):'<span style="color:#d1d5db">Not started</span>'}</td>
+      <td style="font-size:11px;color:${isCompleted?'#16a34a':'#9ca3af'}">${isCompleted&&j.completedAt?fmtDateTimeStacked(j.completedAt):'—'}</td>
       <td style="font-size:11px;font-weight:700;color:${durationStr!=='—'?'#374151':'#d1d5db'}">${durationStr}</td>
       <td style="font-size:11px;max-width:160px;color:#374151">${j.completionNotes?`<span title="${j.completionNotes.replace(/"/g,"'")}">${j.completionNotes}</span>`:'<span style="color:#d1d5db">—</span>'}</td>
       <td style="white-space:nowrap">
