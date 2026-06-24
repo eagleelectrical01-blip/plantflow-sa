@@ -333,6 +333,10 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',Arial,sans-serif;ba
           <div class="ptw-row"><div class="ptw-label">Priority</div><div class="ptw-val" id="jd-priority">—</div></div>
           <div class="ptw-row" style="margin-bottom:0"><div class="ptw-label">Notes</div><div class="ptw-val" id="jd-notes">—</div></div>
         </div>
+
+        <!-- START JOB / TIME TRACKING -->
+        <div id="jd-time-tracking" style="margin-bottom:10px"></div>
+
         <div id="jd-permit-section"></div>
       </div>
 
@@ -1668,11 +1672,72 @@ window.openJobDetail = function(id){
     permitSection.innerHTML=`<div style="background:#fee2e2;border-radius:14px;padding:14px;margin-bottom:12px;border:1.5px solid #dc2626"><div style="font-size:13px;font-weight:700;color:#b91c1c;margin-bottom:4px">⚠ Permit required — work blocked</div><div style="font-size:12px;color:#dc2626">You cannot start this job until the Production Manager issues a Permit to Work.</div></div>`;
   }else{permitSection.innerHTML='';}
 
+  renderJobTimeTracking(j);
+
   // Materials list
   renderJobMaterials(j);
   showSC('sc-job-detail');
   // Load comments thread for this job
   loadMobileJobComments(id);
+};
+
+function renderJobTimeTracking(j){
+  const el = document.getElementById('jd-time-tracking');
+  if(!el) return;
+
+  const fmtTime = ts => {
+    const d = ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+    return d ? d.toLocaleString('en-ZA',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : null;
+  };
+
+  const startedStr = fmtTime(j.startedAt);
+  const completedStr = fmtTime(j.completedAt);
+
+  if(j.status==='completed'){
+    // Show both times + duration
+    let durationStr = '';
+    if(j.startedAt && j.completedAt){
+      const start = j.startedAt.toDate ? j.startedAt.toDate() : new Date(j.startedAt);
+      const end = j.completedAt.toDate ? j.completedAt.toDate() : new Date(j.completedAt);
+      const mins = Math.round((end-start)/60000);
+      const hrs = Math.floor(mins/60);
+      durationStr = hrs>0 ? hrs+'h '+(mins%60)+'m' : mins+'m';
+    }
+    el.innerHTML = `<div style="background:#f0fdf4;border-radius:14px;padding:14px;border:1.5px solid #86efac">
+      <div style="font-size:11px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">✅ Job completed</div>
+      <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#166534;margin-bottom:4px"><span>▶ Started:</span><b>${startedStr||'Not recorded'}</b></div>
+      <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#166534;margin-bottom:4px"><span>⏹ Completed:</span><b>${completedStr||'—'}</b></div>
+      ${durationStr?`<div style="display:flex;justify-content:space-between;font-size:12.5px;color:#166534;font-weight:800;border-top:1px solid #bbf7d0;padding-top:6px;margin-top:4px"><span>⏱ Duration:</span><b>${durationStr}</b></div>`:''}
+    </div>`;
+  } else if(j.startedAt){
+    // Already started, not yet completed
+    el.innerHTML = `<div style="background:#eff6ff;border-radius:14px;padding:14px;border:1.5px solid #93c5fd">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">▶</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#1d4ed8">Job started — ${startedStr}</div>
+          <div style="font-size:11px;color:#6b7280">Time is being tracked. Complete the job below when finished.</div>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    // Not started yet — show Start button
+    el.innerHTML = `<button onclick="startJobTimer()" style="width:100%;padding:14px;background:#185FA5;color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px">
+      <span style="font-size:18px">▶</span> Start Job — Record Start Time
+    </button>`;
+  }
+}
+
+window.startJobTimer = async function(){
+  const id = window._currentJobId;
+  if(!id) return;
+  try{
+    await updateDoc(doc(db,'jobCards',id),{
+      startedAt: serverTimestamp(),
+      status: 'in-progress'
+    });
+    toastMob('Job started — time is now being tracked','success');
+  }catch(e){toastMob('Error: '+e.message,'error');}
 };
 
 function renderJobMaterials(j){
@@ -1822,6 +1887,8 @@ window.submitJobComplete = async function(){
     totalCost,
     completedAt:serverTimestamp()
   };
+  // If job was never explicitly started, stamp startedAt now too (better than nothing)
+  if(!j?.startedAt) updates.startedAt = serverTimestamp();
   if(permitNum) updates.permitNumber = permitNum;
   await updateDoc(doc(db,'jobCards',window._currentJobId), updates);
   showSC('sc-job-success');
