@@ -1685,60 +1685,68 @@ function renderJobTimeTracking(j){
   const el = document.getElementById('jd-time-tracking');
   if(!el) return;
 
-  const fmtTime = ts => {
-    const d = ts?.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
-    return d ? d.toLocaleString('en-ZA',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : null;
+  // Convert Firestore timestamp / ISO string to input-friendly date and time strings
+  const toInputParts = ts => {
+    if(!ts) return {date:'', time:''};
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    const date = d.toISOString().split('T')[0];
+    const time = d.toTimeString().slice(0,5);
+    return {date, time};
   };
 
-  const startedStr = fmtTime(j.startedAt);
-  const completedStr = fmtTime(j.completedAt);
+  const startParts = toInputParts(j.startedAt);
+  const completedParts = toInputParts(j.completedAt);
+  const todayStr = new Date().toISOString().split('T')[0];
 
-  if(j.status==='completed'){
-    // Show both times + duration
-    let durationStr = '';
-    if(j.startedAt && j.completedAt){
-      const start = j.startedAt.toDate ? j.startedAt.toDate() : new Date(j.startedAt);
-      const end = j.completedAt.toDate ? j.completedAt.toDate() : new Date(j.completedAt);
-      const mins = Math.round((end-start)/60000);
-      const hrs = Math.floor(mins/60);
-      durationStr = hrs>0 ? hrs+'h '+(mins%60)+'m' : mins+'m';
-    }
-    el.innerHTML = `<div style="background:#f0fdf4;border-radius:14px;padding:14px;border:1.5px solid #86efac">
-      <div style="font-size:11px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">✅ Job completed</div>
-      <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#166534;margin-bottom:4px"><span>▶ Started:</span><b>${startedStr||'Not recorded'}</b></div>
-      <div style="display:flex;justify-content:space-between;font-size:12.5px;color:#166534;margin-bottom:4px"><span>⏹ Completed:</span><b>${completedStr||'—'}</b></div>
-      ${durationStr?`<div style="display:flex;justify-content:space-between;font-size:12.5px;color:#166534;font-weight:800;border-top:1px solid #bbf7d0;padding-top:6px;margin-top:4px"><span>⏱ Duration:</span><b>${durationStr}</b></div>`:''}
-    </div>`;
-  } else if(j.startedAt){
-    // Already started, not yet completed
-    el.innerHTML = `<div style="background:#eff6ff;border-radius:14px;padding:14px;border:1.5px solid #93c5fd">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:18px">▶</span>
-        <div>
-          <div style="font-size:13px;font-weight:700;color:#1d4ed8">Job started — ${startedStr}</div>
-          <div style="font-size:11px;color:#6b7280">Time is being tracked. Complete the job below when finished.</div>
-        </div>
+  el.innerHTML = `
+    <div style="background:#fff;border-radius:14px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.05)">
+      <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">⏱ Job Time — Enter Manually</div>
+
+      <div style="font-size:12px;font-weight:700;color:#185FA5;margin-bottom:6px">▶ Started</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+        <input class="form-input" type="date" id="jd-start-date" value="${startParts.date||todayStr}" style="font-size:13px"/>
+        <input class="form-input" type="time" id="jd-start-time" value="${startParts.time}" style="font-size:13px"/>
       </div>
+
+      <div style="font-size:12px;font-weight:700;color:#16a34a;margin-bottom:6px">⏹ Completed</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <input class="form-input" type="date" id="jd-end-date" value="${completedParts.date}" style="font-size:13px"/>
+        <input class="form-input" type="time" id="jd-end-time" value="${completedParts.time}" style="font-size:13px"/>
+      </div>
+      <div style="font-size:11px;color:#9ca3af">Leave end time blank until the job is finished — fill it in when you submit completion below.</div>
+      <div id="jd-duration-display" style="margin-top:10px;font-size:12.5px;font-weight:700;color:#185FA5"></div>
     </div>`;
-  } else {
-    // Not started yet — show Start button
-    el.innerHTML = `<button onclick="startJobTimer()" style="width:100%;padding:14px;background:#185FA5;color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Segoe UI',Arial,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px">
-      <span style="font-size:18px">▶</span> Start Job — Record Start Time
-    </button>`;
-  }
+
+  // Live duration calculation as fields change
+  ['jd-start-date','jd-start-time','jd-end-date','jd-end-time'].forEach(id=>{
+    const elx = document.getElementById(id);
+    if(elx) elx.addEventListener('change', updateDurationDisplay);
+  });
+  updateDurationDisplay();
 }
 
-window.startJobTimer = async function(){
-  const id = window._currentJobId;
-  if(!id) return;
-  try{
-    await updateDoc(doc(db,'jobCards',id),{
-      startedAt: serverTimestamp(),
-      status: 'in-progress'
-    });
-    toastMob('Job started — time is now being tracked','success');
-  }catch(e){toastMob('Error: '+e.message,'error');}
-};
+function updateDurationDisplay(){
+  const sd = document.getElementById('jd-start-date')?.value;
+  const st = document.getElementById('jd-start-time')?.value;
+  const ed = document.getElementById('jd-end-date')?.value;
+  const et = document.getElementById('jd-end-time')?.value;
+  const disp = document.getElementById('jd-duration-display');
+  if(!disp) return;
+  if(sd&&st&&ed&&et){
+    const start = new Date(sd+'T'+st);
+    const end = new Date(ed+'T'+et);
+    const mins = Math.round((end-start)/60000);
+    if(mins>=0){
+      const hrs = Math.floor(mins/60);
+      disp.textContent = '⏱ Duration: '+(hrs>0?hrs+'h '+(mins%60)+'m':mins+'m');
+    } else {
+      disp.textContent = '⚠ End time is before start time — please check';
+      disp.style.color = '#dc2626';
+    }
+  } else {
+    disp.textContent = '';
+  }
+}
 
 function renderJobMaterials(j){
   const list = document.getElementById('jd-materials-list');
@@ -1881,17 +1889,32 @@ window.submitJobComplete = async function(){
   const permitNum=document.getElementById('jd-permit-num-entry')?.value.trim()||'';
   const mats=j?j.materials||[]:[];
   const totalCost=mats.reduce((s,m)=>s+((parseFloat(m.qty)||0)*(parseFloat(m.unitPrice||m.unitCost||0))),0);
+
+  // Read manually entered start/end date & time
+  const sd = document.getElementById('jd-start-date')?.value;
+  const st = document.getElementById('jd-start-time')?.value;
+  const ed = document.getElementById('jd-end-date')?.value;
+  const et = document.getElementById('jd-end-time')?.value;
+
+  if(!sd||!st){toastMob('Please enter the job start date and time','error');return;}
+  if(!ed||!et){toastMob('Please enter the job end (completed) date and time','error');return;}
+
+  const startDateTime = new Date(sd+'T'+st);
+  const endDateTime = new Date(ed+'T'+et);
+  if(endDateTime < startDateTime){toastMob('End time cannot be before start time — please check','error');return;}
+
   const updates = {
     status:'completed',
     completionNotes:notes,
     totalCost,
-    completedAt:serverTimestamp()
+    startedAt: startDateTime,
+    completedAt: endDateTime
   };
-  // If job was never explicitly started, stamp startedAt now too (better than nothing)
-  if(!j?.startedAt) updates.startedAt = serverTimestamp();
   if(permitNum) updates.permitNumber = permitNum;
-  await updateDoc(doc(db,'jobCards',window._currentJobId), updates);
-  showSC('sc-job-success');
+  try{
+    await updateDoc(doc(db,'jobCards',window._currentJobId), updates);
+    showSC('sc-job-success');
+  }catch(e){toastMob('Error: '+e.message,'error');}
 };
 
 // Awaiting spares toggle
