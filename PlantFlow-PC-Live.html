@@ -316,10 +316,12 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
         <select class="form-select" style="width:auto;font-size:11px;padding:4px 8px" id="jobs-filter" onchange="renderJobCards()"><option value="">All status</option><option value="open">Open &amp; Assigned</option><option value="in-progress">In progress</option><option value="blocked">Blocked</option><option value="completed">Completed</option></select>
         <button class="tb-btn primary" style="font-size:11px;padding:5px 10px;margin-left:8px" onclick="openModal('jobcard-modal')">+ New Job Card</button>
       </div>
-      <table class="tbl">
-        <thead><tr><th>Job #</th><th>Priority</th><th>Description</th><th>Location</th><th>Logged by</th><th>Assigned to</th><th>Permit #</th><th>Materials used</th><th>Total cost</th><th>Created</th><th>Started</th><th>Completed</th><th>Duration</th><th>Completion notes</th><th>Status</th><th>Actions</th></tr></thead>
+      <div style="overflow-x:auto;width:100%">
+      <table class="tbl" style="min-width:1500px">
+        <thead><tr><th>Job #</th><th>Priority</th><th>Description</th><th>Location</th><th>Logged by</th><th>Assigned to</th><th>Permit #</th><th>Materials used</th><th>Total cost</th><th>Created</th><th>Started</th><th>Completed</th><th>Duration</th><th>Completion notes</th><th>Status</th><th style="position:sticky;right:0;background:#f8fafc;box-shadow:-4px 0 6px -2px rgba(0,0,0,0.08);min-width:160px">Actions</th></tr></thead>
         <tbody id="jobcards-tbody"><tr><td colspan="13" class="empty-state">Loading...</td></tr></tbody>
       </table>
+      </div>
     </div>
   </div>
 
@@ -1569,20 +1571,22 @@ window.renderJobCards = function(){
       <td style="font-size:11px;font-weight:700;color:${durationStr!=='—'?'#374151':'#d1d5db'}">${durationStr}</td>
       <td style="font-size:11px;max-width:200px;color:${j.completionNotes?'#374151':'#d1d5db'}">${j.completionNotes?`<span title="${(j.completionNotes||'').replace(/"/g,"'")}">${j.completionNotes}</span>`:'—'}</td>
       <td>${statusBadge(j.status||'open')}${j.awaitingSpares?'<br><span style="color:#dc2626;font-size:10px;font-weight:700">⚠ AWAITING SPARES</span>':''}</td>
-      <td style="white-space:nowrap">
+      <td style="white-space:nowrap;position:sticky;right:0;background:${!isOpen?'#f9faf9':'#fff'};box-shadow:-4px 0 6px -2px rgba(0,0,0,0.08);min-width:160px">
+        <div style="display:flex;flex-direction:column;gap:3px">
         ${isOpen ? `
-          <button class="tb-btn" style="font-size:11px;padding:3px 8px" onclick="openAssignModal('${j.id}','${j.jobNumber}','${artisans.join(',')}')">👤 Assign</button>
-          <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#fef3c7;border-color:#f59e0b;color:#92400e" onclick="openEditJobModal('${j.id}')">✏️ Edit</button>
-          <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px" onclick="completeJob('${j.id}')">✓ Done</button>
-          <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#dcfce7;border-color:#86efac;color:#15803d" onclick="openJobComments('${j.id}','${j.jobNumber}')">💬 Notes</button>
-          <button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#dcfce7;border-color:#25D366;color:#15803d" onclick="waFollowUp('${j.id}','${j.jobNumber}','${j.description?.replace(/'/g,'').replace(/"/g,'')||''}','${artisans.join(',')}')">📲 WA</button>
-          ${j.permitRequired==='yes'&&!j.permitNumber?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px;margin-left:3px" onclick="quickPermit('${j.jobNumber}','${artisans[0]||''}')">PTW</button>`:''}
-          ${j.awaitingSpares?`<button class="tb-btn" style="font-size:11px;padding:3px 8px;margin-left:3px;background:#fee2e2;border-color:#fca5a5;color:#b91c1c" onclick="clearSpares('${j.id}')">Clear spares flag</button>`:''}
+          <button class="tb-btn" style="font-size:11px;padding:3px 8px;width:100%" onclick="openAssignModal('${j.id}','${j.jobNumber}','${artisans.join(',')}')">👤 Assign</button>
+          <button class="tb-btn" style="font-size:11px;padding:3px 8px;width:100%;background:#fef3c7;border-color:#f59e0b;color:#92400e" onclick="openEditJobModal('${j.id}')">✏️ Edit</button>
+          <button class="tb-btn" style="font-size:11px;padding:3px 8px;width:100%" onclick="completeJob('${j.id}')">✓ Done</button>
+          <button class="tb-btn" style="font-size:11px;padding:3px 8px;width:100%;background:#dcfce7;border-color:#86efac;color:#15803d" onclick="openJobComments('${j.id}','${j.jobNumber}')">💬 Notes</button>
+          <button class="tb-btn" style="font-size:11px;padding:3px 8px;width:100%;background:#dcfce7;border-color:#25D366;color:#15803d" onclick="waFollowUp('${j.id}','${j.jobNumber}','${j.description?.replace(/'/g,'').replace(/"/g,'')||''}','${artisans.join(',')}')">📲 WA</button>
+          ${j.permitRequired==='yes'&&!j.permitNumber?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px;width:100%" onclick="quickPermit('${j.jobNumber}','${artisans[0]||''}')">PTW</button>`:''}
+          ${j.awaitingSpares?`<button class="tb-btn" style="font-size:11px;padding:3px 8px;width:100%;background:#fee2e2;border-color:#fca5a5;color:#b91c1c" onclick="clearSpares('${j.id}')">Clear spares flag</button>`:''}
         ` : `
-          <button class="tb-btn" style="font-size:11px;padding:3px 8px;background:#fef3c7;border-color:#f59e0b;color:#92400e;margin-bottom:3px" onclick="openReopenModal('${j.id}','${j.jobNumber}')">🔄 Reopen</button>
-          <button class="tb-btn" style="font-size:11px;padding:3px 8px;background:#eff6ff;border-color:#93c5fd;color:#1d4ed8;margin-bottom:3px" onclick="openJobComments('${j.id}','${j.jobNumber}')">💬 Notes</button>
-          <button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteJob('${j.id}')">🗑 Delete</button>
+          <button class="tb-btn" style="font-size:11px;padding:3px 8px;width:100%;background:#fef3c7;border-color:#f59e0b;color:#92400e" onclick="openReopenModal('${j.id}','${j.jobNumber}')">🔄 Reopen</button>
+          <button class="tb-btn" style="font-size:11px;padding:3px 8px;width:100%;background:#eff6ff;border-color:#93c5fd;color:#1d4ed8" onclick="openJobComments('${j.id}','${j.jobNumber}')">💬 Notes</button>
+          <button class="tb-btn danger" style="font-size:11px;padding:3px 8px;width:100%" onclick="deleteJob('${j.id}')">🗑 Delete</button>
         `}
+        </div>
       </td>
     </tr>`;
   }).join('');
