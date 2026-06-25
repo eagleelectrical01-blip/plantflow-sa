@@ -1540,6 +1540,19 @@ window.renderJobCards = function(){
     const artisans = Array.isArray(j.assignedArtisans)&&j.assignedArtisans.length ? j.assignedArtisans : (j.assignedTo?[j.assignedTo]:[]);
     const artisanDisplay = artisans.length ? artisans.map(a=>`<span class="badge b-blue" style="margin:1px">${a}</span>`).join(' ') : '<span style="color:#9ca3af">Unassigned</span>';
     const isOpen = j.status!=='completed';
+
+    // Calculate duration if both timestamps exist
+    let durationStr = '—';
+    if(j.startedAt && j.completedAt){
+      const start = j.startedAt.toDate ? j.startedAt.toDate() : new Date(j.startedAt);
+      const end = j.completedAt.toDate ? j.completedAt.toDate() : new Date(j.completedAt);
+      const mins = Math.round((end-start)/60000);
+      if(mins>=0){
+        const hrs = Math.floor(mins/60);
+        durationStr = hrs>0 ? hrs+'h '+(mins%60)+'m' : mins+'m';
+      }
+    }
+
     return `<tr style="${!isOpen?'background:#f9faf9;':''}">
       <td style="color:#9ca3af;font-size:11px">${j.jobNumber||'—'}</td>
       <td><span class="badge b-${j.priority==='high'||j.priority==='critical'?'red':j.priority==='medium'?'amber':'teal'}">${j.priority||'medium'}</span></td>
@@ -1551,7 +1564,9 @@ window.renderJobCards = function(){
       <td style="font-size:11px;color:#6b7280">${(j.materials||[]).map(m=>m.name).join(', ')||'—'}</td>
       <td style="font-weight:600;color:#185FA5">${j.totalCost?'R '+(parseFloat(j.totalCost)).toFixed(2):'—'}</td>
       <td style="font-size:11px">${fmtDate(j.createdAt)}</td>
-      <td style="font-size:11px;color:${!isOpen?'#16a34a':'#9ca3af'}">${!isOpen&&j.completedAt?fmtDate(j.completedAt):'—'}</td>
+      <td style="font-size:11px;color:${j.startedAt?'#185FA5':'#9ca3af'}">${j.startedAt?fmtDateTimeStacked(j.startedAt):'<span style="color:#d1d5db">Not started</span>'}</td>
+      <td style="font-size:11px;color:${!isOpen?'#16a34a':'#9ca3af'}">${!isOpen&&j.completedAt?fmtDateTimeStacked(j.completedAt):'—'}</td>
+      <td style="font-size:11px;font-weight:700;color:${durationStr!=='—'?'#374151':'#d1d5db'}">${durationStr}</td>
       <td style="font-size:11px;max-width:200px;color:${j.completionNotes?'#374151':'#d1d5db'}">${j.completionNotes?`<span title="${(j.completionNotes||'').replace(/"/g,"'")}">${j.completionNotes}</span>`:'—'}</td>
       <td>${statusBadge(j.status||'open')}${j.awaitingSpares?'<br><span style="color:#dc2626;font-size:10px;font-weight:700">⚠ AWAITING SPARES</span>':''}</td>
       <td style="white-space:nowrap">
