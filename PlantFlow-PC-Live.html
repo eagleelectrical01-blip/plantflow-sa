@@ -1071,10 +1071,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
           <div class="form-label">Inspection type</div>
           <select class="form-select" id="sc-insp-type">
             <option value="electrical">⚡ Electrical</option>
-            <option value="mechanical">🔧 Mechanical / Fitter</option>
-            <option value="fire">🔴 Fire safety</option>
-            <option value="chemical">🧪 Chemical / Hazmat</option>
-            <option value="general">📋 General safety</option>
           </select>
         </div>
       </div>
@@ -1135,10 +1131,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
         <div class="form-group"><div class="form-label">Inspection type</div>
           <select class="form-select" id="esc-insp-type">
             <option value="electrical">⚡ Electrical</option>
-            <option value="mechanical">🔧 Mechanical</option>
-            <option value="fire">🔴 Fire safety</option>
-            <option value="chemical">🧪 Chemical</option>
-            <option value="general">📋 General safety</option>
           </select>
         </div>
       </div>
@@ -3027,6 +3019,7 @@ window.openEditSchedule = function(id){
   const escTime = document.getElementById('esc-time'); if(escTime) escTime.value = s.estTime||'';
   document.getElementById('esc-mats').value = s.materialsRequired||'';
   document.getElementById('esc-permit').value = s.permitRequired||'no';
+  populateInspTypeDropdowns(s.inspectionType||'general');
   const inspEl = document.getElementById('esc-insp-type');
   if(inspEl) inspEl.value = s.inspectionType||'general';
   if(document.getElementById('esc-start-date')) document.getElementById('esc-start-date').value = s.startDate||'';
@@ -4392,8 +4385,28 @@ window.deleteChecklistType = async function(){
   }catch(e){toast('Error: '+e.message,'error');}
 };
   // Open the currently viewed company directly from SA detail panel
+function populateInspTypeDropdowns(selectedVal){
+  const checklists = _companyChecklists || DEFAULT_CHECKLISTS;
+  const icons = {electrical:'⚡',mechanical:'🔧',fire:'🔴',chemical:'🧪',general:'📋'};
+  const opts = Object.entries(checklists).map(([key,cl])=>{
+    const icon = icons[key]||'📋';
+    const sel = selectedVal===key ? ' selected' : '';
+    return `<option value="${key}"${sel}>${icon} ${cl.label||key}</option>`;
+  }).join('');
+  ['sc-insp-type','esc-insp-type'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = opts;
+  });
+}
+
+// Call when opening Add Task modal
+const _origOpenModal = window.openModal;
+window.openModal = function(id){
+  _origOpenModal(id);
+  if(id==='schedule-modal') populateInspTypeDropdowns('electrical');
+};
+
 window.clearInspFilter = function(){
-  const f=document.getElementById('insp-filter-from');
   const t=document.getElementById('insp-filter-to');
   if(f)f.value='';if(t)t.value='';
   renderInspections();
