@@ -1460,6 +1460,16 @@ window.startListeners = function(companyId){
     allInspections.length=0; filterByCompany(snap.docs.map(d=>({id:d.id,...d.data()}))).forEach(d=>allInspections.push(d));
     renderInspections(); renderOHSA(); setSync();
   }, err => { console.error('inspections:',err); showConnError('inspections: '+err.code); }));
+
+  // Load checklists from Firestore so inspection type dropdowns include custom types
+  getDocs(collection(db,'config')).then(snap=>{
+    const clDoc = snap.docs.find(d=>d.id==='checklists');
+    if(clDoc && clDoc.data().types && Object.keys(clDoc.data().types).length>0){
+      _companyChecklists = clDoc.data().types;
+    }
+    // Populate dropdowns now that checklists are loaded
+    if(typeof window.populateInspTypeDropdowns === 'function') window.populateInspTypeDropdowns();
+  }).catch(e=>console.warn('checklists load:',e));
 };
 
 // Helper: stamp companyId on all new documents
@@ -4395,9 +4405,16 @@ function populateInspTypeDropdowns(selectedVal){
   }).join('');
   ['sc-insp-type','esc-insp-type'].forEach(id=>{
     const el = document.getElementById(id);
-    if(el) el.innerHTML = opts;
+    if(el){
+      const current = el.value; // preserve current selection if already set
+      el.innerHTML = opts;
+      if(selectedVal) el.value = selectedVal;
+      else if(current) el.value = current; // restore previous selection
+    }
   });
 }
+// Expose so module script can call it after loading checklists
+window.populateInspTypeDropdowns = populateInspTypeDropdowns;
 
 // Call when opening Add Task modal
 const _origOpenModal = window.openModal;
