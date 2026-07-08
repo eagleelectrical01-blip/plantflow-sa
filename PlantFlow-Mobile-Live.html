@@ -1443,6 +1443,7 @@ function renderCalTasks(mySchedules, taskDays){
     return;
   }
 
+  const freqColor = {daily:'#185FA5',weekly:'#6d28d9',monthly:'#16a34a',quarterly:'#d97706'};
   list.innerHTML = [...new Map(tasks.map(t=>[t.id,t])).values()].map(s=>{
     const artisans = (s.assignedArtisans||[s.assignedTo].filter(Boolean));
     const artisanDisplay = artisans.length
