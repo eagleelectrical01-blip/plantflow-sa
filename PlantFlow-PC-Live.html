@@ -3221,9 +3221,12 @@ window.saveLoginCredentials = async function(){
 };
 
 window.exportMaterials = function(){
+  if(typeof XLSX === 'undefined'){toast('Excel library not loaded — please refresh the page','error');return;}
+  if(!(window.allMaterials||[]).length){toast('No materials to export','error');return;}
+
   // Calculate live usage from job cards
   const usageMap = {};
-  window.allJobs.forEach(j=>{
+  (window.allJobs||[]).forEach(j=>{
     (j.materials||[]).forEach(m=>{
       const key=(m.name||'').toLowerCase().trim();
       if(!usageMap[key]){usageMap[key]={qty:0,cost:0,jobs:[]};}
@@ -3233,35 +3236,51 @@ window.exportMaterials = function(){
     });
   });
 
-  const q = s => '"'+String(s||'').replace(/"/g,'""')+'"';
-  const rows = [
-    [q('Code'),q('Description'),q('Category'),q('Unit Cost (R)'),q('In Stock'),q('Min Level'),q('Used MTD (qty)'),q('Cost MTD (R)'),q('Used On Jobs'),q('Status'),q('Supplier')]
-  ];
+  // Build rows — header + one row per material
+  const headers = ['Code','Description','Category','Unit Cost (R)','In Stock','Min Level','Used MTD (qty)','Cost MTD (R)','Used On Jobs','Status','Supplier'];
+  const rows = [headers];
+
   window.allMaterials.forEach(m=>{
     const usage = usageMap[(m.description||'').toLowerCase().trim()]||{qty:0,cost:0,jobs:[]};
     const usedQty = Math.max(m.usedMTD||0, usage.qty);
     const usedCost = usedQty*(parseFloat(m.unitCost)||0);
     const stockLabel = m.inStock<=0?'Out of stock':m.inStock<=m.minLevel?'Low stock':'In stock';
     rows.push([
-      q(m.code||''),
-      q(m.description||''),
-      q(m.category||''),
-      q((parseFloat(m.unitCost)||0).toFixed(2)),
-      q(m.inStock||0),
-      q(m.minLevel||0),
-      q(usedQty),
-      q(usedCost.toFixed(2)),
-      q((m.usedOnJobs||[]).concat(usage.jobs).filter((v,i,a)=>a.indexOf(v)===i).join(', ')||'—'),
-      q(stockLabel),
-      q(m.supplier||'')
+      m.code||'',
+      m.description||'',
+      m.category||'',
+      parseFloat((parseFloat(m.unitCost)||0).toFixed(2)),
+      parseFloat(m.inStock)||0,
+      parseFloat(m.minLevel)||0,
+      parseFloat(usedQty)||0,
+      parseFloat(usedCost.toFixed(2)),
+      (m.usedOnJobs||[]).concat(usage.jobs).filter((v,i,a)=>a.indexOf(v)===i).join(', ')||'—',
+      stockLabel,
+      m.supplier||''
     ]);
   });
-  const csv = rows.map(r=>r.join(',')).join('\r\n');
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='PlantFlow-Materials.csv';
-  a.click();
-  toast('Materials exported — each field in its own column','success');
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // Set column widths
+  ws['!cols'] = [
+    {wch:12}, // Code
+    {wch:30}, // Description
+    {wch:18}, // Category
+    {wch:14}, // Unit Cost
+    {wch:10}, // In Stock
+    {wch:10}, // Min Level
+    {wch:16}, // Used MTD qty
+    {wch:14}, // Cost MTD
+    {wch:25}, // Used On Jobs
+    {wch:12}, // Status
+    {wch:20}, // Supplier
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Materials & Spares');
+  XLSX.writeFile(wb, 'PlantFlow-Materials.xlsx');
+  toast('Materials exported to Excel — '+window.allMaterials.length+' items','success');
 };
 
 window.exportReport = function(){
