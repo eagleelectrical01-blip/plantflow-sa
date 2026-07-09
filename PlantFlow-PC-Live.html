@@ -468,7 +468,18 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#111827;fo
       <div class="stat-card"><div class="stat-label">Pending orders</div><div class="stat-value" id="mat-orders">0</div></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><div class="panel-title">Materials &amp; Spares Register <span class="live-dot" style="margin-left:5px;width:6px;height:6px"></span></div><button class="tb-btn primary" style="font-size:11px;padding:5px 10px" onclick="openModal('material-modal')">+ Add item</button><button class="tb-btn" style="font-size:11px;padding:5px 10px;margin-left:6px" onclick="exportMaterials()">Export Excel</button></div>
+      <div class="panel-head" style="flex-wrap:wrap;gap:8px">
+        <div class="panel-title">Materials &amp; Spares Register <span class="live-dot" style="margin-left:5px;width:6px;height:6px"></span></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:auto">
+          <button class="tb-btn primary" style="font-size:11px;padding:5px 10px" onclick="openModal('material-modal')">+ Add item</button>
+          <button class="tb-btn" style="font-size:11px;padding:5px 10px" onclick="exportMaterials()">📥 Export Excel</button>
+          <button class="tb-btn" style="font-size:11px;padding:5px 10px;background:#f0fdf4;border-color:#86efac;color:#15803d" onclick="downloadMaterialTemplate()">📋 Download template</button>
+          <label style="cursor:pointer">
+            <span class="tb-btn" style="font-size:11px;padding:5px 10px;background:#eff6ff;border-color:#93c5fd;color:#1d4ed8;display:inline-block">📤 Import from Excel</span>
+            <input type="file" id="mat-import-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="importMaterialsExcel(this)"/>
+          </label>
+        </div>
+      </div>
       <table class="tbl">
         <thead><tr><th>Code</th><th>Description</th><th>Category</th><th>Unit cost</th><th>In stock</th><th>Min. level</th><th>Used MTD</th><th>Cost MTD</th><th>Used on jobs</th><th>Status</th><th>Action</th></tr></thead>
         <tbody id="materials-tbody"><tr><td colspan="11" class="empty-state">Loading materials register...</td></tr></tbody>
@@ -3283,6 +3294,128 @@ window.exportMaterials = function(){
   toast('Materials exported to Excel — '+window.allMaterials.length+' items','success');
 };
 
+// ── MATERIAL IMPORT / TEMPLATE ──
+
+window.downloadMaterialTemplate = function(){
+  if(typeof XLSX === 'undefined'){toast('Excel library not loaded — please refresh','error');return;}
+  const headers = ['Code','Description','Category','Unit Cost (R)','In Stock','Min Level','Supplier'];
+  const examples = [
+    ['MAT-0001','2.5mm Surfix Cable (per metre)','Electrical',6.50,100,20,'RS Components'],
+    ['MAT-0002','M8 Rawlbolts (box of 50)','General',45.00,10,5,'Builders Warehouse'],
+    ['MAT-0003','Pump seal kit 65mm','Seals & gaskets',320.00,4,2,'SKF'],
+    ['MAT-0004','6205 Bearing','Bearings',85.00,8,3,'Bearing Man'],
+    ['MAT-0005','Grease EP2 (500g cartridge)','Lubricants',38.00,15,5,'Engen'],
+  ];
+  const note = [['INSTRUCTIONS: Fill in your materials below the example rows. Delete the example rows before importing. Required columns: Description, Category, Unit Cost, In Stock, Min Level. Code is optional — PlantFlow auto-generates if blank.']];
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([...note, [], headers, ...examples]);
+  ws['!cols'] = [{wch:12},{wch:35},{wch:22},{wch:14},{wch:10},{wch:10},{wch:22}];
+  // Merge instruction cell across all columns
+  ws['!merges'] = [{s:{r:0,c:0},e:{r:0,c:6}}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Materials Import');
+  XLSX.writeFile(wb, 'PlantFlow-Materials-Template.xlsx');
+  toast('Template downloaded — fill in your materials and import it back','success');
+};
+
+window.importMaterialsExcel = async function(input){
+  if(typeof XLSX === 'undefined'){toast('Excel library not loaded — please refresh','error');return;}
+  const file = input.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async function(e){
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+
+      if(!rows.length){toast('No data found in file','error');return;}
+
+      // Find header row — look for row that has "Description" column
+      // sheet_to_json uses first row as headers automatically
+      // Normalize column names (trim, lowercase for matching)
+      const normalizeKey = k => String(k).toLowerCase().replace(/[\s\(\)\/]/g,'');
+      const sampleKeys = Object.keys(rows[0]).map(normalizeKey);
+
+      const hasDesc = sampleKeys.some(k=>k.includes('description')||k.includes('desc'));
+      if(!hasDesc){
+        toast('Column "Description" not found. Make sure your file uses the template headers.','error');
+        input.value='';
+        return;
+      }
+
+      // Map columns flexibly
+      const findCol = (row, ...options) => {
+        const keys = Object.keys(row);
+        for(const opt of options){
+          const match = keys.find(k=>normalizeKey(k).includes(opt));
+          if(match) return row[match];
+        }
+        return '';
+      };
+
+      // Filter out empty rows and instruction rows
+      const validRows = rows.filter(r=>{
+        const desc = String(findCol(r,'description','desc')||'').trim();
+        return desc && !desc.toUpperCase().startsWith('INSTRUCTION');
+      });
+
+      if(!validRows.length){toast('No valid material rows found','error');input.value='';return;}
+
+      // Show confirmation
+      const confirmMsg = `Import ${validRows.length} material(s) from "${file.name}"?\n\nThis will ADD them to your existing materials register. Duplicates will be checked by description.`;
+      if(!confirm(confirmMsg)){input.value='';return;}
+
+      // Get existing descriptions to skip duplicates
+      const existingDescs = new Set((window.allMaterials||[]).map(m=>(m.description||'').toLowerCase().trim()));
+
+      let added = 0, skipped = 0;
+      const errors = [];
+
+      for(const row of validRows){
+        const desc = String(findCol(row,'description','desc')||'').trim();
+        if(!desc){skipped++;continue;}
+        if(existingDescs.has(desc.toLowerCase())){skipped++;continue;}
+
+        // Auto-generate code if blank
+        const existingCodes = (window.allMaterials||[]).map(m=>parseInt((m.code||'MAT-0000').replace('MAT-',''))||0);
+        const nextCode = 'MAT-'+String(Math.max(0,...existingCodes)+1+added).padStart(4,'0');
+        const code = String(findCol(row,'code')||'').trim() || nextCode;
+
+        const unitCost = parseFloat(String(findCol(row,'unitcost','cost','unitcostr','price')||'0').replace(/[^0-9.]/g,''))||0;
+        const inStock = parseFloat(String(findCol(row,'instock','stock','quantity','qty')||'0').replace(/[^0-9.]/g,''))||0;
+        const minLevel = parseFloat(String(findCol(row,'minlevel','min','minimum')||'0').replace(/[^0-9.]/g,''))||0;
+        const category = String(findCol(row,'category','cat')||'General').trim()||'General';
+        const supplier = String(findCol(row,'supplier')||'').trim();
+
+        try{
+          await window._addDoc(window._collection(window.db,'materials'), {
+            code, description:desc, category, unitCost, inStock, minLevel, supplier,
+            usedMTD:0, costMTD:0, usedOnJobs:[],
+            companyId: window._loggedInCompanyId||null,
+            createdAt: window._serverTimestamp()
+          });
+          existingDescs.add(desc.toLowerCase());
+          added++;
+        }catch(err){
+          errors.push(desc+': '+err.message);
+        }
+      }
+
+      input.value='';
+      const msg = `✅ Import complete!\n${added} item(s) added${skipped?' · '+skipped+' skipped (duplicates or blank)':''}${errors.length?' · '+errors.length+' errors':''}`;
+      toast(msg, errors.length?'error':'success');
+      if(errors.length) console.error('Import errors:', errors);
+
+    }catch(err){
+      toast('Error reading file: '+err.message,'error');
+      input.value='';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+};
 window.exportReport = function(){
   const rows = [['Job #','Description','Location','Artisan','Material','Qty','Unit','Unit Price','Line Total','Job Total','Status','Date']];
   window.allJobs.filter(j=>(j.materials||[]).length>0).forEach(j=>{
