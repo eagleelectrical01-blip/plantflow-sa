@@ -2805,20 +2805,22 @@ window.deleteJob = async function(id){
 
 window.convertFault = async function(id,desc,loc,priority){
   const jNum = nextJobNum();
-  await addDoc(collection(db,'jobCards'),cid({
+  const companyId = window._loggedInCompanyId||null;
+  await window._addDoc(window._collection(window.db,'jobCards'),{
     jobNumber:jNum,
     description:desc,
     location:loc,
-    priority:priority,
+    priority:priority||'medium',
     loggedBy:'Converted from fault',
     status:'open',
     permitRequired:'no',
     materials:[],
     totalCost:0,
     source:'converted-fault',
-    createdAt:serverTimestamp()
-  }));
-  await updateDoc(doc(db,'faults',id),{status:'converted',jobNumber:jNum});
+    companyId,
+    createdAt:window._serverTimestamp()
+  });
+  await window._updateDoc(window._doc(window.db,'faults',id),{status:'converted',jobNumber:jNum});
   toast('Fault converted to '+jNum+' — visible on mobile now','success');
 };
 
