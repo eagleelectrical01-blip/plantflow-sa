@@ -1667,7 +1667,7 @@ window.renderFaults = function(){
       <td style="font-size:11px">${fmtDateTime(f.createdAt)}</td>
       <td>${statusBadge(f.status||'new')}</td>
       <td style="white-space:nowrap">${f.status==='new'
-        ?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="convertFault('${f.id}','${(f.description||'').replace(/'/g,"\\'")}','${f.location||''}','${f.priority||'medium'}')">Convert to Job →</button>
+        ?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="convertFault('${f.id}')">Convert to Job →</button>
           <button class="tb-btn danger" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="deleteFault('${f.id}')">🗑</button>`
         :f.status==='converted'
         ?`<span style="font-size:11px;color:#16a34a">→ ${f.jobNumber||'Job created'}</span>
@@ -1714,7 +1714,7 @@ window.renderDashFaults = function(){
       <td>${f.loggedBy||'—'}</td>
       <td><span class="badge b-${f.priority==='high'||f.priority==='critical'?'red':f.priority==='medium'?'amber':'teal'}">${f.priority||'medium'}</span></td>
       <td style="font-size:11px">${fmtDateTime(f.createdAt)}</td>
-      <td><button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="convertFault('${f.id}','${(f.description||'').replace(/'/g,"\\'")}','${f.location||''}','${f.priority||'medium'}')">Convert to Job →</button></td>
+      <td><button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="convertFault('${f.id}')">Convert to Job →</button></td>
     </tr>`).join('');
 };
 
@@ -2803,25 +2803,39 @@ window.deleteJob = async function(id){
   }
 };
 
-window.convertFault = async function(id,desc,loc,priority){
-  const jNum = nextJobNum();
-  const companyId = window._loggedInCompanyId||null;
-  await window._addDoc(window._collection(window.db,'jobCards'),{
-    jobNumber:jNum,
-    description:desc,
-    location:loc,
-    priority:priority||'medium',
-    loggedBy:'Converted from fault',
-    status:'open',
-    permitRequired:'no',
-    materials:[],
-    totalCost:0,
-    source:'converted-fault',
-    companyId,
-    createdAt:window._serverTimestamp()
-  });
-  await window._updateDoc(window._doc(window.db,'faults',id),{status:'converted',jobNumber:jNum});
-  toast('Fault converted to '+jNum+' — visible on mobile now','success');
+window.convertFault = async function(id){
+  try{
+    // Look up fault data from the live array — avoids broken onclick strings
+    const fault = (window.allFaults||[]).find(f=>f.id===id);
+    if(!fault){toast('Fault not found — please refresh','error');return;}
+    const desc = fault.description||'';
+    const loc = fault.location||'';
+    const priority = fault.priority||'medium';
+    const jNum = nextJobNum();
+    const companyId = window._loggedInCompanyId||null;
+    await window._addDoc(window._collection(window.db,'jobCards'),{
+      jobNumber:jNum,
+      description:desc,
+      location:loc,
+      priority,
+      loggedBy:'Converted from fault',
+      assignedTo: fault.assignedTo||'',
+      department: fault.department||'',
+      status:'open',
+      permitRequired:'no',
+      materials:[],
+      totalCost:0,
+      source:'converted-fault',
+      faultId:id,
+      companyId,
+      createdAt:window._serverTimestamp()
+    });
+    await window._updateDoc(window._doc(window.db,'faults',id),{status:'converted',jobNumber:jNum});
+    toast('✅ Fault converted to '+jNum+' — visible on Job Cards now','success');
+  }catch(err){
+    toast('Error converting fault: '+err.message,'error');
+    console.error('convertFault error:',err);
+  }
 };
 
 window.deleteFault = async function(id){
