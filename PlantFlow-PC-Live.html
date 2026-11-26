@@ -1670,8 +1670,11 @@ window.renderFaults = function(){
         ?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px" onclick="convertFault('${f.id}')">Convert to Job →</button>
           <button class="tb-btn danger" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="deleteFault('${f.id}')">🗑</button>`
         :f.status==='converted'
-        ?`<span style="font-size:11px;color:#16a34a">→ ${f.jobNumber||'Job created'}</span>
-          <button class="tb-btn danger" style="font-size:11px;padding:3px 8px;margin-left:4px" onclick="deleteFault('${f.id}')">🗑</button>`
+        ?`<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
+            <span style="font-size:11px;color:#16a34a;font-weight:700">→ ${f.jobNumber||'Job created'}</span>
+            ${f.photoBase64?`<button class="tb-btn" style="font-size:10px;padding:2px 7px;background:#fffbeb;border-color:#fcd34d;color:#92400e" onclick="patchFaultPhoto('${f.id}')">📷 Push photo to job</button>`:''}
+            <button class="tb-btn danger" style="font-size:10px;padding:2px 7px" onclick="deleteFault('${f.id}')">🗑</button>
+          </div>`
         :`<button class="tb-btn danger" style="font-size:11px;padding:3px 8px" onclick="deleteFault('${f.id}')">🗑 Delete</button>`
       }</td>
     </tr>
@@ -2836,6 +2839,23 @@ window.convertFault = async function(id){
   }catch(err){
     toast('Error converting fault: '+err.message,'error');
     console.error('convertFault error:',err);
+  }
+};
+
+window.patchFaultPhoto = async function(faultId){
+  try{
+    const fault = (window.allFaults||[]).find(f=>f.id===faultId);
+    if(!fault){toast('Fault not found','error');return;}
+    if(!fault.photoBase64){toast('No photo on this fault','error');return;}
+    if(!fault.jobNumber){toast('No job number linked to this fault','error');return;}
+    // Find the job card by job number
+    const job = (window.allJobs||[]).find(j=>j.jobNumber===fault.jobNumber);
+    if(!job){toast('Job card '+fault.jobNumber+' not found','error');return;}
+    await window._updateDoc(window._doc(window.db,'jobCards',job.id),{faultPhoto: fault.photoBase64});
+    toast('✅ Photo pushed to '+fault.jobNumber+' — artisan can now see it on their phone','success');
+  }catch(err){
+    toast('Error: '+err.message,'error');
+    console.error('patchFaultPhoto error:',err);
   }
 };
 
