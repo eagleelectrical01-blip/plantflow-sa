@@ -1591,7 +1591,7 @@ window.renderJobCards = function(){
           <button class="tb-btn" style="font-size:11px;padding:3px 8px;width:100%;background:#fef3c7;border-color:#f59e0b;color:#92400e" onclick="openEditJobModal('${j.id}')">✏️ Edit</button>
           <button class="tb-btn" style="font-size:11px;padding:3px 8px;width:100%" onclick="completeJob('${j.id}')">✓ Done</button>
           <button class="tb-btn" style="font-size:11px;padding:3px 8px;width:100%;background:#dcfce7;border-color:#86efac;color:#15803d" onclick="openJobComments('${j.id}','${j.jobNumber}')">💬 Notes</button>
-          <button class="tb-btn" style="font-size:11px;padding:3px 8px;width:100%;background:#dcfce7;border-color:#25D366;color:#15803d" onclick="waFollowUp('${j.id}','${j.jobNumber}','${j.description?.replace(/'/g,'').replace(/"/g,'')||''}','${artisans.join(',')}')">📲 WA</button>
+          <button class="tb-btn" style="font-size:11px;padding:3px 8px;width:100%;background:#dcfce7;border-color:#25D366;color:#15803d" onclick="waFollowUp('${j.id}')">📲 WA</button>
           ${j.permitRequired==='yes'&&!j.permitNumber?`<button class="tb-btn primary" style="font-size:11px;padding:3px 8px;width:100%" onclick="quickPermit('${j.jobNumber}','${artisans[0]||''}')">PTW</button>`:''}
           ${j.awaitingSpares?`<button class="tb-btn" style="font-size:11px;padding:3px 8px;width:100%;background:#fee2e2;border-color:#fca5a5;color:#b91c1c" onclick="clearSpares('${j.id}')">Clear spares flag</button>`:''}
         ` : `
@@ -3585,10 +3585,16 @@ window.addJobComment = async function(){
   }catch(e){toast('Error: '+e.message,'error');}
 };
 
-window.waFollowUp = function(jobId, jobNum, desc, artisansStr){
-  const artisans = artisansStr ? artisansStr.split(',').filter(Boolean) : [];
-  const job = window.allJobs.find(j=>j.id===jobId)||{};
-  _sendWaFollowUp(jobNum, desc||job.description||'', artisans);
+window.waFollowUp = function(jobId){
+  const job = (window.allJobs||[]).find(j=>j.id===jobId);
+  if(!job){toast('Job not found — please refresh','error');return;}
+  const jobNum = job.jobNumber||'';
+  const desc = job.description||'';
+  // artisans stored as array or comma string
+  let artisans = [];
+  if(Array.isArray(job.assignedTo)) artisans = job.assignedTo;
+  else if(typeof job.assignedTo==='string' && job.assignedTo) artisans = job.assignedTo.split(',').map(s=>s.trim()).filter(Boolean);
+  _sendWaFollowUp(jobNum, desc, artisans);
 };
 
 window.waFollowUpFromComments = function(){
