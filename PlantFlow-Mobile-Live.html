@@ -2797,6 +2797,13 @@ window.logMaterial = async function(){
   loadJobMaterials();
 };
 
+</script>
+
+<script>
+// Non-module utilities
+let _prevScreen = 'sc-role';
+let _currentRole = '';
+
 // ---- Fault photo zoom / fullscreen ----
 window._faultPhotoZoom = 260;
 window.zoomFaultPhoto = function(dir){
@@ -2815,12 +2822,6 @@ window.expandFaultPhoto = function(){
 window.closeFaultPhotoOverlay = function(){
   document.getElementById('jd-fault-photo-overlay').style.display = 'none';
 };
-</script>
-
-<script>
-// Non-module utilities
-let _prevScreen = 'sc-role';
-let _currentRole = '';
 
 window._faultType = 'factory';
 window._currentUserName = '';
