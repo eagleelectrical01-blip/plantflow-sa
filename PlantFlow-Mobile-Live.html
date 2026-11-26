@@ -1707,7 +1707,7 @@ window.openJobDetail = function(id){
   const faultPhotoImg = document.getElementById('jd-fault-photo-img');
   if(j.faultPhoto && faultPhotoSection && faultPhotoImg){
     faultPhotoImg.src = j.faultPhoto;
-    _faultPhotoZoom = 260; // reset zoom each time
+    window._faultPhotoZoom = 260; // reset zoom each time
     faultPhotoImg.style.maxHeight = '260px';
     faultPhotoSection.style.display = 'block';
   } else if(faultPhotoSection){
@@ -2798,23 +2798,23 @@ window.logMaterial = async function(){
 };
 
 // ---- Fault photo zoom / fullscreen ----
-let _faultPhotoZoom = 260; // default max-height px
-function zoomFaultPhoto(dir){
+window._faultPhotoZoom = 260;
+window.zoomFaultPhoto = function(dir){
   const img = document.getElementById('jd-fault-photo-img');
   if(!img) return;
-  _faultPhotoZoom = Math.min(900, Math.max(120, _faultPhotoZoom + dir * 80));
-  img.style.maxHeight = _faultPhotoZoom + 'px';
-}
-function expandFaultPhoto(){
-  const src = document.getElementById('jd-fault-photo-img').src;
-  if(!src) return;
+  window._faultPhotoZoom = Math.min(900, Math.max(120, window._faultPhotoZoom + dir * 80));
+  img.style.maxHeight = window._faultPhotoZoom + 'px';
+};
+window.expandFaultPhoto = function(){
+  const img = document.getElementById('jd-fault-photo-img');
+  if(!img || !img.src) return;
   const overlay = document.getElementById('jd-fault-photo-overlay');
-  document.getElementById('jd-fault-photo-overlay-img').src = src;
+  document.getElementById('jd-fault-photo-overlay-img').src = img.src;
   overlay.style.display = 'flex';
-}
-function closeFaultPhotoOverlay(){
+};
+window.closeFaultPhotoOverlay = function(){
   document.getElementById('jd-fault-photo-overlay').style.display = 'none';
-}
+};
 </script>
 
 <script>
