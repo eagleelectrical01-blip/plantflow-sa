@@ -2827,6 +2827,7 @@ window.convertFault = async function(id){
       totalCost:0,
       source:'converted-fault',
       faultId:id,
+      faultPhoto: fault.photoBase64||null,
       companyId,
       createdAt:window._serverTimestamp()
     });
